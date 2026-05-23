@@ -1,0 +1,262 @@
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.vue';
+@source '../**/*.js';
+@source '../**/*.ts';
+
+/* ─────────────────────────────────────────────────────────────
+ * Palette & font (sesuai Dokumentasi/00-Pendahuluan/02-color-palette-dan-asset.md)
+ * Topbar hijau gelap (warisan pos-pajoh), action merah Pajoh,
+ * gradient merah-oranye untuk banner & stat hero.
+ * ───────────────────────────────────────────────────────────── */
+@theme {
+    --font-sans:
+        'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Brand merah */
+    --color-brand: #a03232;
+    --color-brand-dark: #7a2424;
+    --color-brand-light: #ffe2e2;
+    --color-brand-foreground: #ffffff;
+
+    /* Hijau pos-pajoh (top-bar, secondary action, success state) */
+    --color-emerald-pos: #104837;
+    --color-emerald-pos-dark: #0d3d2e;
+    --color-emerald-pos-light: #d9f0e5;
+
+    /* Amber/orange */
+    --color-warning: #ec9800;
+    --color-warning-light: #fff4da;
+    --color-warning-soft: #fef3c7;
+
+    /* State */
+    --color-success: #16a34a;
+    --color-success-soft: #d1fae5;
+    --color-danger: #dc2626;
+    --color-danger-soft: #fee2e2;
+    --color-info: #2563eb;
+    --color-info-soft: #dbeafe;
+
+    /* Layered shadow tokens */
+    --shadow-xs: 0 1px 2px 0 rgb(15 15 15 / 0.04);
+    --shadow-sm: 0 1px 2px 0 rgb(15 15 15 / 0.05), 0 1px 3px 0 rgb(15 15 15 / 0.06);
+    --shadow-md: 0 4px 6px -1px rgb(15 15 15 / 0.07), 0 2px 4px -2px rgb(15 15 15 / 0.05);
+    --shadow-lg: 0 10px 15px -3px rgb(15 15 15 / 0.08), 0 4px 6px -4px rgb(15 15 15 / 0.05);
+
+    /* Animations */
+    --animate-page-in: pageIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    --animate-fade-in-up: fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    --animate-slide-down: slideDown 0.25s ease both;
+}
+
+@keyframes pageIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * shadcn-vue token mapping → palette brand.
+ * ───────────────────────────────────────────────────────────── */
+@theme inline {
+    --font-heading: var(--font-sans);
+
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+}
+
+:root {
+    --radius: 0.625rem;
+
+    --background: #faf9f7;
+    --foreground: #1a1a1a;
+
+    --card: #ffffff;
+    --card-foreground: #1a1a1a;
+
+    --popover: #ffffff;
+    --popover-foreground: #1a1a1a;
+
+    /* Primary = brand merah (action button utama) */
+    --primary: #a03232;
+    --primary-foreground: #ffffff;
+
+    /* Secondary = hijau pos-pajoh */
+    --secondary: #104837;
+    --secondary-foreground: #ffffff;
+
+    --muted: #f4f1ec;
+    --muted-foreground: #6b6b6b;
+
+    --accent: #f3eee9;
+    --accent-foreground: #1a1a1a;
+
+    --destructive: #dc2626;
+
+    --border: #e7e3dd;
+    --input: #e7e3dd;
+    --ring: #a03232;
+
+    --chart-1: oklch(0.646 0.222 41.116);
+    --chart-2: oklch(0.6 0.118 184.704);
+    --chart-3: oklch(0.398 0.07 227.392);
+    --chart-4: oklch(0.828 0.189 84.429);
+    --chart-5: oklch(0.769 0.188 70.08);
+
+    /* Sidebar — dipakai sebagai top-bar di app distributor (hijau pos-pajoh) */
+    --sidebar: #104837;
+    --sidebar-foreground: #ffffff;
+    --sidebar-primary: #a03232;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: rgba(255, 255, 255, 0.1);
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: rgba(255, 255, 255, 0.1);
+    --sidebar-ring: #a03232;
+}
+
+html,
+body {
+    font-family: var(--font-sans);
+    background-color: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    /* Base font 13.5px — compact admin app feel.
+       Tailwind utility `text-base` (1rem) tetap mengacu 16px,
+       jadi explicit text-* class tetap proportional. */
+    html {
+        font-size: 14.5px;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+    h1, h2, h3, h4 {
+        letter-spacing: -0.015em;
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * Gradient utilities — siap pakai sebagai class
+ * ───────────────────────────────────────────────────────────── */
+@utility gradient-brand {
+    background: linear-gradient(135deg, #a03232 0%, #7a2424 100%);
+}
+
+@utility gradient-brand-orange {
+    background: linear-gradient(135deg, #a03232 0%, #c2410c 60%, #ea580c 100%);
+}
+
+@utility gradient-orange {
+    background: linear-gradient(135deg, #ea580c 0%, #f59e0b 100%);
+}
+
+@utility gradient-emerald-pos {
+    background: linear-gradient(135deg, #104837 0%, #0d3d2e 100%);
+}
+
+@utility bg-topbar {
+    background-color: #104837;
+}
+
+/* ─────────────────────────────────────────────────────────────
+ * Page transition (Vue <Transition name="page">)
+ * ───────────────────────────────────────────────────────────── */
+.page-enter-active,
+.page-leave-active {
+    transition:
+        opacity 200ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.page-enter-from {
+    opacity: 0;
+    transform: translateY(8px);
+}
+.page-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+
+/* Subtle button active feedback */
+button:active,
+[role='button']:active {
+    transform: translateY(0.5px);
+}
+
+/* Custom scrollbar */
+@layer base {
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: color-mix(in oklch, var(--muted-foreground) 30%, transparent);
+        border-radius: 10px;
+        border: 2px solid var(--background);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
+    }
+}
