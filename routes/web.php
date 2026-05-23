@@ -9,17 +9,20 @@ use App\Http\Controllers\Web\CustomerPhotoController;
 use App\Http\Controllers\Web\CustomerTypeController;
 use App\Http\Controllers\Web\DriverController;
 use App\Http\Controllers\Web\DriverDocumentController;
+use App\Http\Controllers\Web\GoodsReceiptController;
+use App\Http\Controllers\Web\InventoryController;
 use App\Http\Controllers\Web\LoginHistoryController;
 use App\Http\Controllers\Web\MenuController;
-use App\Http\Controllers\Web\PurchaseOrderController;
-use App\Http\Controllers\Web\ProfileController;
-use App\Http\Controllers\Web\RoleController;
 use App\Http\Controllers\Web\PriceTierController;
 use App\Http\Controllers\Web\ProductCategoryController;
 use App\Http\Controllers\Web\ProductController;
 use App\Http\Controllers\Web\ProductPriceController;
 use App\Http\Controllers\Web\ProductSupplierController;
 use App\Http\Controllers\Web\ProductUnitController;
+use App\Http\Controllers\Web\ProfileController;
+use App\Http\Controllers\Web\PurchaseOrderController;
+use App\Http\Controllers\Web\RoleController;
+use App\Http\Controllers\Web\StockLedgerController;
 use App\Http\Controllers\Web\SupplierBankAccountController;
 use App\Http\Controllers\Web\SupplierCategoryController;
 use App\Http\Controllers\Web\SupplierController;
@@ -251,6 +254,15 @@ Route::middleware('auth')->group(function (): void {
             ->name('vehicle-documents.destroy');
     });
 
+    // ── Inventory (stocks & ledger viewer, MVP read-only) ─────────────
+    Route::middleware('menu:inventory.stock')->group(function (): void {
+        Route::get('stocks', [InventoryController::class, 'index'])->name('stocks.index');
+        Route::get('stocks/{product}', [InventoryController::class, 'show'])->name('stocks.show');
+    });
+    Route::middleware('menu:inventory.ledger')->group(function (): void {
+        Route::get('stock-ledger', [StockLedgerController::class, 'index'])->name('stock-ledger.index');
+    });
+
     // ── Purchase Order ────────────────────────────────────────────────
     Route::middleware('menu:purchasing.po')->group(function (): void {
         Route::get('purchase-orders/suppliers/{supplier}/products', [PurchaseOrderController::class, 'productsForSupplier'])
@@ -266,5 +278,23 @@ Route::middleware('auth')->group(function (): void {
             ->name('purchase-orders.pdf');
         Route::post('purchase-orders/{purchase_order}/regenerate-pdf', [PurchaseOrderController::class, 'regeneratePdf'])
             ->name('purchase-orders.regenerate-pdf');
+    });
+
+    // ── Goods Receipt (GRN) ───────────────────────────────────────────
+    Route::middleware('menu:purchasing.grn')->group(function (): void {
+        Route::get('grns/po/{purchase_order}/details', [GoodsReceiptController::class, 'poDetails'])
+            ->name('grns.po-details');
+        Route::resource('grns', GoodsReceiptController::class)
+            ->parameters(['grns' => 'goods_receipt']);
+        Route::post('grns/{goods_receipt}/submit', [GoodsReceiptController::class, 'submit'])
+            ->name('grns.submit');
+        Route::post('grns/{goods_receipt}/cancel', [GoodsReceiptController::class, 'cancel'])
+            ->name('grns.cancel');
+        Route::post('grns/{goods_receipt}/reject', [GoodsReceiptController::class, 'reject'])
+            ->name('grns.reject');
+        Route::post('grns/{goods_receipt}/post', [GoodsReceiptController::class, 'post'])
+            ->name('grns.post');
+        Route::get('grns/{goods_receipt}/pdf', [GoodsReceiptController::class, 'downloadPdf'])
+            ->name('grns.pdf');
     });
 });
