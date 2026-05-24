@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Web\ActivityLogController;
 use App\Http\Controllers\Web\CreditNoteController;
 use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\CustomerGeoController;
@@ -37,9 +38,12 @@ use App\Http\Controllers\Web\SupplierCategoryController;
 use App\Http\Controllers\Web\SupplierController;
 use App\Http\Controllers\Web\SupplierDocumentController;
 use App\Http\Controllers\Web\SupplierReturnController;
+use App\Http\Controllers\Web\TrashController;
 use App\Http\Controllers\Web\UserController;
 use App\Http\Controllers\Web\VehicleController;
 use App\Http\Controllers\Web\VehicleDocumentController;
+use App\Http\Controllers\Web\WaNotificationController;
+use App\Http\Controllers\Web\YearEndClosingController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -412,6 +416,35 @@ Route::middleware('auth')->group(function (): void {
         Route::get('credit-notes', [CreditNoteController::class, 'index'])->name('credit-notes.index');
         Route::get('credit-notes/{credit_note}', [CreditNoteController::class, 'show'])->name('credit-notes.show');
         Route::post('credit-notes/{credit_note}/apply', [CreditNoteController::class, 'apply'])->name('credit-notes.apply');
+    });
+
+    // ── Activity Log + Trash (T19) ────────────────────────────────────
+    Route::middleware('menu:audit.activity')->group(function (): void {
+        Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+        Route::get('activity-logs/{activity_log}', [ActivityLogController::class, 'show'])->name('activity-logs.show');
+    });
+
+    Route::get('trash', [TrashController::class, 'index'])->name('trash.index');
+    Route::post('trash/{type}/{id}/restore', [TrashController::class, 'restore'])->name('trash.restore');
+
+    // ── WhatsApp Notifications (T18) ──────────────────────────────────
+    Route::prefix('wa')->name('wa.')->group(function (): void {
+        Route::get('notifications', [WaNotificationController::class, 'index'])->name('notifications.index');
+        Route::get('notifications/{wa_notification}', [WaNotificationController::class, 'show'])->name('notifications.show');
+        Route::post('notifications/{wa_notification}/retry', [WaNotificationController::class, 'retry'])->name('notifications.retry');
+        Route::post('notifications/manual-send', [WaNotificationController::class, 'manualSend'])->name('notifications.manual-send');
+        Route::get('test-connection', [WaNotificationController::class, 'testConnection'])->name('test-connection');
+        Route::get('templates', [WaNotificationController::class, 'templatesIndex'])->name('templates.index');
+        Route::put('templates/{wa_template}', [WaNotificationController::class, 'templatesUpdate'])->name('templates.update');
+        Route::post('settings', [WaNotificationController::class, 'settingsUpdate'])->name('settings.update');
+    });
+
+    // ── Year-End Closing (T20) ────────────────────────────────────────
+    Route::prefix('year-end-closings')->name('year-end-closings.')->group(function (): void {
+        Route::get('/', [YearEndClosingController::class, 'index'])->name('index');
+        Route::get('pre-check/{fiscalYear}', [YearEndClosingController::class, 'preCheck'])->name('pre-check');
+        Route::post('execute', [YearEndClosingController::class, 'execute'])->name('execute');
+        Route::get('{year_end_closing}', [YearEndClosingController::class, 'show'])->name('show');
     });
 
     // ── Reports (T17) ─────────────────────────────────────────────────
