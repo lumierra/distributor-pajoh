@@ -131,6 +131,20 @@ class WaNotificationController extends Controller
         ]);
     }
 
+    public function settingsIndex(Request $request, SettingManager $settings): InertiaResponse
+    {
+        $this->ensureAdmin($request);
+
+        return Inertia::render('WaNotifications/Settings', [
+            'settings' => [
+                'gateway_url' => $settings->get('notification.wa.gateway_url'),
+                'gateway_token' => $settings->get('notification.wa.gateway_token'),
+                'sender_id' => $settings->get('notification.wa.sender_id'),
+                'rate_limit_per_day' => $settings->get('notification.wa.rate_limit_per_day', 5),
+            ],
+        ]);
+    }
+
     public function templatesUpdate(Request $request, WaTemplate $waTemplate): RedirectResponse
     {
         $this->ensureAdmin($request);

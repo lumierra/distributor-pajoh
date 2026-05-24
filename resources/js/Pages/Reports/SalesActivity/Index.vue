@@ -1,7 +1,8 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import { Activity, Download } from '@lucide/vue';
-import { reactive, watch } from 'vue';
+import { Activity, Download, FileText } from '@lucide/vue';
+import { computed, reactive, watch } from 'vue';
+import ReportChart from '@/Components/Reports/ReportChart.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import StatCard from '@/Components/Shared/StatCard.vue';
 import { Button } from '@/Components/ui/button';
@@ -53,6 +54,16 @@ function exportXlsx() {
     window.location.href = route('reports.export', { reportType: 'sales_activity', ...props.filters });
 }
 
+function exportPdf() {
+    window.location.href = route('reports.export', { reportType: 'sales_activity', format: 'pdf', ...props.filters });
+}
+
+const salesCategories = computed(() => props.bySales.slice(0, 8).map((r) => r.sales?.name?.substring(0, 14) ?? '—'));
+const salesSeries = computed(() => [
+    { name: 'SO Count', data: props.bySales.slice(0, 8).map((r) => Number(r.so_count) || 0) },
+    { name: 'Visits', data: props.bySales.slice(0, 8).map((r) => Number(r.total_visits) || 0) },
+]);
+
 function fmtRp(v) {
     return 'Rp ' + new Intl.NumberFormat('id-ID').format(Number(v) || 0);
 }
@@ -64,6 +75,9 @@ function fmtRp(v) {
     <AppLayout>
         <PageHeader title="Sales Activity" description="SO count, value, approval rate per sales." :icon="Activity">
             <template #actions>
+                <Button size="default" variant="outline" @click="exportPdf">
+                    <FileText class="size-4" /> PDF
+                </Button>
                 <Button size="default" @click="exportXlsx">
                     <Download class="size-4" /> Export Excel
                 </Button>
@@ -75,6 +89,14 @@ function fmtRp(v) {
             <StatCard label="SO Count" :value="kpi.so_count ?? 0" tone="brand" />
             <StatCard label="SO Value" :value="fmtRp(kpi.so_value)" tone="brand" />
             <StatCard label="Approved / Cancelled" :value="(kpi.so_approved ?? 0) + ' / ' + (kpi.so_cancelled ?? 0)" tone="brand-orange" />
+        </section>
+
+        <section v-if="bySales.length > 0" class="mb-4">
+            <ReportChart title="Top 8 Sales: Visits vs SO Count"
+                type="bar"
+                :categories="salesCategories"
+                :series="salesSeries"
+                :height="280" />
         </section>
 
         <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">

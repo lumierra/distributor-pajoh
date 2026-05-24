@@ -32,6 +32,9 @@ use App\Http\Controllers\Web\PurchaseOrderController;
 use App\Http\Controllers\Web\Reports\ReportController;
 use App\Http\Controllers\Web\RoleController;
 use App\Http\Controllers\Web\SalesOrderController;
+use App\Http\Controllers\Web\SalesScheduleController;
+use App\Http\Controllers\Web\SalesVisitBypassRequestController;
+use App\Http\Controllers\Web\SalesVisitController;
 use App\Http\Controllers\Web\StockLedgerController;
 use App\Http\Controllers\Web\SupplierBankAccountController;
 use App\Http\Controllers\Web\SupplierCategoryController;
@@ -40,6 +43,7 @@ use App\Http\Controllers\Web\SupplierDocumentController;
 use App\Http\Controllers\Web\SupplierReturnController;
 use App\Http\Controllers\Web\TrashController;
 use App\Http\Controllers\Web\UserController;
+use App\Http\Controllers\Web\UserDeviceController;
 use App\Http\Controllers\Web\VehicleController;
 use App\Http\Controllers\Web\VehicleDocumentController;
 use App\Http\Controllers\Web\WaNotificationController;
@@ -418,9 +422,33 @@ Route::middleware('auth')->group(function (): void {
         Route::post('credit-notes/{credit_note}/apply', [CreditNoteController::class, 'apply'])->name('credit-notes.apply');
     });
 
+    // ── Sales Schedule + Visit + Device (T10) ─────────────────────────
+    Route::middleware('menu:sales.schedule')->group(function (): void {
+        Route::resource('sales-schedules', SalesScheduleController::class)
+            ->only(['index', 'store', 'update', 'destroy']);
+    });
+
+    Route::middleware('menu:sales.visit')->group(function (): void {
+        Route::get('sales-visits', [SalesVisitController::class, 'index'])->name('sales-visits.index');
+        Route::get('sales-visits/{sales_visit}', [SalesVisitController::class, 'show'])->name('sales-visits.show');
+        Route::post('sales-visits/{sales_visit}/cancel', [SalesVisitController::class, 'cancel'])->name('sales-visits.cancel');
+
+        Route::get('sales-visit-bypass-requests', [SalesVisitBypassRequestController::class, 'index'])->name('sales-visit-bypass-requests.index');
+        Route::post('sales-visit-bypass-requests/{sales_visit_bypass_request}/approve', [SalesVisitBypassRequestController::class, 'approve'])->name('sales-visit-bypass-requests.approve');
+        Route::post('sales-visit-bypass-requests/{sales_visit_bypass_request}/reject', [SalesVisitBypassRequestController::class, 'reject'])->name('sales-visit-bypass-requests.reject');
+    });
+
+    Route::middleware('menu:master.user')->group(function (): void {
+        Route::get('user-devices', [UserDeviceController::class, 'index'])->name('user-devices.index');
+        Route::post('user-devices/pending/{user_device_pending_request}/approve', [UserDeviceController::class, 'approvePending'])->name('user-devices.approve-pending');
+        Route::post('user-devices/pending/{user_device_pending_request}/reject', [UserDeviceController::class, 'rejectPending'])->name('user-devices.reject-pending');
+        Route::post('user-devices/{user_device}/revoke', [UserDeviceController::class, 'revoke'])->name('user-devices.revoke');
+    });
+
     // ── Activity Log + Trash (T19) ────────────────────────────────────
     Route::middleware('menu:audit.activity')->group(function (): void {
         Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+        Route::get('activity-logs/for-model', [ActivityLogController::class, 'forModel'])->name('activity-logs.for-model');
         Route::get('activity-logs/{activity_log}', [ActivityLogController::class, 'show'])->name('activity-logs.show');
     });
 
@@ -436,6 +464,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('test-connection', [WaNotificationController::class, 'testConnection'])->name('test-connection');
         Route::get('templates', [WaNotificationController::class, 'templatesIndex'])->name('templates.index');
         Route::put('templates/{wa_template}', [WaNotificationController::class, 'templatesUpdate'])->name('templates.update');
+        Route::get('settings', [WaNotificationController::class, 'settingsIndex'])->name('settings.index');
         Route::post('settings', [WaNotificationController::class, 'settingsUpdate'])->name('settings.update');
     });
 
@@ -456,6 +485,11 @@ Route::middleware('auth')->group(function (): void {
         Route::middleware('menu:reports.sales_activity')->get('sales-activity', [ReportController::class, 'salesActivityIndex'])->name('sales-activity');
         Route::post('regenerate', [ReportController::class, 'regenerate'])->name('regenerate');
         Route::get('export/{reportType}', [ReportController::class, 'export'])->name('export');
+
+        // Drill-downs
+        Route::middleware('menu:reports.sales')->get('sales/drill-down', [ReportController::class, 'drillDownSales'])->name('sales.drill-down');
+        Route::middleware('menu:reports.stock')->get('stock/drill-down/{productId}/{batchId?}', [ReportController::class, 'drillDownStock'])->name('stock.drill-down');
+        Route::middleware('menu:reports.ar_aging')->get('ar-aging/drill-down/{customerId}', [ReportController::class, 'drillDownArAging'])->name('ar-aging.drill-down');
     });
 
     // ── Supplier Return ───────────────────────────────────────────────

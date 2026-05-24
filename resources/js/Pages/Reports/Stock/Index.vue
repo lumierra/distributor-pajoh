@@ -1,7 +1,8 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
-import { Download, Package, RefreshCw } from '@lucide/vue';
-import { reactive, watch } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { Download, FileText, Package, RefreshCw } from '@lucide/vue';
+import { computed, reactive, watch } from 'vue';
+import ReportChart from '@/Components/Reports/ReportChart.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import StatCard from '@/Components/Shared/StatCard.vue';
 import { Button } from '@/Components/ui/button';
@@ -59,6 +60,16 @@ function exportXlsx() {
     window.location.href = route('reports.export', { reportType: 'stock_position', ...props.filters });
 }
 
+function exportPdf() {
+    window.location.href = route('reports.export', { reportType: 'stock_position', format: 'pdf', ...props.filters });
+}
+
+const topProducts = computed(() => [...props.rows].slice(0, 8));
+const chartCategories = computed(() => topProducts.value.map((r) => r.product?.name?.substring(0, 14) ?? '—'));
+const chartSeries = computed(() => [
+    { name: 'Stock Value', data: topProducts.value.map((r) => Number(r.stock_value) || 0) },
+]);
+
 function fmtRp(v) {
     return 'Rp ' + new Intl.NumberFormat('id-ID').format(Number(v) || 0);
 }
@@ -73,6 +84,9 @@ function fmtRp(v) {
                 <Button variant="outline" size="default" @click="regenerate">
                     <RefreshCw class="size-4" /> Refresh
                 </Button>
+                <Button size="default" variant="outline" @click="exportPdf">
+                    <FileText class="size-4" /> PDF
+                </Button>
                 <Button size="default" @click="exportXlsx">
                     <Download class="size-4" /> Export Excel
                 </Button>
@@ -84,6 +98,15 @@ function fmtRp(v) {
             <StatCard label="Total Qty (base)" :value="(kpi.qty_total ?? 0).toLocaleString('id-ID')" tone="brand" />
             <StatCard label="Total Value" :value="fmtRp(kpi.total_value)" tone="brand" />
             <StatCard label="Stale Batches (>60d)" :value="kpi.stale_batches ?? 0" tone="brand-orange" />
+        </section>
+
+        <section v-if="topProducts.length > 0" class="mb-4">
+            <ReportChart title="Top 8 Produk by Stock Value"
+                type="bar"
+                :categories="chartCategories"
+                :series="chartSeries"
+                :height="280"
+                :format-y="(v) => fmtRp(v)" />
         </section>
 
         <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
@@ -116,8 +139,10 @@ function fmtRp(v) {
                     </TableRow>
                     <TableRow v-for="row in rows" :key="row.id">
                         <TableCell class="pl-4 py-2.5">
-                            <p class="font-medium">{{ row.product?.name ?? '—' }}</p>
-                            <p class="text-[11px] text-muted-foreground font-mono">{{ row.product?.sku }}</p>
+                            <Link :href="route('reports.stock.drill-down', { productId: row.product_id, batchId: row.batch_id ?? '' })" class="hover:text-primary">
+                                <p class="font-medium">{{ row.product?.name ?? '—' }}</p>
+                                <p class="text-[11px] text-muted-foreground font-mono">{{ row.product?.sku }}</p>
+                            </Link>
                         </TableCell>
                         <TableCell class="font-mono text-xs">{{ row.batch?.batch_code ?? '—' }}</TableCell>
                         <TableCell class="text-right font-mono">{{ row.qty_on_hand_base }}</TableCell>

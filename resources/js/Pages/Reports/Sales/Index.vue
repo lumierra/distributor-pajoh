@@ -1,7 +1,8 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
-import { BarChart3, Download, RefreshCw } from '@lucide/vue';
-import { reactive, watch } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { BarChart3, Download, FileText, RefreshCw } from '@lucide/vue';
+import { computed, reactive, watch } from 'vue';
+import ReportChart from '@/Components/Reports/ReportChart.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import StatCard from '@/Components/Shared/StatCard.vue';
 import { Button } from '@/Components/ui/button';
@@ -67,6 +68,16 @@ function exportXlsx() {
     window.location.href = route('reports.export', { reportType: 'sales_summary', ...props.filters });
 }
 
+function exportPdf() {
+    window.location.href = route('reports.export', { reportType: 'sales_summary', format: 'pdf', ...props.filters });
+}
+
+const chartCategories = computed(() => [...props.rows].reverse().map((r) => r.snapshot_date));
+const chartSeries = computed(() => [
+    { name: 'Revenue', data: [...props.rows].reverse().map((r) => Number(r.revenue) || 0) },
+    { name: 'Margin', data: [...props.rows].reverse().map((r) => Number(r.margin) || 0) },
+]);
+
 function fmtRp(v) {
     return 'Rp ' + new Intl.NumberFormat('id-ID').format(Number(v) || 0);
 }
@@ -86,6 +97,9 @@ function fmtDate(v) {
                 <Button variant="outline" size="default" @click="regenerate">
                     <RefreshCw class="size-4" /> Refresh
                 </Button>
+                <Button size="default" variant="outline" @click="exportPdf">
+                    <FileText class="size-4" /> PDF
+                </Button>
                 <Button size="default" @click="exportXlsx">
                     <Download class="size-4" /> Export Excel
                 </Button>
@@ -97,6 +111,21 @@ function fmtDate(v) {
             <StatCard label="Revenue" :value="fmtRp(kpi.revenue)" tone="brand" />
             <StatCard label="Margin" :value="fmtRp(kpi.margin)" tone="brand" />
             <StatCard label="Margin %" :value="(kpi.margin_percent ?? 0) + '%'" tone="brand-orange" />
+        </section>
+
+        <section v-if="rows.length > 0" class="mb-4">
+            <ReportChart title="Revenue vs Margin per Tanggal"
+                type="line"
+                :categories="chartCategories"
+                :series="chartSeries"
+                :height="280"
+                :format-y="(v) => fmtRp(v)" />
+        </section>
+
+        <section class="mb-3 text-xs text-right">
+            <Link :href="route('reports.sales.drill-down', filters)" class="text-primary hover:underline">
+                Lihat semua invoice (drill-down) →
+            </Link>
         </section>
 
         <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">

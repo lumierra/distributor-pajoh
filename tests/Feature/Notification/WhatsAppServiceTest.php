@@ -142,3 +142,13 @@ test('manual send via controller', function (): void {
 
     expect(WaNotification::where('is_manual', true)->count())->toBe(1);
 });
+
+test('settings index endpoint return current settings', function (): void {
+    $admin = waUser(Role::CODE_SUPERADMIN);
+
+    $this->actingAs($admin)
+        ->get(route('wa.settings.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->component('WaNotifications/Settings')
+            ->has('settings'));
+});

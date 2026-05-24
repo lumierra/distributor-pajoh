@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\HasActivityLog;
 use App\Concerns\HasAuditFields;
+use App\Concerns\LinksToActiveVisit;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CustomerReturn extends Model
 {
-    use HasActivityLog, HasAuditFields, SoftDeletes;
+    use HasActivityLog, HasAuditFields, LinksToActiveVisit, SoftDeletes;
 
     public const STATUS_DRAFT = 'draft';
 

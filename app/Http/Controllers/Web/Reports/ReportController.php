@@ -9,13 +9,17 @@ use App\Exports\Reports\SalesSummaryExport;
 use App\Exports\Reports\StockPositionExport;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\ProductBatch;
 use App\Models\ReportExport;
 use App\Models\Role;
+use App\Models\StockLedger;
 use App\Models\User;
 use App\Policies\ReportPolicy;
 use App\Services\Reports\ArAgingReportService;
 use App\Services\Reports\MarginReportService;
+use App\Services\Reports\ReportPdfRenderer;
 use App\Services\Reports\ReportService;
 use App\Services\Reports\SalesActivityReportService;
 use App\Services\Reports\SalesReportService;
@@ -40,6 +44,7 @@ class ReportController extends Controller
         private readonly MarginReportService $margin,
         private readonly SalesActivityReportService $salesActivity,
         private readonly ReportService $orchestrator,
+        private readonly ReportPdfRenderer $pdfRenderer,
     ) {}
 
     public function salesIndex(Request $request): InertiaResponse
@@ -132,11 +137,22 @@ class ReportController extends Controller
         return back()->with('flash.success', "Snapshot di-regenerate untuk {$date->toDateString()} — {$summary}.");
     }
 
-    public function export(Request $request, string $reportType): BinaryFileResponse|RedirectResponse
+    public function export(Request $request, string $reportType)
     {
         $this->authorizeReport($request, 'export', $reportType);
 
-        $filters = $request->all();
+        $format = $request->input('format', 'xlsx');
+        $filters = $request->except(['format']);
+
+        if ($format === 'pdf') {
+            return $this->exportPdf($request, $reportType, $filters);
+        }
+
+        return $this->exportXlsx($request, $reportType, $filters);
+    }
+
+    private function exportXlsx(Request $request, string $reportType, array $filters): BinaryFileResponse|RedirectResponse
+    {
         $year = now()->format('Y');
         $filename = sprintf('%s_%s.xlsx', $reportType, Str::uuid()->toString());
         $path = "report_exports/{$year}/{$request->user()->id}/{$filename}";
@@ -171,6 +187,127 @@ class ReportController extends Controller
         ]);
 
         return response()->download($absolute, $filename)->deleteFileAfterSend(false);
+    }
+
+    private function exportPdf(Request $request, string $reportType, array $filters)
+    {
+        $year = now()->format('Y');
+        $filename = sprintf('%s_%s.pdf', $reportType, Str::uuid()->toString());
+        $path = "report_exports/{$year}/{$request->user()->id}/{$filename}";
+
+        try {
+            $output = $this->pdfRenderer->render($reportType, $filters, $request->user()->name);
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('flash.error', $e->getMessage());
+        }
+
+        Storage::disk('local')->put($path, $output);
+        $size = strlen($output);
+
+        ReportExport::create([
+            'user_id' => $request->user()->id,
+            'report_type' => $reportType,
+            'format' => 'pdf',
+            'filters' => $filters,
+            'file_size_bytes' => $size,
+            'file_path' => $path,
+            'exported_at' => now(),
+        ]);
+
+        return response()->streamDownload(
+            fn () => print ($output),
+            $filename,
+            ['Content-Type' => 'application/pdf'],
+        );
+    }
+
+    /**
+     * Drill-down: list invoices contribute ke sales summary cell.
+     */
+    public function drillDownSales(Request $request): InertiaResponse
+    {
+        $this->authorizeReport($request, 'viewSales');
+
+        $date = $request->input('date');
+        $salesId = $request->input('sales_id');
+        $customerId = $request->input('customer_id');
+        $productId = $request->input('product_id');
+
+        $query = Invoice::query()
+            ->with(['customer:id,code,name', 'sales:id,name']);
+
+        if ($date) {
+            $query->whereDate('invoice_date', $date);
+        }
+        if ($salesId) {
+            $query->where('sales_id', $salesId);
+        }
+        if ($customerId) {
+            $query->where('customer_id', $customerId);
+        }
+        if ($productId) {
+            $query->whereHas('items', fn ($q) => $q->where('product_id', $productId));
+        }
+
+        // Scope sales role to own
+        $user = $request->user();
+        if ($user && ! $user->isSuperadmin() && $user->hasRole(Role::CODE_SALES)) {
+            $query->where('sales_id', $user->id);
+        }
+
+        return Inertia::render('Reports/Sales/DrillDown', [
+            'invoices' => $query->orderByDesc('invoice_date')->paginate(50)->withQueryString(),
+            'filters' => [
+                'date' => $date,
+                'sales_id' => $salesId,
+                'customer_id' => $customerId,
+                'product_id' => $productId,
+            ],
+        ]);
+    }
+
+    /**
+     * Drill-down stock: stock_ledger rows per product/batch.
+     */
+    public function drillDownStock(Request $request, int $productId, ?int $batchId = null): InertiaResponse
+    {
+        $this->authorizeReport($request, 'viewStock');
+
+        $query = StockLedger::query()
+            ->where('product_id', $productId)
+            ->with(['batch:id,batch_code', 'productUnit:id,name'])
+            ->orderByDesc('created_at');
+
+        if ($batchId !== null) {
+            $query->where('batch_id', $batchId);
+        }
+
+        return Inertia::render('Reports/Stock/DrillDown', [
+            'product' => Product::query()->find($productId, ['id', 'name', 'sku']),
+            'batch' => $batchId ? ProductBatch::query()->find($batchId, ['id', 'batch_code', 'expired_date']) : null,
+            'ledgers' => $query->paginate(100),
+        ]);
+    }
+
+    /**
+     * Drill-down AR aging: outstanding invoices per customer.
+     */
+    public function drillDownArAging(Request $request, int $customerId): InertiaResponse
+    {
+        $this->authorizeReport($request, 'viewArAging');
+
+        $customer = Customer::query()->findOrFail($customerId);
+
+        $invoices = Invoice::query()
+            ->where('customer_id', $customerId)
+            ->where('outstanding', '>', 0)
+            ->orderBy('due_date')
+            ->get(['id', 'invoice_number', 'invoice_date', 'due_date', 'total', 'paid_amount', 'outstanding', 'status']);
+
+        return Inertia::render('Reports/ArAging/DrillDown', [
+            'customer' => $customer->only(['id', 'code', 'name', 'phone']),
+            'invoices' => $invoices,
+        ]);
     }
 
     private function authorizeReport(Request $request, string $method, ?string $arg = null): void

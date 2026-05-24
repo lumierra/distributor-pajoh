@@ -5,6 +5,9 @@ use App\Http\Controllers\Api\V1\Auth\LogoutController as ApiLogoutController;
 use App\Http\Controllers\Api\V1\Auth\MeController as ApiMeController;
 use App\Http\Controllers\Api\V1\Delivery\DeliveryOrderApiController;
 use App\Http\Controllers\Api\V1\Payment\PaymentRequestApiController;
+use App\Http\Controllers\Api\V1\Sales\BypassApiController;
+use App\Http\Controllers\Api\V1\Sales\ScheduleApiController;
+use App\Http\Controllers\Api\V1\Sales\VisitApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->group(function (): void {
@@ -42,4 +45,14 @@ Route::middleware('auth:sanctum')->prefix('v1/sales')->group(function (): void {
         ->name('api.sales.payment-requests.submit');
     Route::post('payment-requests/{payment_request}/cancel', [PaymentRequestApiController::class, 'cancel'])
         ->name('api.sales.payment-requests.cancel');
+
+    // T10 — Sales Visit + Schedule + Bypass
+    Route::get('schedules/today', [ScheduleApiController::class, 'today'])->name('api.sales.schedules.today');
+
+    Route::get('visits', [VisitApiController::class, 'index'])->name('api.sales.visits.index');
+    Route::get('visits/active', [VisitApiController::class, 'active'])->name('api.sales.visits.active');
+    Route::post('visits/checkin', [VisitApiController::class, 'checkin'])->name('api.sales.visits.checkin');
+    Route::post('visits/{visit}/checkout', [VisitApiController::class, 'checkout'])->name('api.sales.visits.checkout');
+
+    Route::post('bypass-requests', [BypassApiController::class, 'store'])->name('api.sales.bypass-requests.store');
 });

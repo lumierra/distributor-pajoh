@@ -1,7 +1,8 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3';
-import { CalendarRange, Download, RefreshCw } from '@lucide/vue';
-import { reactive, watch } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { CalendarRange, Download, FileText, RefreshCw } from '@lucide/vue';
+import { computed, reactive, watch } from 'vue';
+import ReportChart from '@/Components/Reports/ReportChart.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import StatCard from '@/Components/Shared/StatCard.vue';
 import { Button } from '@/Components/ui/button';
@@ -59,6 +60,21 @@ function exportXlsx() {
     window.location.href = route('reports.export', { reportType: 'ar_aging', ...props.filters });
 }
 
+function exportPdf() {
+    window.location.href = route('reports.export', { reportType: 'ar_aging', format: 'pdf', ...props.filters });
+}
+
+const bucketCategories = ['0-30', '31-60', '61-90', '>90'];
+const bucketSeries = computed(() => [{
+    name: 'Outstanding',
+    data: [
+        Number(props.kpi.bucket_0_30) || 0,
+        Number(props.kpi.bucket_31_60) || 0,
+        Number(props.kpi.bucket_61_90) || 0,
+        Number(props.kpi.bucket_over_90) || 0,
+    ],
+}]);
+
 function fmtRp(v) {
     return 'Rp ' + new Intl.NumberFormat('id-ID').format(Number(v) || 0);
 }
@@ -73,6 +89,9 @@ function fmtRp(v) {
                 <Button variant="outline" size="default" @click="regenerate">
                     <RefreshCw class="size-4" /> Refresh
                 </Button>
+                <Button size="default" variant="outline" @click="exportPdf">
+                    <FileText class="size-4" /> PDF
+                </Button>
                 <Button size="default" @click="exportXlsx">
                     <Download class="size-4" /> Export Excel
                 </Button>
@@ -85,6 +104,15 @@ function fmtRp(v) {
             <StatCard label="31-60 hari" :value="fmtRp(kpi.bucket_31_60)" tone="brand" />
             <StatCard label="61-90 hari" :value="fmtRp(kpi.bucket_61_90)" tone="brand-orange" />
             <StatCard label=">90 hari" :value="fmtRp(kpi.bucket_over_90)" tone="brand-orange" />
+        </section>
+
+        <section class="mb-4">
+            <ReportChart title="Distribusi Outstanding per Bucket"
+                type="bar"
+                :categories="bucketCategories"
+                :series="bucketSeries"
+                :height="260"
+                :format-y="(v) => fmtRp(v)" />
         </section>
 
         <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
@@ -116,8 +144,10 @@ function fmtRp(v) {
                     </TableRow>
                     <TableRow v-for="row in rows" :key="row.id">
                         <TableCell class="pl-4 py-2.5">
-                            <p class="font-medium">{{ row.customer?.name ?? '—' }}</p>
-                            <p class="text-[11px] text-muted-foreground font-mono">{{ row.customer?.code }}</p>
+                            <Link :href="route('reports.ar-aging.drill-down', row.customer_id)" class="hover:text-primary">
+                                <p class="font-medium">{{ row.customer?.name ?? '—' }}</p>
+                                <p class="text-[11px] text-muted-foreground font-mono">{{ row.customer?.code }}</p>
+                            </Link>
                         </TableCell>
                         <TableCell class="text-right font-mono">{{ fmtRp(row.bucket_0_30) }}</TableCell>
                         <TableCell class="text-right font-mono">{{ fmtRp(row.bucket_31_60) }}</TableCell>

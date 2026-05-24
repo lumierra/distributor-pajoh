@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
@@ -65,6 +66,29 @@ class ActivityLogController extends Controller
         return Inertia::render('ActivityLogs/Show', [
             'log' => $activityLog,
         ]);
+    }
+
+    /**
+     * Endpoint untuk fetch activity logs by model type + id (untuk tab "Activity" di detail page).
+     */
+    public function forModel(Request $request): JsonResponse
+    {
+        $this->ensureCanView($request);
+
+        $data = $request->validate([
+            'model_type' => 'required|string',
+            'model_id' => 'required|integer',
+        ]);
+
+        $logs = ActivityLog::query()
+            ->with('user:id,name')
+            ->where('model_type', $data['model_type'])
+            ->where('model_id', $data['model_id'])
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get();
+
+        return response()->json($logs);
     }
 
     private function ensureCanView(Request $request): void

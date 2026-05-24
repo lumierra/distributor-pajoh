@@ -1,7 +1,8 @@
 <script setup>
 import { Head, router } from '@inertiajs/vue3';
-import { Download, TrendingUp } from '@lucide/vue';
-import { reactive, watch } from 'vue';
+import { Download, FileText, TrendingUp } from '@lucide/vue';
+import { computed, reactive, watch } from 'vue';
+import ReportChart from '@/Components/Reports/ReportChart.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import StatCard from '@/Components/Shared/StatCard.vue';
 import { Button } from '@/Components/ui/button';
@@ -42,6 +43,16 @@ function exportXlsx() {
     window.location.href = route('reports.export', { reportType: 'margin', ...filters });
 }
 
+function exportPdf() {
+    window.location.href = route('reports.export', { reportType: 'margin', format: 'pdf', ...filters });
+}
+
+const productCategories = computed(() => props.byProduct.slice(0, 8).map((r) => r.product?.name?.substring(0, 14) ?? '—'));
+const productSeries = computed(() => [
+    { name: 'Revenue', data: props.byProduct.slice(0, 8).map((r) => Number(r.revenue) || 0) },
+    { name: 'Margin', data: props.byProduct.slice(0, 8).map((r) => Number(r.margin) || 0) },
+]);
+
 function fmtRp(v) {
     return 'Rp ' + new Intl.NumberFormat('id-ID').format(Number(v) || 0);
 }
@@ -53,6 +64,9 @@ function fmtRp(v) {
     <AppLayout>
         <PageHeader title="Laporan Margin" description="Margin per produk dan customer (revenue - HPP)." :icon="TrendingUp">
             <template #actions>
+                <Button size="default" variant="outline" @click="exportPdf">
+                    <FileText class="size-4" /> PDF
+                </Button>
                 <Button size="default" @click="exportXlsx">
                     <Download class="size-4" /> Export Excel
                 </Button>
@@ -64,6 +78,15 @@ function fmtRp(v) {
             <StatCard label="Cost" :value="fmtRp(kpi.cost)" tone="brand" />
             <StatCard label="Margin" :value="fmtRp(kpi.margin)" tone="brand" />
             <StatCard label="Margin %" :value="(kpi.margin_percent ?? 0) + '%'" tone="brand-orange" />
+        </section>
+
+        <section v-if="byProduct.length > 0" class="mb-4">
+            <ReportChart title="Top 8 Produk: Revenue vs Margin"
+                type="bar"
+                :categories="productCategories"
+                :series="productSeries"
+                :height="280"
+                :format-y="(v) => fmtRp(v)" />
         </section>
 
         <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-3 mb-4 flex items-center gap-2">

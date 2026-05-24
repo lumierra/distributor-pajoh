@@ -24,12 +24,16 @@ use App\Models\ProductPrice;
 use App\Models\PurchaseOrder;
 use App\Models\Role;
 use App\Models\SalesOrder;
+use App\Models\SalesSchedule;
+use App\Models\SalesVisit;
+use App\Models\SalesVisitBypassRequest;
 use App\Models\Setting;
 use App\Models\Supplier;
 use App\Models\SupplierCategory;
 use App\Models\SupplierProduct;
 use App\Models\SupplierReturn;
 use App\Models\User;
+use App\Models\UserDevice;
 use App\Models\Vehicle;
 use App\Observers\CompanyBankAccountObserver;
 use App\Observers\CustomerObserver;
@@ -67,9 +71,13 @@ use App\Policies\ProductPolicy;
 use App\Policies\PurchaseOrderPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SalesOrderPolicy;
+use App\Policies\SalesSchedulePolicy;
+use App\Policies\SalesVisitBypassRequestPolicy;
+use App\Policies\SalesVisitPolicy;
 use App\Policies\SupplierCategoryPolicy;
 use App\Policies\SupplierPolicy;
 use App\Policies\SupplierReturnPolicy;
+use App\Policies\UserDevicePolicy;
 use App\Policies\UserPolicy;
 use App\Policies\VehiclePolicy;
 use App\Services\Audit\ActivityLogger;
@@ -133,6 +141,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(CustomerReturn::class, CustomerReturnPolicy::class);
         Gate::policy(CreditNote::class, CreditNotePolicy::class);
         Gate::policy(SupplierReturn::class, SupplierReturnPolicy::class);
+        Gate::policy(SalesSchedule::class, SalesSchedulePolicy::class);
+        Gate::policy(SalesVisit::class, SalesVisitPolicy::class);
+        Gate::policy(SalesVisitBypassRequest::class, SalesVisitBypassRequestPolicy::class);
+        Gate::policy(UserDevice::class, UserDevicePolicy::class);
 
         // NB: Superadmin bypass diatur per-policy via method `before()` di masing-masing
         // policy. Tidak pakai global `Gate::before` agar kasus self-action seperti
