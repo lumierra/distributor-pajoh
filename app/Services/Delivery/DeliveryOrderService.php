@@ -13,6 +13,7 @@ use App\Models\StockLedger;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
+use App\Services\Billing\InvoiceService;
 use App\Services\Inventory\ReservationService;
 use App\Services\Numbering\NumberingService;
 use App\Services\Sales\SalesOrderService;
@@ -32,6 +33,7 @@ class DeliveryOrderService
         private readonly SettingManager $settings,
         private readonly ReservationService $reservation,
         private readonly SalesOrderService $salesOrder,
+        private readonly InvoiceService $invoice,
     ) {}
 
     /**
@@ -348,6 +350,9 @@ class DeliveryOrderService
 
             // Trigger SO status update
             $this->salesOrder->updateStatusAfterDo($do->salesOrder->refresh());
+
+            // Auto-generate invoice (idempotent via unique do_id index).
+            $this->invoice->generateFromDeliveredDo($do->refresh(), $by);
 
             return $do->refresh();
         });

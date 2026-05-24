@@ -12,6 +12,7 @@ use App\Http\Controllers\Web\DriverController;
 use App\Http\Controllers\Web\DriverDocumentController;
 use App\Http\Controllers\Web\GoodsReceiptController;
 use App\Http\Controllers\Web\InventoryController;
+use App\Http\Controllers\Web\InvoiceController;
 use App\Http\Controllers\Web\LoginHistoryController;
 use App\Http\Controllers\Web\MenuController;
 use App\Http\Controllers\Web\PriceTierController;
@@ -336,5 +337,17 @@ Route::middleware('auth')->group(function (): void {
             ->name('delivery-orders.cancel');
         Route::get('delivery-orders/{delivery_order}/pdf', [DeliveryOrderController::class, 'downloadPdf'])
             ->name('delivery-orders.pdf');
+    });
+
+    // ── Invoice (Faktur) ──────────────────────────────────────────────
+    Route::middleware('menu:sales.invoice')->group(function (): void {
+        Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+        Route::post('invoices/mark-overdue', [InvoiceController::class, 'markOverdue'])
+            ->name('invoices.mark-overdue');
+        Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+        Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])
+            ->name('invoices.pdf');
+        Route::post('invoices/{invoice}/regenerate-pdf', [InvoiceController::class, 'regeneratePdf'])
+            ->name('invoices.regenerate-pdf');
     });
 });
