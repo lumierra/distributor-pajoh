@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Auth\LoginController as ApiLoginController;
 use App\Http\Controllers\Api\V1\Auth\LogoutController as ApiLogoutController;
 use App\Http\Controllers\Api\V1\Auth\MeController as ApiMeController;
 use App\Http\Controllers\Api\V1\Delivery\DeliveryOrderApiController;
+use App\Http\Controllers\Api\V1\Payment\PaymentRequestApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->group(function (): void {
@@ -25,4 +26,20 @@ Route::middleware('auth:sanctum')->prefix('v1/sales')->group(function (): void {
         ->name('api.sales.delivery-orders.start-delivery');
     Route::post('delivery-orders/{delivery_order}/mark-delivered', [DeliveryOrderApiController::class, 'markDelivered'])
         ->name('api.sales.delivery-orders.mark-delivered');
+
+    // Payment Request mobile endpoints
+    Route::get('payment-requests/invoices', [PaymentRequestApiController::class, 'payableInvoices'])
+        ->name('api.sales.payment-requests.payable-invoices');
+    Route::get('payment-requests', [PaymentRequestApiController::class, 'index'])
+        ->name('api.sales.payment-requests.index');
+    Route::post('payment-requests', [PaymentRequestApiController::class, 'store'])
+        ->name('api.sales.payment-requests.store');
+    Route::get('payment-requests/{payment_request}', [PaymentRequestApiController::class, 'show'])
+        ->name('api.sales.payment-requests.show');
+    Route::put('payment-requests/{payment_request}', [PaymentRequestApiController::class, 'update'])
+        ->name('api.sales.payment-requests.update');
+    Route::post('payment-requests/{payment_request}/submit', [PaymentRequestApiController::class, 'submit'])
+        ->name('api.sales.payment-requests.submit');
+    Route::post('payment-requests/{payment_request}/cancel', [PaymentRequestApiController::class, 'cancel'])
+        ->name('api.sales.payment-requests.cancel');
 });

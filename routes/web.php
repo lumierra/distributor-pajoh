@@ -13,8 +13,11 @@ use App\Http\Controllers\Web\DriverDocumentController;
 use App\Http\Controllers\Web\GoodsReceiptController;
 use App\Http\Controllers\Web\InventoryController;
 use App\Http\Controllers\Web\InvoiceController;
+use App\Http\Controllers\Web\InvoiceExtensionController;
 use App\Http\Controllers\Web\LoginHistoryController;
 use App\Http\Controllers\Web\MenuController;
+use App\Http\Controllers\Web\PaymentController;
+use App\Http\Controllers\Web\PaymentRequestController;
 use App\Http\Controllers\Web\PriceTierController;
 use App\Http\Controllers\Web\ProductCategoryController;
 use App\Http\Controllers\Web\ProductController;
@@ -349,5 +352,44 @@ Route::middleware('auth')->group(function (): void {
             ->name('invoices.pdf');
         Route::post('invoices/{invoice}/regenerate-pdf', [InvoiceController::class, 'regeneratePdf'])
             ->name('invoices.regenerate-pdf');
+
+        // Invoice Extension request (sales → admin approve)
+        Route::post('invoices/{invoice}/extensions', [InvoiceExtensionController::class, 'store'])
+            ->name('invoices.extensions.store');
+    });
+
+    // ── Invoice Extensions (admin review list) ────────────────────────
+    Route::middleware('menu:sales.invoice')->group(function (): void {
+        Route::get('invoice-extensions', [InvoiceExtensionController::class, 'index'])
+            ->name('invoice-extensions.index');
+        Route::post('invoice-extensions/{invoice_extension_log}/approve', [InvoiceExtensionController::class, 'approve'])
+            ->name('invoice-extensions.approve');
+        Route::post('invoice-extensions/{invoice_extension_log}/reject', [InvoiceExtensionController::class, 'reject'])
+            ->name('invoice-extensions.reject');
+        Route::post('invoice-extensions/{invoice_extension_log}/cancel', [InvoiceExtensionController::class, 'cancel'])
+            ->name('invoice-extensions.cancel');
+    });
+
+    // ── Payment Request (sales lapor → kasir verify) ──────────────────
+    Route::middleware('menu:finance.payment_request')->group(function (): void {
+        Route::resource('payment-requests', PaymentRequestController::class);
+        Route::post('payment-requests/{payment_request}/submit', [PaymentRequestController::class, 'submit'])
+            ->name('payment-requests.submit');
+        Route::post('payment-requests/{payment_request}/cancel', [PaymentRequestController::class, 'cancel'])
+            ->name('payment-requests.cancel');
+        Route::post('payment-requests/{payment_request}/verify', [PaymentRequestController::class, 'verify'])
+            ->name('payment-requests.verify');
+        Route::post('payment-requests/{payment_request}/reject', [PaymentRequestController::class, 'reject'])
+            ->name('payment-requests.reject');
+    });
+
+    // ── Payment (kasir) ───────────────────────────────────────────────
+    Route::middleware('menu:finance.payment')->group(function (): void {
+        Route::get('payments', [PaymentController::class, 'index'])->name('payments.index');
+        Route::get('payments/{payment}', [PaymentController::class, 'show'])->name('payments.show');
+        Route::post('payments/{payment}/clear-giro', [PaymentController::class, 'clearGiro'])
+            ->name('payments.clear-giro');
+        Route::post('payments/{payment}/bounce-giro', [PaymentController::class, 'bounceGiro'])
+            ->name('payments.bounce-giro');
     });
 });

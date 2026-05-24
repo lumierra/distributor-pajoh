@@ -10,7 +10,10 @@ use App\Models\DeliveryOrder;
 use App\Models\Driver;
 use App\Models\GoodsReceipt;
 use App\Models\Invoice;
+use App\Models\InvoiceExtensionLog;
 use App\Models\Menu;
+use App\Models\Payment;
+use App\Models\PaymentRequest;
 use App\Models\PriceTier;
 use App\Models\Product;
 use App\Models\ProductCategory;
@@ -31,6 +34,8 @@ use App\Observers\DeliveryOrderObserver;
 use App\Observers\DriverObserver;
 use App\Observers\GoodsReceiptObserver;
 use App\Observers\InvoiceObserver;
+use App\Observers\PaymentObserver;
+use App\Observers\PaymentRequestObserver;
 use App\Observers\ProductObserver;
 use App\Observers\ProductPriceObserver;
 use App\Observers\PurchaseOrderObserver;
@@ -45,8 +50,11 @@ use App\Policies\CustomerTypePolicy;
 use App\Policies\DeliveryOrderPolicy;
 use App\Policies\DriverPolicy;
 use App\Policies\GoodsReceiptPolicy;
+use App\Policies\InvoiceExtensionLogPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\MenuPolicy;
+use App\Policies\PaymentPolicy;
+use App\Policies\PaymentRequestPolicy;
 use App\Policies\PriceTierPolicy;
 use App\Policies\ProductCategoryPolicy;
 use App\Policies\ProductGroupPolicy;
@@ -91,6 +99,8 @@ class AppServiceProvider extends ServiceProvider
         SalesOrder::observe(SalesOrderObserver::class);
         DeliveryOrder::observe(DeliveryOrderObserver::class);
         Invoice::observe(InvoiceObserver::class);
+        PaymentRequest::observe(PaymentRequestObserver::class);
+        Payment::observe(PaymentObserver::class);
 
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Role::class, RolePolicy::class);
@@ -111,6 +121,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(SalesOrder::class, SalesOrderPolicy::class);
         Gate::policy(DeliveryOrder::class, DeliveryOrderPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
+        Gate::policy(InvoiceExtensionLog::class, InvoiceExtensionLogPolicy::class);
+        Gate::policy(PaymentRequest::class, PaymentRequestPolicy::class);
+        Gate::policy(Payment::class, PaymentPolicy::class);
 
         // NB: Superadmin bypass diatur per-policy via method `before()` di masing-masing
         // policy. Tidak pakai global `Gate::before` agar kasus self-action seperti
