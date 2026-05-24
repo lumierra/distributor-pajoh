@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
 use App\Services\Billing\InvoiceService;
+use App\Services\CustomerReturn\CustomerReturnService;
 use App\Services\Inventory\ReservationService;
 use App\Services\Numbering\NumberingService;
 use App\Services\Sales\SalesOrderService;
@@ -34,6 +35,7 @@ class DeliveryOrderService
         private readonly ReservationService $reservation,
         private readonly SalesOrderService $salesOrder,
         private readonly InvoiceService $invoice,
+        private readonly CustomerReturnService $customerReturn,
     ) {}
 
     /**
@@ -345,7 +347,7 @@ class DeliveryOrderService
                     'has_partial_return' => true,
                     'status' => DeliveryOrder::STATUS_PARTIAL_RETURNED,
                 ]);
-                // NOTE: customer return auto-trigger di-defer ke T15.
+                $this->customerReturn->createFromDeliveryReject($do->refresh(), $by);
             }
 
             // Trigger SO status update

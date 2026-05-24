@@ -3,9 +3,11 @@
 use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Web\CreditNoteController;
 use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\CustomerGeoController;
 use App\Http\Controllers\Web\CustomerPhotoController;
+use App\Http\Controllers\Web\CustomerReturnController;
 use App\Http\Controllers\Web\CustomerTypeController;
 use App\Http\Controllers\Web\DeliveryOrderController;
 use App\Http\Controllers\Web\DriverController;
@@ -391,5 +393,22 @@ Route::middleware('auth')->group(function (): void {
             ->name('payments.clear-giro');
         Route::post('payments/{payment}/bounce-giro', [PaymentController::class, 'bounceGiro'])
             ->name('payments.bounce-giro');
+    });
+
+    // ── Customer Return + Credit Note ─────────────────────────────────
+    Route::middleware('menu:returns.customer')->group(function (): void {
+        Route::resource('customer-returns', CustomerReturnController::class);
+        Route::post('customer-returns/{customer_return}/sort', [CustomerReturnController::class, 'sort'])
+            ->name('customer-returns.sort');
+        Route::post('customer-returns/{customer_return}/post', [CustomerReturnController::class, 'post'])
+            ->name('customer-returns.post');
+        Route::post('customer-returns/{customer_return}/cancel', [CustomerReturnController::class, 'cancel'])
+            ->name('customer-returns.cancel');
+    });
+
+    Route::middleware('menu:returns.credit_note')->group(function (): void {
+        Route::get('credit-notes', [CreditNoteController::class, 'index'])->name('credit-notes.index');
+        Route::get('credit-notes/{credit_note}', [CreditNoteController::class, 'show'])->name('credit-notes.show');
+        Route::post('credit-notes/{credit_note}/apply', [CreditNoteController::class, 'apply'])->name('credit-notes.apply');
     });
 });

@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Models\CompanyBankAccount;
+use App\Models\CreditNote;
 use App\Models\Customer;
 use App\Models\CustomerPhoto;
+use App\Models\CustomerReturn;
 use App\Models\CustomerType;
 use App\Models\DeliveryOrder;
 use App\Models\Driver;
@@ -44,8 +46,10 @@ use App\Observers\SettingObserver;
 use App\Observers\SupplierObserver;
 use App\Observers\SupplierProductObserver;
 use App\Observers\VehicleObserver;
+use App\Policies\CreditNotePolicy;
 use App\Policies\CustomerPhotoPolicy;
 use App\Policies\CustomerPolicy;
+use App\Policies\CustomerReturnPolicy;
 use App\Policies\CustomerTypePolicy;
 use App\Policies\DeliveryOrderPolicy;
 use App\Policies\DriverPolicy;
@@ -124,6 +128,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(InvoiceExtensionLog::class, InvoiceExtensionLogPolicy::class);
         Gate::policy(PaymentRequest::class, PaymentRequestPolicy::class);
         Gate::policy(Payment::class, PaymentPolicy::class);
+        Gate::policy(CustomerReturn::class, CustomerReturnPolicy::class);
+        Gate::policy(CreditNote::class, CreditNotePolicy::class);
 
         // NB: Superadmin bypass diatur per-policy via method `before()` di masing-masing
         // policy. Tidak pakai global `Gate::before` agar kasus self-action seperti
