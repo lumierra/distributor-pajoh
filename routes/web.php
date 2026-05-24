@@ -35,6 +35,7 @@ use App\Http\Controllers\Web\SupplierBankAccountController;
 use App\Http\Controllers\Web\SupplierCategoryController;
 use App\Http\Controllers\Web\SupplierController;
 use App\Http\Controllers\Web\SupplierDocumentController;
+use App\Http\Controllers\Web\SupplierReturnController;
 use App\Http\Controllers\Web\UserController;
 use App\Http\Controllers\Web\VehicleController;
 use App\Http\Controllers\Web\VehicleDocumentController;
@@ -410,5 +411,18 @@ Route::middleware('auth')->group(function (): void {
         Route::get('credit-notes', [CreditNoteController::class, 'index'])->name('credit-notes.index');
         Route::get('credit-notes/{credit_note}', [CreditNoteController::class, 'show'])->name('credit-notes.show');
         Route::post('credit-notes/{credit_note}/apply', [CreditNoteController::class, 'apply'])->name('credit-notes.apply');
+    });
+
+    // ── Supplier Return ───────────────────────────────────────────────
+    Route::middleware('menu:returns.supplier')->group(function (): void {
+        Route::resource('supplier-returns', SupplierReturnController::class);
+        Route::post('supplier-returns/{supplier_return}/approve', [SupplierReturnController::class, 'approve'])
+            ->name('supplier-returns.approve');
+        Route::post('supplier-returns/{supplier_return}/mark-sent', [SupplierReturnController::class, 'markSent'])
+            ->name('supplier-returns.mark-sent');
+        Route::post('supplier-returns/{supplier_return}/settle', [SupplierReturnController::class, 'settle'])
+            ->name('supplier-returns.settle');
+        Route::post('supplier-returns/{supplier_return}/cancel', [SupplierReturnController::class, 'cancel'])
+            ->name('supplier-returns.cancel');
     });
 });
