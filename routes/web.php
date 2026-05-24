@@ -28,6 +28,7 @@ use App\Http\Controllers\Web\ProductSupplierController;
 use App\Http\Controllers\Web\ProductUnitController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\PurchaseOrderController;
+use App\Http\Controllers\Web\Reports\ReportController;
 use App\Http\Controllers\Web\RoleController;
 use App\Http\Controllers\Web\SalesOrderController;
 use App\Http\Controllers\Web\StockLedgerController;
@@ -411,6 +412,17 @@ Route::middleware('auth')->group(function (): void {
         Route::get('credit-notes', [CreditNoteController::class, 'index'])->name('credit-notes.index');
         Route::get('credit-notes/{credit_note}', [CreditNoteController::class, 'show'])->name('credit-notes.show');
         Route::post('credit-notes/{credit_note}/apply', [CreditNoteController::class, 'apply'])->name('credit-notes.apply');
+    });
+
+    // ── Reports (T17) ─────────────────────────────────────────────────
+    Route::prefix('reports')->name('reports.')->group(function (): void {
+        Route::middleware('menu:reports.sales')->get('sales', [ReportController::class, 'salesIndex'])->name('sales');
+        Route::middleware('menu:reports.stock')->get('stock', [ReportController::class, 'stockIndex'])->name('stock');
+        Route::middleware('menu:reports.ar_aging')->get('ar-aging', [ReportController::class, 'arAgingIndex'])->name('ar-aging');
+        Route::middleware('menu:reports.margin')->get('margin', [ReportController::class, 'marginIndex'])->name('margin');
+        Route::middleware('menu:reports.sales_activity')->get('sales-activity', [ReportController::class, 'salesActivityIndex'])->name('sales-activity');
+        Route::post('regenerate', [ReportController::class, 'regenerate'])->name('regenerate');
+        Route::get('export/{reportType}', [ReportController::class, 'export'])->name('export');
     });
 
     // ── Supplier Return ───────────────────────────────────────────────

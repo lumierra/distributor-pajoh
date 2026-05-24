@@ -156,6 +156,8 @@ class RolePermissionSeeder extends Seeder
             'finance.payment_request' => ['view' => true, 'create' => true],
             'finance.extension' => ['view' => true, 'create' => true],
             'returns.customer' => ['view' => true, 'create' => true],
+            'reports.sales' => ['view' => true],
+            'reports.sales_activity' => ['view' => true],
         ];
     }
 }
