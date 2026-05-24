@@ -6,6 +6,7 @@ use App\Models\CompanyBankAccount;
 use App\Models\Customer;
 use App\Models\CustomerPhoto;
 use App\Models\CustomerType;
+use App\Models\DeliveryOrder;
 use App\Models\Driver;
 use App\Models\GoodsReceipt;
 use App\Models\Menu;
@@ -25,6 +26,7 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Observers\CompanyBankAccountObserver;
 use App\Observers\CustomerObserver;
+use App\Observers\DeliveryOrderObserver;
 use App\Observers\DriverObserver;
 use App\Observers\GoodsReceiptObserver;
 use App\Observers\ProductObserver;
@@ -38,6 +40,7 @@ use App\Observers\VehicleObserver;
 use App\Policies\CustomerPhotoPolicy;
 use App\Policies\CustomerPolicy;
 use App\Policies\CustomerTypePolicy;
+use App\Policies\DeliveryOrderPolicy;
 use App\Policies\DriverPolicy;
 use App\Policies\GoodsReceiptPolicy;
 use App\Policies\MenuPolicy;
@@ -83,6 +86,7 @@ class AppServiceProvider extends ServiceProvider
         PurchaseOrder::observe(PurchaseOrderObserver::class);
         GoodsReceipt::observe(GoodsReceiptObserver::class);
         SalesOrder::observe(SalesOrderObserver::class);
+        DeliveryOrder::observe(DeliveryOrderObserver::class);
 
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Role::class, RolePolicy::class);
@@ -101,6 +105,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(PurchaseOrder::class, PurchaseOrderPolicy::class);
         Gate::policy(GoodsReceipt::class, GoodsReceiptPolicy::class);
         Gate::policy(SalesOrder::class, SalesOrderPolicy::class);
+        Gate::policy(DeliveryOrder::class, DeliveryOrderPolicy::class);
 
         // NB: Superadmin bypass diatur per-policy via method `before()` di masing-masing
         // policy. Tidak pakai global `Gate::before` agar kasus self-action seperti

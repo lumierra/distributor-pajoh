@@ -265,6 +265,38 @@ class SalesOrderService
         });
     }
 
+    /**
+     * Update SO status setelah DO posted (delivered).
+     *
+     * - Semua items qty_delivered >= qty → status `delivered`.
+     * - Sebagian → `partially_delivered`.
+     * Dipanggil dari DeliveryOrderService::markDelivered().
+     */
+    public function updateStatusAfterDo(SalesOrder $so): SalesOrder
+    {
+        $so->load('items');
+
+        if (in_array($so->status, [
+            SalesOrder::STATUS_CANCELLED,
+            SalesOrder::STATUS_REJECTED,
+        ], true)) {
+            return $so;
+        }
+
+        $allDelivered = $so->items->every(
+            fn ($item) => (int) $item->qty_delivered >= (int) $item->qty,
+        );
+        $anyDelivered = $so->items->contains(fn ($item) => (int) $item->qty_delivered > 0);
+
+        if ($allDelivered) {
+            $so->update(['status' => SalesOrder::STATUS_DELIVERED]);
+        } elseif ($anyDelivered) {
+            $so->update(['status' => SalesOrder::STATUS_PARTIALLY_DELIVERED]);
+        }
+
+        return $so->refresh();
+    }
+
     public function recomputeTotals(SalesOrder $so): void
     {
         $subtotal = (float) $so->items()->sum('line_subtotal');

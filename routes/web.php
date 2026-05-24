@@ -7,6 +7,7 @@ use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\CustomerGeoController;
 use App\Http\Controllers\Web\CustomerPhotoController;
 use App\Http\Controllers\Web\CustomerTypeController;
+use App\Http\Controllers\Web\DeliveryOrderController;
 use App\Http\Controllers\Web\DriverController;
 use App\Http\Controllers\Web\DriverDocumentController;
 use App\Http\Controllers\Web\GoodsReceiptController;
@@ -314,5 +315,26 @@ Route::middleware('auth')->group(function (): void {
             ->name('sales-orders.reject');
         Route::post('sales-orders/{sales_order}/cancel', [SalesOrderController::class, 'cancel'])
             ->name('sales-orders.cancel');
+    });
+
+    // ── Delivery Order (Surat Jalan) ──────────────────────────────────
+    Route::middleware('menu:sales.do')->group(function (): void {
+        Route::get('delivery-orders/so/{sales_order}/details', [DeliveryOrderController::class, 'soDetails'])
+            ->name('delivery-orders.so-details');
+        Route::resource('delivery-orders', DeliveryOrderController::class);
+        Route::post('delivery-orders/{delivery_order}/start-picking', [DeliveryOrderController::class, 'startPicking'])
+            ->name('delivery-orders.start-picking');
+        Route::post('delivery-orders/{delivery_order}/confirm-picks', [DeliveryOrderController::class, 'confirmPicks'])
+            ->name('delivery-orders.confirm-picks');
+        Route::post('delivery-orders/{delivery_order}/mark-packed', [DeliveryOrderController::class, 'markPacked'])
+            ->name('delivery-orders.mark-packed');
+        Route::post('delivery-orders/{delivery_order}/start-delivery', [DeliveryOrderController::class, 'startDelivery'])
+            ->name('delivery-orders.start-delivery');
+        Route::post('delivery-orders/{delivery_order}/mark-delivered', [DeliveryOrderController::class, 'markDelivered'])
+            ->name('delivery-orders.mark-delivered');
+        Route::post('delivery-orders/{delivery_order}/cancel', [DeliveryOrderController::class, 'cancel'])
+            ->name('delivery-orders.cancel');
+        Route::get('delivery-orders/{delivery_order}/pdf', [DeliveryOrderController::class, 'downloadPdf'])
+            ->name('delivery-orders.pdf');
     });
 });
