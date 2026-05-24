@@ -16,6 +16,7 @@ use App\Models\ProductGroup;
 use App\Models\ProductPrice;
 use App\Models\PurchaseOrder;
 use App\Models\Role;
+use App\Models\SalesOrder;
 use App\Models\Setting;
 use App\Models\Supplier;
 use App\Models\SupplierCategory;
@@ -29,6 +30,7 @@ use App\Observers\GoodsReceiptObserver;
 use App\Observers\ProductObserver;
 use App\Observers\ProductPriceObserver;
 use App\Observers\PurchaseOrderObserver;
+use App\Observers\SalesOrderObserver;
 use App\Observers\SettingObserver;
 use App\Observers\SupplierObserver;
 use App\Observers\SupplierProductObserver;
@@ -45,6 +47,7 @@ use App\Policies\ProductGroupPolicy;
 use App\Policies\ProductPolicy;
 use App\Policies\PurchaseOrderPolicy;
 use App\Policies\RolePolicy;
+use App\Policies\SalesOrderPolicy;
 use App\Policies\SupplierCategoryPolicy;
 use App\Policies\SupplierPolicy;
 use App\Policies\UserPolicy;
@@ -79,6 +82,7 @@ class AppServiceProvider extends ServiceProvider
         Vehicle::observe(VehicleObserver::class);
         PurchaseOrder::observe(PurchaseOrderObserver::class);
         GoodsReceipt::observe(GoodsReceiptObserver::class);
+        SalesOrder::observe(SalesOrderObserver::class);
 
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Role::class, RolePolicy::class);
@@ -96,6 +100,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Vehicle::class, VehiclePolicy::class);
         Gate::policy(PurchaseOrder::class, PurchaseOrderPolicy::class);
         Gate::policy(GoodsReceipt::class, GoodsReceiptPolicy::class);
+        Gate::policy(SalesOrder::class, SalesOrderPolicy::class);
 
         // NB: Superadmin bypass diatur per-policy via method `before()` di masing-masing
         // policy. Tidak pakai global `Gate::before` agar kasus self-action seperti

@@ -22,6 +22,7 @@ use App\Http\Controllers\Web\ProductUnitController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\PurchaseOrderController;
 use App\Http\Controllers\Web\RoleController;
+use App\Http\Controllers\Web\SalesOrderController;
 use App\Http\Controllers\Web\StockLedgerController;
 use App\Http\Controllers\Web\SupplierBankAccountController;
 use App\Http\Controllers\Web\SupplierCategoryController;
@@ -296,5 +297,22 @@ Route::middleware('auth')->group(function (): void {
             ->name('grns.post');
         Route::get('grns/{goods_receipt}/pdf', [GoodsReceiptController::class, 'downloadPdf'])
             ->name('grns.pdf');
+    });
+
+    // ── Sales Order ───────────────────────────────────────────────────
+    Route::middleware('menu:sales.so')->group(function (): void {
+        Route::get('sales-orders/customers/{customer}/products', [SalesOrderController::class, 'productPrices'])
+            ->name('sales-orders.customer-products');
+        Route::resource('sales-orders', SalesOrderController::class);
+        Route::post('sales-orders/{sales_order}/submit', [SalesOrderController::class, 'submit'])
+            ->name('sales-orders.submit');
+        Route::post('sales-orders/{sales_order}/approve', [SalesOrderController::class, 'approve'])
+            ->name('sales-orders.approve');
+        Route::post('sales-orders/{sales_order}/approve-override', [SalesOrderController::class, 'approveOverride'])
+            ->name('sales-orders.approve-override');
+        Route::post('sales-orders/{sales_order}/reject', [SalesOrderController::class, 'reject'])
+            ->name('sales-orders.reject');
+        Route::post('sales-orders/{sales_order}/cancel', [SalesOrderController::class, 'cancel'])
+            ->name('sales-orders.cancel');
     });
 });
