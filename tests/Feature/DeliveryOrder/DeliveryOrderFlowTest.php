@@ -15,7 +15,6 @@ use App\Models\StockBalance;
 use App\Models\StockLedger;
 use App\Models\User;
 use App\Models\Vehicle;
-use App\Models\VehicleDocument;
 use App\Services\Delivery\DeliveryOrderService;
 use App\Services\Delivery\DoPdfRenderer;
 use App\Services\Inventory\StockLedgerWriter;
@@ -147,14 +146,6 @@ function doMakeSetup(int $initialStock = 100, int $orderQty = 30): array
         'is_active' => true,
         'status' => Vehicle::STATUS_IDLE,
     ]);
-    // Dokumen STNK valid (tidak expired)
-    VehicleDocument::create([
-        'vehicle_id' => $vehicle->id,
-        'type' => 'STNK',
-        'title' => 'STNK Valid',
-        'file_path' => 'dummy/path.pdf',
-        'expires_date' => now()->addYear()->toDateString(),
-    ]);
 
     return compact('customer', 'product', 'unit', 'batch', 'so', 'admin', 'driver', 'vehicle');
 }
@@ -267,46 +258,6 @@ test('markPacked dengan driver + vehicle valid sukses + snapshot disimpan', func
     expect($do->vehicle_id)->toBe($ctx['vehicle']->id);
     expect($do->driver_snapshot['name'])->toBe('Pak Supir');
     expect($do->vehicle_snapshot['plate'])->toBe($ctx['vehicle']->plate_number);
-});
-
-test('markPacked dengan SIM expired ditolak', function (): void {
-    $ctx = doMakeSetup();
-    $ctx['driver']->update(['license_expired_date' => now()->subMonth()->toDateString()]);
-
-    $do = app(DeliveryOrderService::class)->createFromSo(
-        $ctx['so'],
-        [['so_item_id' => $ctx['so']->items->first()->id, 'qty_planned' => 30]],
-        $ctx['admin'],
-    );
-    app(DeliveryOrderService::class)->startPicking($do, $ctx['admin']);
-
-    expect(fn () => app(DeliveryOrderService::class)->markPacked(
-        $do,
-        $ctx['driver']->id,
-        $ctx['vehicle']->id,
-        $ctx['admin'],
-    ))->toThrow(ValidationException::class);
-});
-
-test('markPacked dengan STNK expired ditolak', function (): void {
-    $ctx = doMakeSetup();
-    VehicleDocument::query()
-        ->where('vehicle_id', $ctx['vehicle']->id)
-        ->update(['expires_date' => now()->subMonth()->toDateString()]);
-
-    $do = app(DeliveryOrderService::class)->createFromSo(
-        $ctx['so'],
-        [['so_item_id' => $ctx['so']->items->first()->id, 'qty_planned' => 30]],
-        $ctx['admin'],
-    );
-    app(DeliveryOrderService::class)->startPicking($do, $ctx['admin']);
-
-    expect(fn () => app(DeliveryOrderService::class)->markPacked(
-        $do,
-        $ctx['driver']->id,
-        $ctx['vehicle']->id,
-        $ctx['admin'],
-    ))->toThrow(ValidationException::class);
 });
 
 test('markPacked dengan vehicle maintenance ditolak', function (): void {

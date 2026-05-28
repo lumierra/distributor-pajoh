@@ -1,15 +1,15 @@
 <script setup>
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import {
     Ban,
     CheckCircle2,
-    Eye,
     LogIn,
     Pause,
     Pencil,
     Plus,
     RotateCcw,
     Search,
+    Trash2,
     Truck,
     Wrench,
 } from '@lucide/vue';
@@ -51,6 +51,11 @@ const canCreate = computed(
     () =>
         page.props.auth?.user?.is_superadmin ||
         page.props.permissions?.['master.vehicle']?.create,
+);
+const canDelete = computed(
+    () =>
+        page.props.auth?.user?.is_superadmin ||
+        page.props.permissions?.['master.vehicle']?.delete,
 );
 
 const ALL = 'all';
@@ -112,12 +117,25 @@ function toggleActive(v) {
     useForm({}).post(route('vehicles.toggle-active', v.id), { preserveScroll: true });
 }
 
+function destroy(v) {
+    if (!window.confirm(`Hapus vehicle ${v.plate_number}?`)) return;
+    useForm({}).delete(route('vehicles.destroy', v.id), { preserveScroll: true });
+}
+
 function statusBadgeClass(s) {
     return {
         idle: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
         on_delivery: 'bg-blue-50 text-blue-700 ring-blue-200',
         maintenance: 'bg-amber-50 text-amber-800 ring-amber-200',
     }[s] ?? 'bg-muted text-muted-foreground';
+}
+
+function statusLabel(s) {
+    return {
+        idle: 'Idle',
+        on_delivery: 'Lagi antar',
+        maintenance: 'Maintenance',
+    }[s] ?? s;
 }
 </script>
 
@@ -127,7 +145,7 @@ function statusBadgeClass(s) {
     <AppLayout>
         <PageHeader
             title="Vehicle"
-            description="Armada pengiriman. STNK & KIR wajib aktif untuk DO."
+            description="Master kendaraan pengiriman."
             :icon="Truck"
         >
             <template #actions>
@@ -159,7 +177,7 @@ function statusBadgeClass(s) {
                     <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                     <Input
                         v-model="filters.q"
-                        placeholder="Cari plat, kode, brand, atau model…"
+                        placeholder="Cari plat atau kode…"
                         class="pl-8 h-9 rounded-md"
                     />
                 </div>
@@ -203,18 +221,16 @@ function statusBadgeClass(s) {
             <Table>
                 <TableHeader>
                     <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
-                        <TableHead class="pl-4">Vehicle</TableHead>
+                        <TableHead class="pl-4">No. Plat</TableHead>
                         <TableHead>Tipe</TableHead>
-                        <TableHead>Kapasitas</TableHead>
-                        <TableHead>Service Berikut</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Aktif</TableHead>
-                        <TableHead class="text-right pr-4">Aksi</TableHead>
+                        <TableHead class="text-center pr-4">Aksi</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody class="text-sm">
                     <TableRow v-if="vehicles.data.length === 0">
-                        <TableCell colspan="7" class="text-center py-16">
+                        <TableCell colspan="5" class="text-center py-16">
                             <div class="flex flex-col items-center gap-2 text-muted-foreground">
                                 <Truck class="size-7 opacity-40" />
                                 <p class="text-sm">Belum ada vehicle.</p>
@@ -228,36 +244,23 @@ function statusBadgeClass(s) {
                                     <Truck class="size-4" />
                                 </div>
                                 <div class="min-w-0">
-                                    <Link
-                                        :href="route('vehicles.show', v.id)"
-                                        class="font-medium text-foreground truncate leading-tight hover:text-primary transition-colors block font-mono"
-                                    >
+                                    <p class="font-medium text-foreground truncate leading-tight font-mono">
                                         {{ v.plate_number }}
-                                    </Link>
-                                    <p class="text-[11px] text-muted-foreground font-mono leading-tight">
-                                        {{ v.code }}<span v-if="v.brand"> · {{ v.brand }} {{ v.model }}</span>
                                     </p>
+                                    <p class="text-[11px] text-muted-foreground font-mono leading-tight">{{ v.code }}</p>
                                 </div>
                             </div>
                         </TableCell>
                         <TableCell>
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground capitalize">
                                 {{ v.type }}
                             </span>
-                        </TableCell>
-                        <TableCell class="text-xs font-mono">
-                            <span v-if="v.capacity_kg">{{ Number(v.capacity_kg).toLocaleString('id-ID') }} kg</span>
-                            <span v-else class="text-muted-foreground">—</span>
-                        </TableCell>
-                        <TableCell class="text-xs">
-                            <span v-if="v.next_service_date">{{ new Date(v.next_service_date).toLocaleDateString('id-ID') }}</span>
-                            <span v-else class="text-muted-foreground">—</span>
                         </TableCell>
                         <TableCell>
                             <span
                                 :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ring-1', statusBadgeClass(v.status)]"
                             >
-                                {{ v.status }}
+                                {{ statusLabel(v.status) }}
                             </span>
                         </TableCell>
                         <TableCell>
@@ -267,13 +270,8 @@ function statusBadgeClass(s) {
                             >Aktif</span>
                             <span v-else class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground">Nonaktif</span>
                         </TableCell>
-                        <TableCell class="py-3 px-4 text-right whitespace-nowrap">
+                        <TableCell class="py-3 px-4 text-center whitespace-nowrap">
                             <ActionGroup>
-                                <ActionButton :icon="Eye" label="Detail" as-child tone="brand">
-                                    <Link :href="route('vehicles.show', v.id)">
-                                        <Eye class="w-4 h-4" />
-                                    </Link>
-                                </ActionButton>
                                 <ActionButton :icon="Pencil" label="Edit" tone="blue" @click="openEdit(v)" />
                                 <ActionButton
                                     v-if="v.is_active"
@@ -288,6 +286,13 @@ function statusBadgeClass(s) {
                                     label="Aktifkan"
                                     tone="emerald"
                                     @click="toggleActive(v)"
+                                />
+                                <ActionButton
+                                    v-if="canDelete"
+                                    :icon="Trash2"
+                                    label="Hapus"
+                                    tone="red"
+                                    @click="destroy(v)"
                                 />
                             </ActionGroup>
                         </TableCell>

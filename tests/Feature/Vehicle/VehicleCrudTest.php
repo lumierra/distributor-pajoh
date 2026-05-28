@@ -4,15 +4,19 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\Fleet\VehicleService;
+use Database\Seeders\MenuSeeder;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\RoleSeeder;
+use Database\Seeders\SettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->seed(\Database\Seeders\SettingSeeder::class);
-    $this->seed(\Database\Seeders\RoleSeeder::class);
-    $this->seed(\Database\Seeders\MenuSeeder::class);
-    $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+    $this->seed(SettingSeeder::class);
+    $this->seed(RoleSeeder::class);
+    $this->seed(MenuSeeder::class);
+    $this->seed(RolePermissionSeeder::class);
 });
 
 function vehicleCrudUser(string $roleCode): User
@@ -95,18 +99,6 @@ test('admin bisa update vehicle', function (): void {
         ->assertRedirect();
 
     expect($v->fresh()->plate_number)->toBe('BL 3333 CC');
-});
-
-test('show menampilkan vehicle detail', function (): void {
-    $admin = vehicleCrudUser(Role::CODE_ADMIN);
-    $v = Vehicle::create(['code' => 'VEH-0003', 'plate_number' => 'BL 4444 DD', 'type' => 'truck']);
-
-    $this->actingAs($admin)
-        ->get(route('vehicles.show', $v))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('Vehicles/Show')
-            ->where('vehicle.id', $v->id),
-        );
 });
 
 test('admin tidak bisa delete vehicle', function (): void {

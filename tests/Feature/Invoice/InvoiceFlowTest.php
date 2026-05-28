@@ -13,7 +13,6 @@ use App\Models\Role;
 use App\Models\StockLedger;
 use App\Models\User;
 use App\Models\Vehicle;
-use App\Models\VehicleDocument;
 use App\Services\Billing\InvoicePdfRenderer;
 use App\Services\Billing\InvoiceService;
 use App\Services\Delivery\DeliveryOrderService;
@@ -159,14 +158,6 @@ function invFullDeliveredDo(int $orderQty = 30, int $deliveredQty = 30, int $ret
         'is_active' => true,
         'status' => Vehicle::STATUS_IDLE,
     ]);
-    VehicleDocument::create([
-        'vehicle_id' => $vehicle->id,
-        'type' => 'STNK',
-        'title' => 'STNK',
-        'file_path' => 'dummy.pdf',
-        'expires_date' => now()->addYear()->toDateString(),
-    ]);
-
     $do = app(DeliveryOrderService::class)->createFromSo(
         $so,
         [['so_item_id' => $so->items->first()->id, 'qty_planned' => $deliveredQty]],
@@ -295,7 +286,6 @@ test('invoice items snapshot dari SO items (price + Z1/Z2 + bonus)', function ()
 
     $driver = Driver::create(['code' => 'DRV', 'name' => 'D', 'license_expired_date' => now()->addYear()->toDateString(), 'is_active' => true, 'status' => 'idle']);
     $vehicle = Vehicle::create(['code' => 'VEH', 'plate_number' => 'BL 1234 SS', 'type' => 'pickup', 'is_active' => true, 'status' => 'idle']);
-    VehicleDocument::create(['vehicle_id' => $vehicle->id, 'type' => 'STNK', 'title' => 'STNK', 'file_path' => 'd.pdf', 'expires_date' => now()->addYear()->toDateString()]);
 
     $do = app(DeliveryOrderService::class)->createFromSo(
         $so,
@@ -523,7 +513,6 @@ test('header discount SO ter-prorate ke invoice', function (): void {
 
     $driver = Driver::create(['code' => 'DRV-HD', 'name' => 'D', 'license_expired_date' => now()->addYear()->toDateString(), 'is_active' => true, 'status' => 'idle']);
     $vehicle = Vehicle::create(['code' => 'VEH-HD', 'plate_number' => 'BL 1 HD', 'type' => 'pickup', 'is_active' => true, 'status' => 'idle']);
-    VehicleDocument::create(['vehicle_id' => $vehicle->id, 'type' => 'STNK', 'title' => 'STNK', 'file_path' => 'd.pdf', 'expires_date' => now()->addYear()->toDateString()]);
 
     $do = app(DeliveryOrderService::class)->createFromSo(
         $so,

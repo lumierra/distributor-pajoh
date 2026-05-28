@@ -61,11 +61,6 @@ class Vehicle extends Model
         return $this->hasMany(Driver::class, 'default_vehicle_id');
     }
 
-    public function documents(): HasMany
-    {
-        return $this->hasMany(VehicleDocument::class)->latest();
-    }
-
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
@@ -79,14 +74,5 @@ class Vehicle extends Model
     public function isAvailable(): bool
     {
         return $this->is_active && $this->status === self::STATUS_IDLE;
-    }
-
-    public function hasExpiredCriticalDoc(): bool
-    {
-        return $this->documents()
-            ->whereIn('type', ['STNK', 'KIR'])
-            ->whereNotNull('expires_date')
-            ->whereDate('expires_date', '<', now())
-            ->exists();
     }
 }

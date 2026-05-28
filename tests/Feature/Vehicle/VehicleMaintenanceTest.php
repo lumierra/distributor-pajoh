@@ -3,16 +3,21 @@
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Services\Fleet\VehicleService;
+use Database\Seeders\MenuSeeder;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\RoleSeeder;
+use Database\Seeders\SettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->seed(\Database\Seeders\SettingSeeder::class);
-    $this->seed(\Database\Seeders\RoleSeeder::class);
-    $this->seed(\Database\Seeders\MenuSeeder::class);
-    $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+    $this->seed(SettingSeeder::class);
+    $this->seed(RoleSeeder::class);
+    $this->seed(MenuSeeder::class);
+    $this->seed(RolePermissionSeeder::class);
 });
 
 function vehicleMaintUser(string $roleCode): User
@@ -68,7 +73,7 @@ test('hapus vehicle status maintenance ditolak (unset dulu)', function (): void 
     ]);
 
     $this->actingAs($sa)
-        ->from(route('vehicles.show', $v))
+        ->from(route('vehicles.index'))
         ->delete(route('vehicles.destroy', $v))
         ->assertSessionHasErrors('delete');
 
@@ -83,7 +88,7 @@ test('canBeDeleted return blocker untuk maintenance', function (): void {
         'status' => Vehicle::STATUS_MAINTENANCE,
     ]);
 
-    $svc = app(\App\Services\Fleet\VehicleService::class);
+    $svc = app(VehicleService::class);
     expect($svc->canBeDeleted($v))->not->toBeEmpty();
 });
 
@@ -95,7 +100,7 @@ test('service.delete throw ValidationException jika maintenance', function (): v
         'status' => Vehicle::STATUS_MAINTENANCE,
     ]);
 
-    expect(fn () => app(\App\Services\Fleet\VehicleService::class)->delete($v))
+    expect(fn () => app(VehicleService::class)->delete($v))
         ->toThrow(ValidationException::class);
 });
 

@@ -13,7 +13,6 @@ use App\Models\Role;
 use App\Models\StockLedger;
 use App\Models\User;
 use App\Models\Vehicle;
-use App\Models\VehicleDocument;
 use App\Models\YearEndClosing;
 use App\Services\Billing\InvoicePdfRenderer;
 use App\Services\Closing\YearEndClosingService;
@@ -170,10 +169,6 @@ test('execute closing — carry-over flag open invoice + summary populated', fun
     $vehicle = Vehicle::create([
         'code' => 'V-'.random_int(100, 999), 'plate_number' => 'BL '.random_int(1000, 9999).' P',
         'type' => 'pickup', 'is_active' => true, 'status' => Vehicle::STATUS_IDLE,
-    ]);
-    VehicleDocument::create([
-        'vehicle_id' => $vehicle->id, 'type' => 'STNK', 'title' => 'STNK',
-        'file_path' => 'd.pdf', 'expires_date' => now()->addYear()->toDateString(),
     ]);
 
     $do = app(DeliveryOrderService::class)->createFromSo(

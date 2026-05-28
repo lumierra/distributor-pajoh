@@ -12,7 +12,6 @@ use App\Models\SoReservation;
 use App\Models\StockLedger;
 use App\Models\User;
 use App\Models\Vehicle;
-use App\Models\VehicleDocument;
 use App\Services\Billing\InvoiceService;
 use App\Services\CustomerReturn\CustomerReturnService;
 use App\Services\Inventory\ReservationService;
@@ -183,29 +182,6 @@ class DeliveryOrderService
             }
             if ($vehicle->status === Vehicle::STATUS_MAINTENANCE) {
                 throw ValidationException::withMessages(['vehicle_id' => 'Vehicle sedang maintenance.']);
-            }
-
-            // Expired doc check (kalau setting aktif)
-            if ((bool) $this->settings->get('vehicle.block_expired_doc.enabled', true)) {
-                if ($driver->license_expired_date !== null
-                    && $driver->license_expired_date->isPast()) {
-                    throw ValidationException::withMessages([
-                        'driver_id' => "SIM driver expired ({$driver->license_expired_date->format('d M Y')}).",
-                    ]);
-                }
-
-                $expiredCriticalDoc = VehicleDocument::query()
-                    ->where('vehicle_id', $vehicle->id)
-                    ->whereIn('type', VehicleDocument::CRITICAL_TYPES)
-                    ->whereNotNull('expires_date')
-                    ->whereDate('expires_date', '<', now())
-                    ->first();
-
-                if ($expiredCriticalDoc !== null) {
-                    throw ValidationException::withMessages([
-                        'vehicle_id' => "Dokumen {$expiredCriticalDoc->type} vehicle expired.",
-                    ]);
-                }
             }
 
             $do->update([

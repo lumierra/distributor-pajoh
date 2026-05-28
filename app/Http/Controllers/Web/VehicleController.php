@@ -26,9 +26,7 @@ class VehicleController extends Controller
         if ($search = trim((string) $request->input('q'))) {
             $query->where(function ($q) use ($search): void {
                 $q->where('plate_number', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%")
-                    ->orWhere('brand', 'like', "%{$search}%")
-                    ->orWhere('model', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%");
             });
         }
 
@@ -73,25 +71,7 @@ class VehicleController extends Controller
     {
         $vehicle = $this->service->create($request->validated());
 
-        return redirect()
-            ->route('vehicles.show', $vehicle)
-            ->with('flash.success', "Vehicle {$vehicle->plate_number} ({$vehicle->code}) dibuat.");
-    }
-
-    public function show(Vehicle $vehicle): Response
-    {
-        $this->authorize('view', $vehicle);
-
-        $vehicle->load([
-            'documents.uploader:id,name',
-            'drivers:id,code,name,default_vehicle_id',
-        ]);
-
-        return Inertia::render('Vehicles/Show', [
-            'vehicle' => $vehicle,
-            'types' => Vehicle::TYPES,
-            'canUpdate' => request()->user()?->can('update', $vehicle) ?? false,
-        ]);
+        return back()->with('flash.success', "Vehicle {$vehicle->plate_number} ({$vehicle->code}) dibuat.");
     }
 
     public function update(UpdateVehicleRequest $request, Vehicle $vehicle): RedirectResponse

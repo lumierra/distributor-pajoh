@@ -102,7 +102,7 @@ function submit() {
 
 <template>
     <Dialog :open="open" @update:open="(v) => $emit('update:open', v)">
-        <DialogContent class="sm:max-w-[600px] p-0 overflow-hidden">
+        <DialogContent class="sm:max-w-[460px] p-0 overflow-hidden">
             <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
                 <div class="flex items-start gap-3">
                     <div class="size-10 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 ring-1 ring-emerald-200">
@@ -119,75 +119,23 @@ function submit() {
                 </div>
             </DialogHeader>
 
-            <form class="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto" @submit.prevent="submit">
-                <div class="space-y-3">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Identitas</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">No. Plat *</Label>
-                            <Input v-model="form.plate_number" required class="h-9 font-mono uppercase" placeholder="BL 9195 XX" />
-                            <p v-if="form.errors.plate_number" class="text-xs text-destructive">{{ form.errors.plate_number }}</p>
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Tipe *</Label>
-                            <Select v-model="form.type">
-                                <SelectTrigger class="h-9">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem v-for="t in types" :key="t" :value="t">{{ t }}</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Brand</Label>
-                            <Input v-model="form.brand" class="h-9" />
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Model</Label>
-                            <Input v-model="form.model" class="h-9" />
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Tahun</Label>
-                            <Input v-model="form.year" type="number" min="1990" max="2100" class="h-9 font-mono" />
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Warna</Label>
-                            <Input v-model="form.color" class="h-9" />
-                        </div>
-                    </div>
+            <form class="px-5 py-4 space-y-3.5" @submit.prevent="submit">
+                <div class="space-y-1">
+                    <Label class="text-xs font-medium">No. Plat *</Label>
+                    <Input v-model="form.plate_number" required class="h-9 font-mono uppercase" placeholder="BL 9195 XX" />
+                    <p v-if="form.errors.plate_number" class="text-xs text-destructive">{{ form.errors.plate_number }}</p>
                 </div>
 
-                <div class="space-y-3 pt-2 border-t border-border/70">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kapasitas</p>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Kapasitas (kg)</Label>
-                            <Input v-model="form.capacity_kg" type="number" step="0.01" min="0" class="h-9 font-mono" />
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Kapasitas (m³)</Label>
-                            <Input v-model="form.capacity_kubik" type="number" step="0.001" min="0" class="h-9 font-mono" />
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-3 pt-2 border-t border-border/70">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Service</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Service Terakhir</Label>
-                            <Input v-model="form.last_service_date" type="date" class="h-9" />
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Service Berikut</Label>
-                            <Input v-model="form.next_service_date" type="date" class="h-9" />
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Odometer (km)</Label>
-                            <Input v-model="form.odometer_km" type="number" min="0" class="h-9 font-mono" />
-                        </div>
-                    </div>
+                <div class="space-y-1">
+                    <Label class="text-xs font-medium">Tipe *</Label>
+                    <Select v-model="form.type">
+                        <SelectTrigger class="h-9">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem v-for="t in types" :key="t" :value="t">{{ t }}</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 <div class="flex items-center justify-between rounded-md bg-muted/40 ring-1 ring-foreground/5 px-3.5 py-2.5">
@@ -198,10 +146,20 @@ function submit() {
                     <Switch v-model="form.is_active" />
                 </div>
 
-                <div class="space-y-1">
-                    <Label class="text-xs font-medium">Catatan</Label>
-                    <Textarea v-model="form.notes" rows="2" />
-                </div>
+                <!-- Field detail (brand, model, tahun, warna, kapasitas, service, odometer, catatan)
+                     di-hide. Data master vehicle cukup plat + tipe untuk faktur. -->
+                <template v-if="false">
+                    <Input v-model="form.brand" />
+                    <Input v-model="form.model" />
+                    <Input v-model="form.year" />
+                    <Input v-model="form.color" />
+                    <Input v-model="form.capacity_kg" />
+                    <Input v-model="form.capacity_kubik" />
+                    <Input v-model="form.last_service_date" />
+                    <Input v-model="form.next_service_date" />
+                    <Input v-model="form.odometer_km" />
+                    <Textarea v-model="form.notes" />
+                </template>
             </form>
 
             <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">

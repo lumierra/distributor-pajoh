@@ -1,9 +1,11 @@
 <script setup>
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
+    AlertCircle,
     Ban,
     CheckCircle2,
     Eye,
+    FileSpreadsheet,
     LogIn,
     MapPinOff,
     Pencil,
@@ -21,6 +23,7 @@ import PageHeader from '@/Components/Shared/PageHeader.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import StatCard from '@/Components/Shared/StatCard.vue';
 import CustomerFormDialog from '@/Components/Customers/CustomerFormDialog.vue';
+import CustomerImportDialog from '@/Components/Customers/CustomerImportDialog.vue';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import {
@@ -46,6 +49,7 @@ const props = defineProps({
     tiers: { type: Array, required: true },
     filters: { type: Object, default: () => ({}) },
     stats: { type: Object, default: null },
+    hasImportErrors: { type: Boolean, default: false },
 });
 
 const page = usePage();
@@ -96,10 +100,19 @@ function reset() {
 
 const modalOpen = ref(false);
 const editing = ref(null);
+const importOpen = ref(false);
 
 function openCreate() {
     editing.value = null;
     modalOpen.value = true;
+}
+
+function openImport() {
+    importOpen.value = true;
+}
+
+function onImported() {
+    router.reload({ only: ['customers', 'stats', 'hasImportErrors'] });
 }
 
 function openEdit(c) {
@@ -145,6 +158,22 @@ function formatDate(value) {
                         <Tags class="size-4" />
                         Tipe
                     </Link>
+                </Button>
+                <Button
+                    v-if="hasImportErrors"
+                    as-child
+                    variant="outline"
+                    size="default"
+                    class="text-amber-700 ring-1 ring-amber-200 hover:bg-amber-50"
+                >
+                    <a :href="route('customers.import.errors')">
+                        <AlertCircle class="size-4" />
+                        Download Error
+                    </a>
+                </Button>
+                <Button v-if="canCreate" variant="outline" size="default" @click="openImport">
+                    <FileSpreadsheet class="size-4" />
+                    Import Excel
                 </Button>
                 <Button v-if="canCreate" size="default" variant="secondary" @click="openCreate">
                     <Plus class="size-4" />
@@ -343,6 +372,10 @@ function formatDate(value) {
             :can-edit-price-tier="true"
             :can-edit-assigned-sales="true"
             @saved="onSaved"
+        />
+        <CustomerImportDialog
+            v-model:open="importOpen"
+            @saved="onImported"
         />
     </AppLayout>
 </template>

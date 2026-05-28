@@ -73,7 +73,8 @@ class MenuSeeder extends Seeder
             ['parent' => 'master', 'code' => 'master.customer', 'label' => 'Customer', 'icon' => 'Store', 'route' => 'customers.index', 'order' => 5],
             ['parent' => 'master', 'code' => 'master.product', 'label' => 'Produk', 'icon' => 'Package', 'route' => 'products.index', 'order' => 6],
             ['parent' => 'master', 'code' => 'master.product_group', 'label' => 'Product Group', 'icon' => 'Layers', 'route' => 'product-groups.index', 'order' => 7],
-            ['parent' => 'master', 'code' => 'master.price_tier', 'label' => 'Price Tier', 'icon' => 'Tag', 'route' => 'price-tiers.index', 'order' => 8],
+            ['parent' => 'master', 'code' => 'master.unit', 'label' => 'Satuan', 'icon' => 'Ruler', 'route' => 'units.index', 'order' => 8],
+            ['parent' => 'master', 'code' => 'master.price_tier', 'label' => 'Price Tier', 'icon' => 'Tag', 'route' => 'price-tiers.index', 'order' => 9],
             ['parent' => 'master', 'code' => 'master.driver', 'label' => 'Driver', 'icon' => 'UserCog', 'route' => 'drivers.index', 'order' => 9],
             ['parent' => 'master', 'code' => 'master.vehicle', 'label' => 'Vehicle', 'icon' => 'Truck', 'route' => 'vehicles.index', 'order' => 10],
 

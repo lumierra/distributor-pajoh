@@ -58,6 +58,7 @@ function showFlashToast() {
     const flash = page.props.flash;
     if (!flash) return;
     if (flash.success) toast.success(flash.success);
+    if (flash.warning) toast.warning(flash.warning);
     if (flash.error) toast.error(flash.error);
 }
 

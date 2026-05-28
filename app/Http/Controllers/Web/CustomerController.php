@@ -81,6 +81,7 @@ class CustomerController extends Controller
                 'inactive' => (int) ($totals->inactive ?? 0),
                 'without_geo' => (int) ($totals->without_geo ?? 0),
             ],
+            'hasImportErrors' => session()->has('customer_import.errors'),
         ]);
     }
 

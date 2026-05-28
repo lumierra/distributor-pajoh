@@ -8,6 +8,7 @@ use App\Http\Controllers\Web\CreditNoteController;
 use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\CustomerCreditLimitController;
 use App\Http\Controllers\Web\CustomerGeoController;
+use App\Http\Controllers\Web\CustomerImportController;
 use App\Http\Controllers\Web\CustomerPhotoController;
 use App\Http\Controllers\Web\CustomerReturnController;
 use App\Http\Controllers\Web\CustomerTypeController;
@@ -44,10 +45,10 @@ use App\Http\Controllers\Web\SupplierController;
 use App\Http\Controllers\Web\SupplierDocumentController;
 use App\Http\Controllers\Web\SupplierReturnController;
 use App\Http\Controllers\Web\TrashController;
+use App\Http\Controllers\Web\UnitController;
 use App\Http\Controllers\Web\UserController;
 use App\Http\Controllers\Web\UserDeviceController;
 use App\Http\Controllers\Web\VehicleController;
-use App\Http\Controllers\Web\VehicleDocumentController;
 use App\Http\Controllers\Web\WaNotificationController;
 use App\Http\Controllers\Web\YearEndClosingController;
 use Illuminate\Foundation\Application;
@@ -202,6 +203,14 @@ Route::middleware('auth')->group(function (): void {
             ->name('product-categories.destroy');
     });
 
+    // ── Unit (master satuan global) ───────────────────────────────────
+    Route::middleware('menu:master.unit')->group(function (): void {
+        Route::get('units', [UnitController::class, 'index'])->name('units.index');
+        Route::post('units', [UnitController::class, 'store'])->name('units.store');
+        Route::put('units/{unit}', [UnitController::class, 'update'])->name('units.update');
+        Route::delete('units/{unit}', [UnitController::class, 'destroy'])->name('units.destroy');
+    });
+
     // ── Product Group ─────────────────────────────────────────────────
     Route::middleware('menu:master.product_group')->group(function (): void {
         Route::get('product-groups', [ProductGroupController::class, 'index'])
@@ -244,6 +253,14 @@ Route::middleware('auth')->group(function (): void {
         Route::put('customers/{customer}/credit-limits', [CustomerCreditLimitController::class, 'sync'])
             ->name('customers.credit-limits.sync');
 
+        // Bulk Import via Excel
+        Route::get('customers/import/template', [CustomerImportController::class, 'downloadTemplate'])
+            ->name('customers.import.template');
+        Route::post('customers/import', [CustomerImportController::class, 'import'])
+            ->name('customers.import');
+        Route::get('customers/import/errors', [CustomerImportController::class, 'downloadErrors'])
+            ->name('customers.import.errors');
+
         // Geo
         Route::put('customers/{customer}/geo', [CustomerGeoController::class, 'update'])
             ->name('customers.geo.update');
@@ -280,20 +297,13 @@ Route::middleware('auth')->group(function (): void {
 
     // ── Vehicle ───────────────────────────────────────────────────────
     Route::middleware('menu:master.vehicle')->group(function (): void {
-        Route::resource('vehicles', VehicleController::class)->except(['create', 'edit']);
+        Route::resource('vehicles', VehicleController::class)->except(['create', 'edit', 'show']);
         Route::post('vehicles/{vehicle}/toggle-active', [VehicleController::class, 'toggleActive'])
             ->name('vehicles.toggle-active');
         Route::post('vehicles/{vehicle}/maintenance', [VehicleController::class, 'setMaintenance'])
             ->name('vehicles.maintenance.set');
         Route::delete('vehicles/{vehicle}/maintenance', [VehicleController::class, 'unsetMaintenance'])
             ->name('vehicles.maintenance.unset');
-
-        Route::post('vehicles/{vehicle}/documents', [VehicleDocumentController::class, 'store'])
-            ->name('vehicles.documents.store');
-        Route::get('vehicle-documents/{document}', [VehicleDocumentController::class, 'show'])
-            ->name('vehicle-documents.show');
-        Route::delete('vehicle-documents/{document}', [VehicleDocumentController::class, 'destroy'])
-            ->name('vehicle-documents.destroy');
     });
 
     // ── Inventory (stocks & ledger viewer, MVP read-only) ─────────────
