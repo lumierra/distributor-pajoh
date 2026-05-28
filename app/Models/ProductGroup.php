@@ -37,7 +37,9 @@ class ProductGroup extends Model
 
     public function salesUsers(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'sales_product_groups')->withTimestamps();
+        return $this->belongsToMany(User::class, 'sales_product_groups')
+            ->withPivot('monthly_limit', 'created_by')
+            ->withTimestamps();
     }
 
     public function scopeActive(Builder $query): Builder

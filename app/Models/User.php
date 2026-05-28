@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -74,6 +75,11 @@ class User extends Authenticatable
         return $this->hasMany(UserMenuOverride::class);
     }
 
+    public function devices(): HasMany
+    {
+        return $this->hasMany(UserDevice::class);
+    }
+
     public function loginHistories(): HasMany
     {
         return $this->hasMany(LoginHistory::class);
@@ -82,6 +88,13 @@ class User extends Authenticatable
     public function passwordHistory(): HasMany
     {
         return $this->hasMany(PasswordHistory::class)->orderByDesc('created_at');
+    }
+
+    public function productGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductGroup::class, 'sales_product_groups')
+            ->withPivot('monthly_limit', 'created_by')
+            ->withTimestamps();
     }
 
     /* ------------------------------------------------------------------- scopes -- */

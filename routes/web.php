@@ -6,13 +6,13 @@ use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Web\ActivityLogController;
 use App\Http\Controllers\Web\CreditNoteController;
 use App\Http\Controllers\Web\CustomerController;
+use App\Http\Controllers\Web\CustomerCreditLimitController;
 use App\Http\Controllers\Web\CustomerGeoController;
 use App\Http\Controllers\Web\CustomerPhotoController;
 use App\Http\Controllers\Web\CustomerReturnController;
 use App\Http\Controllers\Web\CustomerTypeController;
 use App\Http\Controllers\Web\DeliveryOrderController;
 use App\Http\Controllers\Web\DriverController;
-use App\Http\Controllers\Web\DriverDocumentController;
 use App\Http\Controllers\Web\GoodsReceiptController;
 use App\Http\Controllers\Web\InventoryController;
 use App\Http\Controllers\Web\InvoiceController;
@@ -24,6 +24,7 @@ use App\Http\Controllers\Web\PaymentRequestController;
 use App\Http\Controllers\Web\PriceTierController;
 use App\Http\Controllers\Web\ProductCategoryController;
 use App\Http\Controllers\Web\ProductController;
+use App\Http\Controllers\Web\ProductGroupController;
 use App\Http\Controllers\Web\ProductPriceController;
 use App\Http\Controllers\Web\ProductSupplierController;
 use App\Http\Controllers\Web\ProductUnitController;
@@ -33,6 +34,7 @@ use App\Http\Controllers\Web\Reports\ReportController;
 use App\Http\Controllers\Web\RoleController;
 use App\Http\Controllers\Web\SalesOrderController;
 use App\Http\Controllers\Web\SalesScheduleController;
+use App\Http\Controllers\Web\SalesUserController;
 use App\Http\Controllers\Web\SalesVisitBypassRequestController;
 use App\Http\Controllers\Web\SalesVisitController;
 use App\Http\Controllers\Web\StockLedgerController;
@@ -100,6 +102,11 @@ Route::middleware('auth')->group(function (): void {
             ->name('users.menu-overrides');
         Route::put('users/{user}/menu-overrides', [UserController::class, 'updateMenuOverrides'])
             ->name('users.menu-overrides.update');
+
+        // Sales user — list & create terpisah dgn field tambahan + pre-register device
+        Route::get('sales-users', [SalesUserController::class, 'index'])->name('sales-users.index');
+        Route::post('sales-users', [SalesUserController::class, 'store'])->name('sales-users.store');
+        Route::put('sales-users/{user}', [SalesUserController::class, 'update'])->name('sales-users.update');
     });
 
     // ── Roles ─────────────────────────────────────────────────────────
@@ -195,6 +202,24 @@ Route::middleware('auth')->group(function (): void {
             ->name('product-categories.destroy');
     });
 
+    // ── Product Group ─────────────────────────────────────────────────
+    Route::middleware('menu:master.product_group')->group(function (): void {
+        Route::get('product-groups', [ProductGroupController::class, 'index'])
+            ->name('product-groups.index');
+        Route::get('product-groups/{productGroup}', [ProductGroupController::class, 'show'])
+            ->name('product-groups.show');
+        Route::post('product-groups', [ProductGroupController::class, 'store'])
+            ->name('product-groups.store');
+        Route::put('product-groups/{productGroup}', [ProductGroupController::class, 'update'])
+            ->name('product-groups.update');
+        Route::delete('product-groups/{productGroup}', [ProductGroupController::class, 'destroy'])
+            ->name('product-groups.destroy');
+        Route::put('product-groups/{productGroup}/products', [ProductGroupController::class, 'syncProducts'])
+            ->name('product-groups.sync-products');
+        Route::put('product-groups/{productGroup}/sales', [ProductGroupController::class, 'syncSales'])
+            ->name('product-groups.sync-sales');
+    });
+
     // ── Price Tier ────────────────────────────────────────────────────
     Route::middleware('menu:master.price_tier')->group(function (): void {
         Route::get('price-tiers', [PriceTierController::class, 'index'])->name('price-tiers.index');
@@ -212,6 +237,12 @@ Route::middleware('auth')->group(function (): void {
             ->name('customers.reassign-sales');
         Route::get('customers/{customer}/outstanding', [CustomerController::class, 'outstanding'])
             ->name('customers.outstanding');
+
+        // Credit Limit per Supplier
+        Route::get('customers/{customer}/credit-limits', [CustomerCreditLimitController::class, 'index'])
+            ->name('customers.credit-limits.index');
+        Route::put('customers/{customer}/credit-limits', [CustomerCreditLimitController::class, 'sync'])
+            ->name('customers.credit-limits.sync');
 
         // Geo
         Route::put('customers/{customer}/geo', [CustomerGeoController::class, 'update'])
@@ -240,18 +271,11 @@ Route::middleware('auth')->group(function (): void {
 
     // ── Driver ────────────────────────────────────────────────────────
     Route::middleware('menu:master.driver')->group(function (): void {
-        Route::resource('drivers', DriverController::class)->except(['create', 'edit']);
+        Route::resource('drivers', DriverController::class)->except(['create', 'edit', 'show']);
         Route::post('drivers/{driver}/toggle-active', [DriverController::class, 'toggleActive'])
             ->name('drivers.toggle-active');
         Route::post('drivers/{driver}/set-unavailable', [DriverController::class, 'setUnavailable'])
             ->name('drivers.set-unavailable');
-
-        Route::post('drivers/{driver}/documents', [DriverDocumentController::class, 'store'])
-            ->name('drivers.documents.store');
-        Route::get('driver-documents/{document}', [DriverDocumentController::class, 'show'])
-            ->name('driver-documents.show');
-        Route::delete('driver-documents/{document}', [DriverDocumentController::class, 'destroy'])
-            ->name('driver-documents.destroy');
     });
 
     // ── Vehicle ───────────────────────────────────────────────────────
