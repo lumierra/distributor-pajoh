@@ -17,6 +17,13 @@ import TabsPill from '@/Components/Shared/TabsPill.vue';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/Components/ui/select';
+import {
     Table,
     TableBody,
     TableCell,
@@ -30,6 +37,7 @@ const props = defineProps({
     group: { type: Object, required: true },
     availableSales: { type: Array, default: () => [] },
     availableProducts: { type: Array, default: () => [] },
+    availableSuppliers: { type: Array, default: () => [] },
 });
 
 const page = usePage();
@@ -55,18 +63,36 @@ const tabs = computed(() => [
 /* ──────────────────────── Tab: Produk ──────────────────────── */
 
 const productSearch = ref('');
+const supplierFilter = ref(''); // '' = semua, atau supplier_id string
 const initialSelectedProductIds = new Set((props.group.products ?? []).map((p) => p.id));
 const selectedProductIds = ref(new Set(initialSelectedProductIds));
 
 const filteredProducts = computed(() => {
     const q = productSearch.value.trim().toLowerCase();
-    if (!q) return props.availableProducts;
-    return props.availableProducts.filter(
-        (p) => p.name.toLowerCase().includes(q)
-            || (p.sku ?? '').toLowerCase().includes(q)
-            || (p.brand ?? '').toLowerCase().includes(q),
-    );
+    const supId = supplierFilter.value ? Number(supplierFilter.value) : null;
+    return props.availableProducts.filter((p) => {
+        if (supId && !(p.supplier_ids ?? []).includes(supId)) return false;
+        if (q) {
+            return (
+                p.name.toLowerCase().includes(q)
+                || (p.sku ?? '').toLowerCase().includes(q)
+                || (p.brand ?? '').toLowerCase().includes(q)
+            );
+        }
+        return true;
+    });
 });
+
+function toggleAllFiltered() {
+    if (!canUpdate.value) return;
+    const next = new Set(selectedProductIds.value);
+    const allSelected = filteredProducts.value.every((p) => next.has(p.id));
+    for (const p of filteredProducts.value) {
+        if (allSelected) next.delete(p.id);
+        else next.add(p.id);
+    }
+    selectedProductIds.value = next;
+}
 
 function toggleProduct(p) {
     if (!canUpdate.value) return;
@@ -207,6 +233,17 @@ function fmtRp(v) {
         <!-- ─────────────── Tab: Produk ─────────────── -->
         <section v-show="tab === 'products'" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
             <div class="border-b border-border/70 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+                <Select v-model="supplierFilter">
+                    <SelectTrigger class="w-[200px] h-9 rounded-md">
+                        <SelectValue placeholder="Filter Supplier" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="">Semua Supplier</SelectItem>
+                        <SelectItem v-for="s in availableSuppliers" :key="s.id" :value="String(s.id)">
+                            {{ s.name }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
                 <div class="relative flex-1">
                     <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                     <Input
@@ -218,6 +255,16 @@ function fmtRp(v) {
                 <div class="text-xs text-muted-foreground">
                     Terpilih: <span class="font-semibold text-foreground">{{ selectedProductIds.size }}</span>
                 </div>
+                <Button
+                    v-if="canUpdate"
+                    type="button"
+                    variant="outline"
+                    size="default"
+                    :disabled="filteredProducts.length === 0"
+                    @click="toggleAllFiltered"
+                >
+                    Pilih Semua
+                </Button>
                 <Button
                     v-if="canUpdate"
                     type="button"

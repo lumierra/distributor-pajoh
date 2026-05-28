@@ -41,6 +41,7 @@ use App\Http\Controllers\Web\SupplierBankAccountController;
 use App\Http\Controllers\Web\SupplierCategoryController;
 use App\Http\Controllers\Web\SupplierController;
 use App\Http\Controllers\Web\SupplierDocumentController;
+use App\Http\Controllers\Web\SupplierProductUnitController;
 use App\Http\Controllers\Web\SupplierReturnController;
 use App\Http\Controllers\Web\TrashController;
 use App\Http\Controllers\Web\UnitController;
@@ -177,6 +178,14 @@ Route::middleware('auth')->group(function (): void {
             ->name('products.units.store');
         Route::delete('product-units/{unit}', [ProductUnitController::class, 'destroy'])
             ->name('product-units.destroy');
+
+        // Supplier × Unit × Price (pivot supplier_product_units)
+        Route::post('products/{product}/supplier-units', [SupplierProductUnitController::class, 'store'])
+            ->name('products.supplier-units.store');
+        Route::put('supplier-product-units/{supplierProductUnit}', [SupplierProductUnitController::class, 'update'])
+            ->name('supplier-product-units.update');
+        Route::delete('supplier-product-units/{supplierProductUnit}', [SupplierProductUnitController::class, 'destroy'])
+            ->name('supplier-product-units.destroy');
 
         // Product ↔ Supplier (M2M)
         Route::post('products/{product}/suppliers', [ProductSupplierController::class, 'store'])

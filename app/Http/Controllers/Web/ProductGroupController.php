@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductGroup;
 use App\Models\Role;
+use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -69,15 +70,33 @@ class ProductGroupController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'username']);
 
+        // Tiap produk dilampirkan list supplier_ids (dari supplier_products)
+        // supaya frontend bisa filter "produk dari supplier X".
         $availableProducts = Product::query()
             ->where('is_active', true)
+            ->with(['suppliers:id,name,code'])
             ->orderBy('name')
-            ->get(['id', 'sku', 'name', 'brand']);
+            ->get(['id', 'sku', 'name', 'brand'])
+            ->map(function ($p) {
+                return [
+                    'id' => $p->id,
+                    'sku' => $p->sku,
+                    'name' => $p->name,
+                    'brand' => $p->brand,
+                    'supplier_ids' => $p->suppliers->pluck('id')->all(),
+                ];
+            });
+
+        $availableSuppliers = Supplier::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'code', 'name']);
 
         return Inertia::render('ProductGroups/Show', [
             'group' => $productGroup,
             'availableSales' => $availableSales,
             'availableProducts' => $availableProducts,
+            'availableSuppliers' => $availableSuppliers,
         ]);
     }
 

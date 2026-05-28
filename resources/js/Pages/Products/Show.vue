@@ -21,6 +21,7 @@ import PageHeader from '@/Components/Shared/PageHeader.vue';
 import TabsPill from '@/Components/Shared/TabsPill.vue';
 import AssignSupplierDialog from '@/Components/Products/AssignSupplierDialog.vue';
 import ProductFormDialog from '@/Components/Products/ProductFormDialog.vue';
+import SupplierUnitPriceDialog from '@/Components/Products/SupplierUnitPriceDialog.vue';
 import UnitFormDialog from '@/Components/Products/UnitFormDialog.vue';
 import { Button } from '@/Components/ui/button';
 import AppLayout from '@/Layouts/AppLayout.vue';
@@ -44,6 +45,23 @@ const tabs = computed(() => [
 const editOpen = ref(false);
 const unitOpen = ref(false);
 const assignSupplierOpen = ref(false);
+const supplierUnitPriceOpen = ref(false);
+const editingSupplierUnit = ref(null);
+
+function openAddSupplierUnit() {
+    editingSupplierUnit.value = null;
+    supplierUnitPriceOpen.value = true;
+}
+
+function openEditSupplierUnit(spu) {
+    editingSupplierUnit.value = spu;
+    supplierUnitPriceOpen.value = true;
+}
+
+function destroySupplierUnit(spu) {
+    if (!window.confirm('Hapus baris harga ini?')) return;
+    useForm({}).delete(route('supplier-product-units.destroy', spu.id), { preserveScroll: true });
+}
 
 const existingLevels = computed(() => (props.product.units ?? []).map((u) => u.level));
 const existingSupplierIds = computed(
@@ -258,74 +276,133 @@ function formatRupiah(v) {
         </section>
 
         <!-- Tab: Supplier & Harga -->
-        <section v-show="tab === 'supplier'" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <header class="border-b border-border/70 px-5 py-3 flex items-center justify-between">
-                <h3 class="text-sm font-semibold">Supplier Penyedia</h3>
-                <Button
-                    v-if="canUpdate"
-                    size="default"
-                    variant="secondary"
-                    @click="assignSupplierOpen = true"
-                >
-                    <Plus class="size-4" />
-                    Tautkan Supplier
-                </Button>
-            </header>
-            <ul v-if="product.supplier_products?.length" class="divide-y divide-border/60">
-                <li
-                    v-for="sp in product.supplier_products"
-                    :key="sp.id"
-                    class="px-5 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors"
-                >
-                    <div class="size-9 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                        <Factory class="size-4" />
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <p class="font-medium text-foreground truncate">
-                                {{ sp.supplier?.name ?? '—' }}
-                            </p>
-                            <span class="text-[10px] font-mono text-muted-foreground">
-                                {{ sp.supplier?.code }}
-                            </span>
-                            <span
-                                v-if="sp.is_primary"
-                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-warning-soft text-amber-700"
+        <section v-show="tab === 'supplier'" class="space-y-3">
+            <!-- Daftar harga per (supplier × satuan) -->
+            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
+                <header class="border-b border-border/70 px-5 py-3 flex items-center justify-between">
+                    <h3 class="text-sm font-semibold">Harga per (Supplier × Satuan)</h3>
+                    <Button
+                        v-if="canUpdate"
+                        size="default"
+                        variant="secondary"
+                        :disabled="product.units?.length === 0"
+                        @click="openAddSupplierUnit"
+                    >
+                        <Plus class="size-4" />
+                        Tambah Harga
+                    </Button>
+                </header>
+                <div v-if="product.supplier_product_units?.length" class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="border-b border-border/70 bg-muted/30">
+                            <tr class="text-[10px] uppercase tracking-wider text-muted-foreground">
+                                <th class="text-left py-2.5 px-5">Supplier</th>
+                                <th class="text-left py-2.5 px-3">Satuan</th>
+                                <th class="text-right py-2.5 px-3">Modal</th>
+                                <th class="text-right py-2.5 px-3">Jual</th>
+                                <th class="text-center py-2.5 px-3">Status</th>
+                                <th class="text-right py-2.5 px-5">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border/40">
+                            <tr
+                                v-for="spu in product.supplier_product_units"
+                                :key="spu.id"
+                                class="hover:bg-muted/20"
                             >
-                                <Star class="size-3" /> Primary
-                            </span>
-                            <span
-                                v-if="!sp.is_active"
-                                class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground"
-                            >
-                                Nonaktif
-                            </span>
+                                <td class="py-2.5 px-5">
+                                    <p class="font-medium">{{ spu.supplier?.name ?? '—' }}</p>
+                                    <p class="text-[10px] font-mono text-muted-foreground">{{ spu.supplier?.code }}</p>
+                                </td>
+                                <td class="py-2.5 px-3">
+                                    <span class="font-medium">{{ spu.product_unit?.name }}</span>
+                                    <span class="text-[10px] text-muted-foreground ml-1">({{ spu.product_unit?.level }})</span>
+                                </td>
+                                <td class="py-2.5 px-3 text-right font-mono">{{ formatRupiah(spu.cost_price) }}</td>
+                                <td class="py-2.5 px-3 text-right font-mono">{{ formatRupiah(spu.sell_price) }}</td>
+                                <td class="py-2.5 px-3 text-center">
+                                    <span
+                                        v-if="spu.is_active"
+                                        class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                                    >Aktif</span>
+                                    <span
+                                        v-else
+                                        class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground"
+                                    >Nonaktif</span>
+                                </td>
+                                <td class="py-2.5 px-5">
+                                    <div class="flex justify-end">
+                                        <ActionGroup v-if="canUpdate">
+                                            <ActionButton :icon="Edit" label="Edit" tone="blue" @click="openEditSupplierUnit(spu)" />
+                                            <ActionButton :icon="Trash2" label="Hapus" tone="red" @click="destroySupplierUnit(spu)" />
+                                        </ActionGroup>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div v-else class="px-5 py-10 text-center text-sm text-muted-foreground">
+                    <DollarSign class="size-7 opacity-40 mx-auto mb-2" />
+                    Belum ada harga supplier untuk produk ini.
+                    <p v-if="product.units?.length === 0" class="text-[11px] mt-1">Tambah satuan dulu di tab Satuan.</p>
+                </div>
+            </div>
+
+            <!-- Supplier tagging (relasi supplier_products) -->
+            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
+                <header class="border-b border-border/70 px-5 py-3 flex items-center justify-between">
+                    <h3 class="text-sm font-semibold">Supplier Penyedia (tagging)</h3>
+                    <Button
+                        v-if="canUpdate"
+                        size="default"
+                        variant="outline"
+                        @click="assignSupplierOpen = true"
+                    >
+                        <Plus class="size-4" />
+                        Tautkan Supplier
+                    </Button>
+                </header>
+                <ul v-if="product.supplier_products?.length" class="divide-y divide-border/60">
+                    <li
+                        v-for="sp in product.supplier_products"
+                        :key="sp.id"
+                        class="px-5 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors"
+                    >
+                        <div class="size-9 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                            <Factory class="size-4" />
                         </div>
-                        <p class="text-xs text-muted-foreground">
-                            <span v-if="sp.supplier_sku">SKU: {{ sp.supplier_sku }}</span>
-                            <span v-if="sp.moq"> · MOQ: {{ sp.moq }}</span>
-                        </p>
-                    </div>
-                    <ActionGroup v-if="canUpdate">
-                        <ActionButton
-                            v-if="!sp.is_primary"
-                            :icon="Star"
-                            label="Set primary"
-                            tone="amber"
-                            @click="setPrimarySupplier(sp)"
-                        />
-                        <ActionButton
-                            :icon="Trash2"
-                            label="Lepas"
-                            tone="red"
-                            @click="destroySupplierLink(sp)"
-                        />
-                    </ActionGroup>
-                </li>
-            </ul>
-            <div v-else class="px-5 py-10 text-center text-sm text-muted-foreground">
-                <Factory class="size-7 opacity-40 mx-auto mb-2" />
-                Belum ada supplier yang ditautkan.
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <p class="font-medium text-foreground truncate">{{ sp.supplier?.name ?? '—' }}</p>
+                                <span class="text-[10px] font-mono text-muted-foreground">{{ sp.supplier?.code }}</span>
+                                <span
+                                    v-if="sp.is_primary"
+                                    class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-warning-soft text-amber-700"
+                                >
+                                    <Star class="size-3" /> Primary
+                                </span>
+                            </div>
+                            <p v-if="sp.supplier_sku || sp.moq" class="text-xs text-muted-foreground">
+                                <span v-if="sp.supplier_sku">SKU: {{ sp.supplier_sku }}</span>
+                                <span v-if="sp.moq"> · MOQ: {{ sp.moq }}</span>
+                            </p>
+                        </div>
+                        <ActionGroup v-if="canUpdate">
+                            <ActionButton
+                                v-if="!sp.is_primary"
+                                :icon="Star"
+                                label="Set primary"
+                                tone="amber"
+                                @click="setPrimarySupplier(sp)"
+                            />
+                            <ActionButton :icon="Trash2" label="Lepas" tone="red" @click="destroySupplierLink(sp)" />
+                        </ActionGroup>
+                    </li>
+                </ul>
+                <div v-else class="px-5 py-6 text-center text-xs text-muted-foreground">
+                    Belum ada supplier yang ditautkan.
+                </div>
             </div>
         </section>
 
@@ -347,6 +424,14 @@ function formatRupiah(v) {
             :product-id="product.id"
             :suppliers="suppliers"
             :existing-supplier-ids="existingSupplierIds"
+            @saved="onSaved"
+        />
+        <SupplierUnitPriceDialog
+            v-model:open="supplierUnitPriceOpen"
+            :product-id="product.id"
+            :product-units="product.units ?? []"
+            :suppliers="suppliers"
+            :row="editingSupplierUnit"
             @saved="onSaved"
         />
     </AppLayout>
