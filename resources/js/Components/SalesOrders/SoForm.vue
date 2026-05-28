@@ -23,53 +23,53 @@ const props = defineProps({
 const emit = defineEmits(['submit']);
 
 const selectedCustomer = ref(null);
-const productMatrix = ref([]); // list dari endpoint customer-products
+// productCatalog: list dari endpoint product-catalog. Tiap product punya
+// `options[]` = kombinasi (supplier × satuan) dgn cost & sell price.
+const productCatalog = ref([]);
+const catalogLoaded = ref(false);
 
 const customerTags = computed(() => selectedCustomer.value?.tags ?? []);
 const hasProblemOutlet = computed(() => customerTags.value.includes('problem_outlet'));
 const hasSlowPayer = computed(() => customerTags.value.includes('slow_payer'));
 
-async function loadCustomer(customerId) {
-    const cust = props.customers.find((c) => c.id === Number(customerId));
-    selectedCustomer.value = cust ?? null;
-
-    if (!customerId) {
-        productMatrix.value = [];
-        return;
-    }
-    if (cust && !props.form.payment_term_days) {
-        props.form.payment_term_days = cust.payment_term_days ?? null;
-    }
-
+async function loadCatalog() {
+    if (catalogLoaded.value) return;
     try {
-        const res = await fetch(route('sales-orders.customer-products', customerId), {
+        const res = await fetch(route('sales-orders.product-catalog'), {
             headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin',
         });
         if (!res.ok) throw new Error('fetch failed');
         const data = await res.json();
-        productMatrix.value = data.products ?? [];
+        productCatalog.value = data.products ?? [];
     } catch {
-        productMatrix.value = [];
+        productCatalog.value = [];
+    } finally {
+        catalogLoaded.value = true;
     }
 }
 
 function onCustomerChange(v) {
     props.form.customer_id = v ? Number(v) : null;
-    props.form.items = [];
-    loadCustomer(props.form.customer_id);
+    const cust = props.customers.find((c) => c.id === props.form.customer_id);
+    selectedCustomer.value = cust ?? null;
+    if (cust && !props.form.payment_term_days) {
+        props.form.payment_term_days = cust.payment_term_days ?? null;
+    }
 }
 
 function addItem() {
     props.form.items.push({
         product_id: null,
         product_unit_id: null,
+        supplier_id: null,
         qty: 1,
         discount_z1_pct: 0,
         discount_z2_pct: 0,
         is_bonus: false,
         notes: '',
         // helper UI state
+        _option_key: '', // "supplier_id|product_unit_id"
         _unit_price: 0,
         _product_name: null,
     });
@@ -84,33 +84,47 @@ function onProductChange(idx, productId) {
     const id = productId ? Number(productId) : null;
     row.product_id = id;
     row.product_unit_id = null;
+    row.supplier_id = null;
+    row._option_key = '';
     row._unit_price = 0;
     row._product_name = null;
     if (!id) return;
-    const prod = productMatrix.value.find((p) => p.product_id === id);
+    const prod = productCatalog.value.find((p) => p.product_id === id);
     if (prod) {
         row._product_name = prod.name;
-        const baseUnit = prod.units.find((u) => u.level === 'KCL') ?? prod.units[0];
-        if (baseUnit) {
-            row.product_unit_id = baseUnit.id;
-            row._unit_price = baseUnit.price;
+        // auto-pick option pertama (kalau cuma 1, sales gak perlu pilih lagi)
+        if (prod.options.length > 0) {
+            const opt = prod.options[0];
+            row.product_unit_id = opt.product_unit_id;
+            row.supplier_id = opt.supplier_id;
+            row._option_key = `${opt.supplier_id}|${opt.product_unit_id}`;
+            row._unit_price = opt.sell_price;
         }
     }
 }
 
-function onUnitChange(idx, unitId) {
+function onOptionChange(idx, key) {
     const row = props.form.items[idx];
-    row.product_unit_id = unitId ? Number(unitId) : null;
-    if (!row.product_id) return;
-    const prod = productMatrix.value.find((p) => p.product_id === row.product_id);
-    const unit = prod?.units.find((u) => u.id === Number(unitId));
-    if (unit) row._unit_price = unit.price;
+    row._option_key = key;
+    if (!row.product_id || !key) {
+        row.product_unit_id = null;
+        row.supplier_id = null;
+        row._unit_price = 0;
+        return;
+    }
+    const prod = productCatalog.value.find((p) => p.product_id === row.product_id);
+    const opt = prod?.options.find((o) => `${o.supplier_id}|${o.product_unit_id}` === key);
+    if (opt) {
+        row.product_unit_id = opt.product_unit_id;
+        row.supplier_id = opt.supplier_id;
+        row._unit_price = opt.sell_price;
+    }
 }
 
-function unitsForRow(row) {
+function optionsForRow(row) {
     if (!row.product_id) return [];
-    const prod = productMatrix.value.find((p) => p.product_id === row.product_id);
-    return prod?.units ?? [];
+    const prod = productCatalog.value.find((p) => p.product_id === row.product_id);
+    return prod?.options ?? [];
 }
 
 function lineNet(row) {
@@ -139,26 +153,37 @@ function fmtRp(v) {
     return 'Rp ' + new Intl.NumberFormat('id-ID').format(Math.round(v) || 0);
 }
 
-// Lazy-init kalau Edit mode (customer sudah ter-set)
+// Load catalog sekali saat form mount, lalu hydrate existing items kalau Edit mode.
+loadCatalog().then(() => {
+    if (props.form.customer_id) {
+        const cust = props.customers.find((c) => c.id === Number(props.form.customer_id));
+        selectedCustomer.value = cust ?? null;
+    }
+    props.form.items.forEach((row) => {
+        if (row.product_id && row.product_unit_id && row.supplier_id) {
+            const prod = productCatalog.value.find((p) => p.product_id === row.product_id);
+            if (prod) row._product_name = prod.name;
+            const opt = prod?.options.find(
+                (o) => o.product_unit_id === row.product_unit_id && o.supplier_id === row.supplier_id,
+            );
+            if (opt) {
+                row._option_key = `${opt.supplier_id}|${opt.product_unit_id}`;
+                row._unit_price = opt.sell_price;
+            }
+        }
+    });
+});
+
 watch(
     () => props.form.customer_id,
     (val) => {
-        if (val && !selectedCustomer.value) {
-            loadCustomer(val);
-            // Hydrate _unit_price untuk existing items
-            setTimeout(() => {
-                props.form.items.forEach((row, i) => {
-                    if (row.product_id && row.product_unit_id) {
-                        const prod = productMatrix.value.find((p) => p.product_id === row.product_id);
-                        const unit = prod?.units.find((u) => u.id === row.product_unit_id);
-                        if (unit) row._unit_price = unit.price;
-                        if (prod) row._product_name = prod.name;
-                    }
-                });
-            }, 200);
+        if (val) {
+            const cust = props.customers.find((c) => c.id === Number(val));
+            selectedCustomer.value = cust ?? null;
+        } else {
+            selectedCustomer.value = null;
         }
     },
-    { immediate: true },
 );
 </script>
 
@@ -269,7 +294,7 @@ watch(
                     type="button"
                     size="sm"
                     variant="outline"
-                    :disabled="!form.customer_id || productMatrix.length === 0"
+                    :disabled="!form.customer_id || productCatalog.length === 0"
                     @click="addItem"
                 >
                     <Plus class="size-3.5" /> Tambah Item
@@ -282,13 +307,13 @@ watch(
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/70">
-                            <th class="text-left py-2 px-3 w-[26%]">Produk</th>
-                            <th class="text-left py-2 px-2 w-[10%]">Unit</th>
-                            <th class="text-right py-2 px-2 w-[8%]">Qty</th>
+                            <th class="text-left py-2 px-3 w-[24%]">Produk</th>
+                            <th class="text-left py-2 px-2 w-[20%]">Supplier · Unit</th>
+                            <th class="text-right py-2 px-2 w-[7%]">Qty</th>
                             <th class="text-right py-2 px-2 w-[10%]">Harga</th>
-                            <th class="text-right py-2 px-2 w-[7%]">Z1%</th>
-                            <th class="text-right py-2 px-2 w-[7%]">Z2%</th>
-                            <th class="text-center py-2 px-2 w-[6%]">Bonus</th>
+                            <th class="text-right py-2 px-2 w-[6%]">Z1%</th>
+                            <th class="text-right py-2 px-2 w-[6%]">Z2%</th>
+                            <th class="text-center py-2 px-2 w-[5%]">Bonus</th>
                             <th class="text-right py-2 px-3 w-[14%]">Subtotal</th>
                             <th class="py-2 px-2 w-8"></th>
                         </tr>
@@ -309,7 +334,7 @@ watch(
                                         <SelectValue placeholder="Pilih produk" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem v-for="p in productMatrix" :key="p.product_id" :value="String(p.product_id)">
+                                        <SelectItem v-for="p in productCatalog" :key="p.product_id" :value="String(p.product_id)">
                                             {{ p.name }}
                                             <span class="text-[10px] text-muted-foreground font-mono ml-1">{{ p.sku }}</span>
                                         </SelectItem>
@@ -318,13 +343,17 @@ watch(
                             </td>
                             <td class="py-2 px-2">
                                 <Select
-                                    :model-value="row.product_unit_id ? String(row.product_unit_id) : ''"
-                                    @update:model-value="(v) => onUnitChange(idx, v)"
+                                    :model-value="row._option_key ?? ''"
+                                    @update:model-value="(v) => onOptionChange(idx, v)"
                                 >
                                     <SelectTrigger class="h-8"><SelectValue placeholder="—" /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem v-for="u in unitsForRow(row)" :key="u.id" :value="String(u.id)">
-                                            {{ u.name }} ({{ u.level }})
+                                        <SelectItem
+                                            v-for="o in optionsForRow(row)"
+                                            :key="`${o.supplier_id}|${o.product_unit_id}`"
+                                            :value="`${o.supplier_id}|${o.product_unit_id}`"
+                                        >
+                                            {{ o.supplier_name }} · {{ o.unit_name }}
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -362,7 +391,7 @@ watch(
         <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5 mb-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="text-xs text-muted-foreground">
-                    <p>💡 Harga otomatis dari tier customer. Sales tidak boleh override harga unit — pakai Z1/Z2 untuk diskon.</p>
+                    <p>💡 Harga otomatis dari supplier yang dipilih per line. Sales tidak boleh override harga unit — pakai Z1/Z2 untuk diskon.</p>
                     <p class="mt-1">Item bonus: harga otomatis 0, dipotong dari bonus_pool saat reservation.</p>
                 </div>
                 <div class="space-y-2 sm:justify-self-end">

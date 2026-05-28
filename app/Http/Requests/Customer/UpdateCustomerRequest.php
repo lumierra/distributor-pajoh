@@ -27,7 +27,6 @@ class UpdateCustomerRequest extends FormRequest
             'name' => ['required', 'string', 'max:128'],
             'owner_name' => ['nullable', 'string', 'max:128'],
             'customer_type_id' => ['nullable', 'integer', 'exists:customer_types,id'],
-            'price_tier_id' => ['required', 'integer', 'exists:price_tiers,id'],
             'npwp' => ['nullable', 'string', 'max:32', 'regex:/^[\d.\-]+$/'],
 
             'phone' => ['nullable', 'string', 'max:32', 'regex:/^[\d\s\-\+\(\)]+$/'],
@@ -67,13 +66,11 @@ class UpdateCustomerRequest extends FormRequest
 
         $original = [
             'credit_limit' => (float) $customer->credit_limit,
-            'price_tier_id' => (int) $customer->price_tier_id,
             'assigned_sales_id' => $customer->assigned_sales_id,
         ];
 
         $checks = [
             'credit_limit' => 'updateCreditLimit',
-            'price_tier_id' => 'updatePriceTier',
             'assigned_sales_id' => 'updateAssignedSales',
         ];
 
@@ -85,7 +82,6 @@ class UpdateCustomerRequest extends FormRequest
             $incoming = $this->input($field);
             $same = match ($field) {
                 'credit_limit' => (float) $incoming === $original[$field],
-                'price_tier_id' => (int) $incoming === $original[$field],
                 default => $incoming == $original[$field],
             };
 

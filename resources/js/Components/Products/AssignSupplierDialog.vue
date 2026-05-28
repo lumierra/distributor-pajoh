@@ -35,7 +35,6 @@ const emit = defineEmits(['update:open', 'saved']);
 const form = useForm({
     supplier_id: null,
     supplier_sku: '',
-    default_cost_price: '',
     moq: '',
     is_primary: false,
     is_active: true,
@@ -52,7 +51,6 @@ watch(
         form.defaults({
             supplier_id: firstAvailable?.id ?? null,
             supplier_sku: '',
-            default_cost_price: '',
             moq: '',
             is_primary: props.existingSupplierIds.length === 0,
             is_active: true,
@@ -67,7 +65,6 @@ function submit() {
     form
         .transform((data) => ({
             ...data,
-            default_cost_price: data.default_cost_price === '' ? null : Number(data.default_cost_price),
             moq: data.moq === '' ? null : Number(data.moq),
         }))
         .post(route('products.suppliers.store', props.productId), {
@@ -133,10 +130,6 @@ function submit() {
                     <div class="space-y-1">
                         <Label class="text-xs font-medium">MOQ</Label>
                         <Input v-model="form.moq" type="number" min="1" class="h-9 font-mono" />
-                    </div>
-                    <div class="space-y-1 sm:col-span-2">
-                        <Label class="text-xs font-medium">Default Cost (Rp)</Label>
-                        <Input v-model="form.default_cost_price" type="number" min="0" step="100" class="h-9 font-mono" />
                     </div>
                     <div class="space-y-1 sm:col-span-2">
                         <Label class="text-xs font-medium">Catatan</Label>

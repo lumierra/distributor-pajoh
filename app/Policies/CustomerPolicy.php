@@ -59,14 +59,6 @@ class CustomerPolicy
     }
 
     /**
-     * Field-level guard: price tier → admin & superadmin.
-     */
-    public function updatePriceTier(User $user, Customer $customer): bool
-    {
-        return $user->canUpdate(self::MENU);
-    }
-
-    /**
      * Field-level guard: assigned sales → admin & superadmin.
      */
     public function updateAssignedSales(User $user, Customer $customer): bool

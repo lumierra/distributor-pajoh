@@ -2,9 +2,8 @@
 
 namespace App\Services\Product;
 
-use App\Models\PriceTier;
 use App\Models\Product;
-use App\Models\ProductPrice;
+use App\Models\ProductCategory;
 use App\Models\ProductUnit;
 use App\Services\Numbering\NumberingService;
 use Illuminate\Support\Facades\Cache;
@@ -35,7 +34,7 @@ class ProductService
      *
      * @param  array<string, mixed>  $productData
      * @param  array<int, array{level:string, name:string, qty_to_base:int, barcode?:?string}>  $units
-     *     Minimal harus ada 1 unit dengan level=KCL & qty_to_base=1.
+     *                                                                                                  Minimal harus ada 1 unit dengan level=KCL & qty_to_base=1.
      */
     public function create(array $productData, array $units): Product
     {
@@ -78,22 +77,11 @@ class ProductService
             $product->base_unit_id = $kclUnit->id;
             $product->save();
 
-            // 5. Generate price matrix: unit × tier (semua price=0)
-            $tiers = PriceTier::query()->active()->get();
-            foreach ($createdUnits as $unit) {
-                foreach ($tiers as $tier) {
-                    ProductPrice::create([
-                        'product_id' => $product->id,
-                        'product_unit_id' => $unit->id,
-                        'price_tier_id' => $tier->id,
-                        'price' => 0,
-                    ]);
-                }
-            }
-
+            // 5. Harga di-set via tab "Supplier & Harga" di halaman produk
+            //    (pivot supplier_product_units). Tidak auto-generate apa-apa.
             $this->invalidateCache();
 
-            return $product->fresh(['category', 'baseUnit', 'units', 'prices.unit', 'prices.tier']);
+            return $product->fresh(['category', 'baseUnit', 'units']);
         });
     }
 
@@ -129,7 +117,7 @@ class ProductService
         if ($categoryId === null) {
             return 'LNY';
         }
-        $code = \App\Models\ProductCategory::query()->where('id', $categoryId)->value('code');
+        $code = ProductCategory::query()->where('id', $categoryId)->value('code');
 
         return $code ?: 'LNY';
     }

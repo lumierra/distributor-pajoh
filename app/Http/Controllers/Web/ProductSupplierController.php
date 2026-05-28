@@ -26,7 +26,6 @@ class ProductSupplierController extends Controller
 
         $data = $request->validate([
             'supplier_sku' => ['nullable', 'string', 'max:64'],
-            'default_cost_price' => ['nullable', 'numeric', 'min:0'],
             'moq' => ['nullable', 'integer', 'min:1'],
             'is_primary' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],

@@ -22,11 +22,9 @@ use App\Http\Controllers\Web\LoginHistoryController;
 use App\Http\Controllers\Web\MenuController;
 use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\PaymentRequestController;
-use App\Http\Controllers\Web\PriceTierController;
 use App\Http\Controllers\Web\ProductCategoryController;
 use App\Http\Controllers\Web\ProductController;
 use App\Http\Controllers\Web\ProductGroupController;
-use App\Http\Controllers\Web\ProductPriceController;
 use App\Http\Controllers\Web\ProductSupplierController;
 use App\Http\Controllers\Web\ProductUnitController;
 use App\Http\Controllers\Web\ProfileController;
@@ -180,10 +178,6 @@ Route::middleware('auth')->group(function (): void {
         Route::delete('product-units/{unit}', [ProductUnitController::class, 'destroy'])
             ->name('product-units.destroy');
 
-        // Product Prices (matrix update)
-        Route::put('products/{product}/prices', [ProductPriceController::class, 'update'])
-            ->name('products.prices.update');
-
         // Product ↔ Supplier (M2M)
         Route::post('products/{product}/suppliers', [ProductSupplierController::class, 'store'])
             ->name('products.suppliers.store');
@@ -227,14 +221,6 @@ Route::middleware('auth')->group(function (): void {
             ->name('product-groups.sync-products');
         Route::put('product-groups/{productGroup}/sales', [ProductGroupController::class, 'syncSales'])
             ->name('product-groups.sync-sales');
-    });
-
-    // ── Price Tier ────────────────────────────────────────────────────
-    Route::middleware('menu:master.price_tier')->group(function (): void {
-        Route::get('price-tiers', [PriceTierController::class, 'index'])->name('price-tiers.index');
-        Route::post('price-tiers', [PriceTierController::class, 'store'])->name('price-tiers.store');
-        Route::put('price-tiers/{priceTier}', [PriceTierController::class, 'update'])->name('price-tiers.update');
-        Route::delete('price-tiers/{priceTier}', [PriceTierController::class, 'destroy'])->name('price-tiers.destroy');
     });
 
     // ── Customer ──────────────────────────────────────────────────────
@@ -352,8 +338,8 @@ Route::middleware('auth')->group(function (): void {
 
     // ── Sales Order ───────────────────────────────────────────────────
     Route::middleware('menu:sales.so')->group(function (): void {
-        Route::get('sales-orders/customers/{customer}/products', [SalesOrderController::class, 'productPrices'])
-            ->name('sales-orders.customer-products');
+        Route::get('sales-orders/product-catalog', [SalesOrderController::class, 'productPrices'])
+            ->name('sales-orders.product-catalog');
         Route::resource('sales-orders', SalesOrderController::class);
         Route::post('sales-orders/{sales_order}/submit', [SalesOrderController::class, 'submit'])
             ->name('sales-orders.submit');

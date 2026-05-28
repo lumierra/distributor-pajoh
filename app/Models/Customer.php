@@ -20,7 +20,6 @@ class Customer extends Model
         'name',
         'owner_name',
         'customer_type_id',
-        'price_tier_id',
         'npwp',
         'phone',
         'whatsapp',
@@ -61,11 +60,6 @@ class Customer extends Model
     public function type(): BelongsTo
     {
         return $this->belongsTo(CustomerType::class, 'customer_type_id');
-    }
-
-    public function priceTier(): BelongsTo
-    {
-        return $this->belongsTo(PriceTier::class);
     }
 
     public function assignedSales(): BelongsTo

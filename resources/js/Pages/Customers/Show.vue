@@ -33,7 +33,6 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 const props = defineProps({
     customer: { type: Object, required: true },
     types: { type: Array, required: true },
-    tiers: { type: Array, required: true },
     salesUsers: { type: Array, required: true },
     outstanding: { type: Object, default: () => ({ total: 0, aging: {} }) },
     canUpdate: { type: Boolean, default: false },
@@ -177,7 +176,6 @@ function photoUrl(path) {
                 <div class="flex-1 min-w-0">
                     <p class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                         {{ customer.code }}
-                        <span v-if="customer.price_tier?.name"> · {{ customer.price_tier.name }}</span>
                         <span v-if="customer.assigned_sales"> · Sales {{ customer.assigned_sales.name }}</span>
                     </p>
                     <h2 class="text-sm font-bold tracking-tight text-foreground truncate leading-tight">
@@ -235,10 +233,6 @@ function photoUrl(path) {
                     <div>
                         <dt class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Area Kerja</dt>
                         <dd class="mt-0.5">{{ customer.area || '—' }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Price Tier</dt>
-                        <dd class="mt-0.5">{{ customer.price_tier?.name || '—' }}</dd>
                     </div>
                     <div>
                         <dt class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Payment Term</dt>
@@ -404,10 +398,8 @@ function photoUrl(path) {
             v-model:open="editOpen"
             :customer="customer"
             :types="types"
-            :tiers="tiers"
             :sales-users="salesUsers"
             :can-edit-credit-limit="false"
-            :can-edit-price-tier="canUpdate"
             :can-edit-assigned-sales="canUpdate"
             @saved="onSaved"
         />

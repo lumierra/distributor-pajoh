@@ -17,8 +17,8 @@ class DatabaseSeeder extends Seeder
             // Fase 2 — Master Data
             SupplierCategorySeeder::class,
             ProductCategorySeeder::class,
-            PriceTierSeeder::class,
             CustomerTypeSeeder::class,
+            UnitSeeder::class,
         ]);
     }
 }

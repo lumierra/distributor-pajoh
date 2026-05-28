@@ -20,7 +20,6 @@ import ActionGroup from '@/Components/Shared/ActionGroup.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import TabsPill from '@/Components/Shared/TabsPill.vue';
 import AssignSupplierDialog from '@/Components/Products/AssignSupplierDialog.vue';
-import PriceMatrixDialog from '@/Components/Products/PriceMatrixDialog.vue';
 import ProductFormDialog from '@/Components/Products/ProductFormDialog.vue';
 import UnitFormDialog from '@/Components/Products/UnitFormDialog.vue';
 import { Button } from '@/Components/ui/button';
@@ -29,7 +28,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 const props = defineProps({
     product: { type: Object, required: true },
     categories: { type: Array, required: true },
-    tiers: { type: Array, required: true },
+    units: { type: Array, default: () => [] },
     suppliers: { type: Array, required: true },
     canUpdate: { type: Boolean, default: false },
     canDelete: { type: Boolean, default: false },
@@ -38,39 +37,18 @@ const props = defineProps({
 const tab = ref('info');
 const tabs = computed(() => [
     { value: 'info', label: 'Info', icon: Info },
-    { value: 'uom', label: `UoM (${props.product.units?.length ?? 0})`, icon: Ruler },
-    { value: 'harga', label: `Harga (${props.product.prices?.length ?? 0})`, icon: DollarSign },
-    { value: 'supplier', label: `Supplier (${props.product.supplier_products?.length ?? 0})`, icon: Factory },
+    { value: 'uom', label: `Satuan (${props.product.units?.length ?? 0})`, icon: Ruler },
+    { value: 'supplier', label: `Supplier & Harga (${props.product.supplier_product_units?.length ?? 0})`, icon: Factory },
 ]);
 
 const editOpen = ref(false);
 const unitOpen = ref(false);
-const priceOpen = ref(false);
 const assignSupplierOpen = ref(false);
 
 const existingLevels = computed(() => (props.product.units ?? []).map((u) => u.level));
 const existingSupplierIds = computed(
     () => (props.product.supplier_products ?? []).map((sp) => sp.supplier_id),
 );
-
-const priceMatrix = computed(() => {
-    const rows = [];
-    const byKey = new Map();
-    for (const p of props.product.prices ?? []) {
-        byKey.set(`${p.product_unit_id}|${p.price_tier_id}`, Number(p.price));
-    }
-    for (const u of props.product.units ?? []) {
-        const row = { unit: u, prices: [] };
-        for (const t of props.tiers) {
-            row.prices.push({
-                tier: t,
-                price: byKey.get(`${u.id}|${t.id}`) ?? null,
-            });
-        }
-        rows.push(row);
-    }
-    return rows;
-});
 
 function onSaved() {
     router.reload({ only: ['product'] });
@@ -279,58 +257,7 @@ function formatRupiah(v) {
             </div>
         </section>
 
-        <!-- Tab: Harga -->
-        <section v-show="tab === 'harga'" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <header class="border-b border-border/70 px-5 py-3 flex items-center justify-between">
-                <h3 class="text-sm font-semibold">Harga per Unit × Tier</h3>
-                <Button
-                    v-if="canUpdate && product.units?.length"
-                    size="default"
-                    variant="secondary"
-                    @click="priceOpen = true"
-                >
-                    <Edit class="size-4" />
-                    Atur Harga
-                </Button>
-            </header>
-            <div v-if="priceMatrix.length" class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="border-b border-border/70">
-                        <tr class="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            <th class="text-left py-2.5 px-5">Unit</th>
-                            <th
-                                v-for="t in tiers"
-                                :key="t.id"
-                                class="text-right py-2.5 px-3"
-                            >
-                                {{ t.name }}
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-border/40">
-                        <tr v-for="row in priceMatrix" :key="row.unit.id" class="hover:bg-muted/20">
-                            <td class="py-2.5 px-5">
-                                <span class="font-medium">{{ row.unit.name }}</span>
-                                <span class="text-[10px] text-muted-foreground ml-1">({{ row.unit.level }})</span>
-                            </td>
-                            <td
-                                v-for="cell in row.prices"
-                                :key="cell.tier.id"
-                                class="py-2.5 px-3 text-right font-mono"
-                            >
-                                {{ formatRupiah(cell.price) }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div v-else class="px-5 py-10 text-center text-sm text-muted-foreground">
-                <DollarSign class="size-7 opacity-40 mx-auto mb-2" />
-                Belum ada unit untuk diberikan harga.
-            </div>
-        </section>
-
-        <!-- Tab: Supplier -->
+        <!-- Tab: Supplier & Harga -->
         <section v-show="tab === 'supplier'" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
             <header class="border-b border-border/70 px-5 py-3 flex items-center justify-between">
                 <h3 class="text-sm font-semibold">Supplier Penyedia</h3>
@@ -376,7 +303,6 @@ function formatRupiah(v) {
                         </div>
                         <p class="text-xs text-muted-foreground">
                             <span v-if="sp.supplier_sku">SKU: {{ sp.supplier_sku }}</span>
-                            <span v-if="sp.default_cost_price"> · Cost: {{ formatRupiah(sp.default_cost_price) }}</span>
                             <span v-if="sp.moq"> · MOQ: {{ sp.moq }}</span>
                         </p>
                     </div>
@@ -414,12 +340,6 @@ function formatRupiah(v) {
             v-model:open="unitOpen"
             :product-id="product.id"
             :existing-levels="existingLevels"
-            @saved="onSaved"
-        />
-        <PriceMatrixDialog
-            v-model:open="priceOpen"
-            :product="product"
-            :tiers="tiers"
             @saved="onSaved"
         />
         <AssignSupplierDialog

@@ -22,6 +22,7 @@ class ProductUnit extends Model
 
     protected $fillable = [
         'product_id',
+        'unit_id',
         'level',
         'name',
         'qty_to_base',
@@ -44,8 +45,13 @@ class ProductUnit extends Model
         return $this->belongsTo(Product::class);
     }
 
-    public function prices(): HasMany
+    public function unit(): BelongsTo
     {
-        return $this->hasMany(ProductPrice::class);
+        return $this->belongsTo(Unit::class);
+    }
+
+    public function supplierProductUnits(): HasMany
+    {
+        return $this->hasMany(SupplierProductUnit::class);
     }
 }

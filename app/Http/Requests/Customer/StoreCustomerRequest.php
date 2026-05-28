@@ -22,7 +22,6 @@ class StoreCustomerRequest extends FormRequest
             'name' => ['required', 'string', 'max:128'],
             'owner_name' => ['nullable', 'string', 'max:128'],
             'customer_type_id' => ['nullable', 'integer', 'exists:customer_types,id'],
-            'price_tier_id' => ['required', 'integer', 'exists:price_tiers,id'],
             'npwp' => ['nullable', 'string', 'max:32', 'regex:/^[\d.\-]+$/'],
 
             'phone' => ['nullable', 'string', 'max:32', 'regex:/^[\d\s\-\+\(\)]+$/'],

@@ -51,14 +51,9 @@ class Product extends Model
         return $this->hasMany(ProductUnit::class)->orderBy('qty_to_base', 'desc');
     }
 
-    public function prices(): HasMany
+    public function supplierProductUnits(): HasMany
     {
-        return $this->hasMany(ProductPrice::class);
-    }
-
-    public function priceHistory(): HasMany
-    {
-        return $this->hasMany(ProductPriceHistory::class)->latest('changed_at');
+        return $this->hasMany(SupplierProductUnit::class);
     }
 
     public function suppliers(): BelongsToMany
@@ -66,7 +61,7 @@ class Product extends Model
         return $this->belongsToMany(Supplier::class, 'supplier_products')
             ->using(SupplierProduct::class)
             ->withPivot([
-                'supplier_sku', 'default_cost_price', 'moq',
+                'supplier_sku', 'moq',
                 'is_primary', 'is_active', 'notes',
             ])
             ->withTimestamps();

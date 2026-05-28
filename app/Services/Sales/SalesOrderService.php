@@ -5,12 +5,11 @@ namespace App\Services\Sales;
 use App\Exceptions\InsufficientStockException;
 use App\Models\Customer;
 use App\Models\Product;
-use App\Models\ProductPrice;
 use App\Models\ProductUnit;
 use App\Models\Role;
 use App\Models\SalesOrder;
 use App\Models\SoItem;
-use App\Models\SupplierProduct;
+use App\Models\SupplierProductUnit;
 use App\Models\User;
 use App\Services\Customer\CustomerCreditLimitService;
 use App\Services\Customer\CustomerOutstandingService;
@@ -348,7 +347,6 @@ class SalesOrderService
             'city' => $c->city,
             'province' => $c->province,
             'npwp' => $c->npwp,
-            'price_tier_id' => $c->price_tier_id,
             'credit_limit' => (float) $c->credit_limit,
             'payment_term_days' => (int) $c->payment_term_days,
             'snapshotted_at' => now()->toIso8601String(),
@@ -368,11 +366,17 @@ class SalesOrderService
             /** @var ProductUnit $unit */
             $unit = ProductUnit::query()->where('product_id', $product->id)->findOrFail($row['product_unit_id']);
 
-            // Resolve unit_price dari product_prices × tier customer.
-            // Sales TIDAK boleh override harga (rule); fallback ke 0 kalau
-            // belum ter-set.
+            // Supplier wajib di-pilih oleh sales untuk tiap line — sumber
+            // kebenaran harga (cost + sell) ada di supplier_product_units.
+            $supplierId = (int) ($row['supplier_id'] ?? 0);
+            if ($supplierId <= 0) {
+                throw ValidationException::withMessages([
+                    "items.{$idx}.supplier_id" => 'Supplier wajib dipilih untuk tiap line item.',
+                ]);
+            }
+
             $isBonus = (bool) ($row['is_bonus'] ?? false);
-            $unitPrice = $isBonus ? 0.0 : $this->resolvePrice($product->id, $unit->id, (int) $customer->price_tier_id);
+            $unitPrice = $isBonus ? 0.0 : $this->resolveSellPrice($product->id, $unit->id, $supplierId);
 
             $z1 = (float) ($row['discount_z1_pct'] ?? 0);
             $z2 = (float) ($row['discount_z2_pct'] ?? 0);
@@ -381,7 +385,7 @@ class SalesOrderService
             SoItem::create([
                 'sales_order_id' => $so->id,
                 'product_id' => $product->id,
-                'supplier_id' => $this->resolveSupplierId($product->id),
+                'supplier_id' => $supplierId,
                 'product_unit_id' => $unit->id,
                 'product_name_snapshot' => $product->name,
                 'product_sku_snapshot' => $product->sku,
@@ -400,34 +404,17 @@ class SalesOrderService
     }
 
     /**
-     * Resolve supplier_id untuk item SO. Pakai primary supplier kalau ada,
-     * fallback ke supplier active mana saja. Null kalau produk belum ada supplier-nya.
+     * Sell price = supplier_product_units.sell_price untuk kombinasi
+     * (produk × satuan × supplier). Fallback ke 0 kalau belum ter-set.
      */
-    private function resolveSupplierId(int $productId): ?int
+    private function resolveSellPrice(int $productId, int $unitId, int $supplierId): float
     {
-        $primary = SupplierProduct::query()
-            ->where('product_id', $productId)
-            ->where('is_active', true)
-            ->where('is_primary', true)
-            ->value('supplier_id');
-
-        if ($primary) {
-            return (int) $primary;
-        }
-
-        return SupplierProduct::query()
-            ->where('product_id', $productId)
-            ->where('is_active', true)
-            ->value('supplier_id');
-    }
-
-    private function resolvePrice(int $productId, int $unitId, int $tierId): float
-    {
-        $price = ProductPrice::query()
+        $price = SupplierProductUnit::query()
             ->where('product_id', $productId)
             ->where('product_unit_id', $unitId)
-            ->where('price_tier_id', $tierId)
-            ->value('price');
+            ->where('supplier_id', $supplierId)
+            ->where('is_active', true)
+            ->value('sell_price');
 
         return (float) ($price ?? 0);
     }

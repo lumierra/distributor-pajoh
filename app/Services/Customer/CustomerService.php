@@ -27,7 +27,6 @@ class CustomerService
 
             $data['credit_limit'] ??= (float) $this->settings->get('customer.credit_limit.default', 0);
             $data['payment_term_days'] ??= (int) $this->settings->get('customer.payment_term_days.default', 0);
-            $data['price_tier_id'] ??= (int) $this->settings->get('customer.price_tier.default_id', 0);
 
             $customer = Customer::create($data);
 

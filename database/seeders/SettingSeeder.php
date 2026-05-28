@@ -213,8 +213,6 @@ class SettingSeeder extends Seeder
                 'label' => 'Default Credit Limit', 'value' => 0],
             ['group' => 'customer', 'key' => 'payment_term_days.default', 'type' => 'int',
                 'label' => 'Default Payment Term (hari)', 'value' => 7],
-            ['group' => 'customer', 'key' => 'price_tier.default_id', 'type' => 'int',
-                'label' => 'Default Price Tier ID', 'value' => null],
 
             // ── SYSTEM ───────────────────────────────────────────────
             ['group' => 'system', 'key' => 'timezone', 'type' => 'string',

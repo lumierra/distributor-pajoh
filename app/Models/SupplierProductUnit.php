@@ -3,29 +3,24 @@
 namespace App\Models;
 
 use App\Concerns\HasAuditFields;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
- * Pivot Supplier ↔ Product. Tagging produk berasal dari supplier mana saja.
- * Harga modal & jual ditentukan di pivot supplier_product_units per satuan.
+ * Pricing pivot per (supplier × produk × satuan). Sumber kebenaran untuk
+ * cost & sell price yang dipakai SalesOrderService.
  */
-class SupplierProduct extends Pivot
+class SupplierProductUnit extends Model
 {
     use HasAuditFields;
-
-    protected $table = 'supplier_products';
-
-    public $incrementing = true;
 
     protected $fillable = [
         'supplier_id',
         'product_id',
-        'supplier_sku',
-        'moq',
-        'is_primary',
+        'product_unit_id',
+        'cost_price',
+        'sell_price',
         'is_active',
-        'notes',
         'created_by',
         'updated_by',
     ];
@@ -33,8 +28,8 @@ class SupplierProduct extends Pivot
     protected function casts(): array
     {
         return [
-            'moq' => 'integer',
-            'is_primary' => 'boolean',
+            'cost_price' => 'decimal:2',
+            'sell_price' => 'decimal:2',
             'is_active' => 'boolean',
         ];
     }
@@ -47,5 +42,10 @@ class SupplierProduct extends Pivot
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function productUnit(): BelongsTo
+    {
+        return $this->belongsTo(ProductUnit::class);
     }
 }

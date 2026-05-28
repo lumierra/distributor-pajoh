@@ -27,10 +27,8 @@ const props = defineProps({
     open: { type: Boolean, default: false },
     customer: { type: Object, default: null },
     types: { type: Array, required: true },
-    tiers: { type: Array, required: true },
     salesUsers: { type: Array, default: () => [] },
     canEditCreditLimit: { type: Boolean, default: false },
-    canEditPriceTier: { type: Boolean, default: false },
     canEditAssignedSales: { type: Boolean, default: false },
 });
 
@@ -42,7 +40,6 @@ const form = useForm({
     name: '',
     owner_name: '',
     customer_type_id: null,
-    price_tier_id: null,
     npwp: '',
     phone: '',
     whatsapp: '',
@@ -70,7 +67,6 @@ watch(
                 name: c.name ?? '',
                 owner_name: c.owner_name ?? '',
                 customer_type_id: c.customer_type_id ?? null,
-                price_tier_id: c.price_tier_id ?? null,
                 npwp: c.npwp ?? '',
                 phone: c.phone ?? '',
                 whatsapp: c.whatsapp ?? '',
@@ -92,7 +88,6 @@ watch(
                 name: '',
                 owner_name: '',
                 customer_type_id: null,
-                price_tier_id: props.tiers[0]?.id ?? null,
                 npwp: '',
                 phone: '',
                 whatsapp: '',
@@ -152,7 +147,7 @@ function submit() {
                             {{
                                 isEdit
                                     ? `Kode: ${customer.code}. Beberapa field dibatasi sesuai role.`
-                                    : 'Kode auto-generate. Set tier & sales setelah simpan jika perlu.'
+                                    : 'Kode auto-generate. Set sales penanggung jawab setelah simpan jika perlu.'
                             }}
                         </DialogDescription>
                     </div>
@@ -190,26 +185,6 @@ function submit() {
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Price Tier *</Label>
-                            <Select
-                                :model-value="form.price_tier_id ? String(form.price_tier_id) : ''"
-                                :disabled="isEdit && !canEditPriceTier"
-                                @update:model-value="(v) => (form.price_tier_id = v ? Number(v) : null)"
-                            >
-                                <SelectTrigger class="h-9">
-                                    <SelectValue placeholder="Pilih tier" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem v-for="t in tiers" :key="t.id" :value="String(t.id)">
-                                        {{ t.name }}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <p v-if="form.errors.price_tier_id" class="text-xs text-destructive">
-                                {{ form.errors.price_tier_id }}
-                            </p>
                         </div>
                         <!-- NPWP di-hide sementara -->
                         <div v-if="false" class="space-y-1 sm:col-span-2">

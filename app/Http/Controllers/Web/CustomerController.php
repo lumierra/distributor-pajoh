@@ -9,7 +9,6 @@ use App\Http\Requests\Customer\UpdateCustomerRequest;
 use App\Models\Customer;
 use App\Models\CustomerType;
 use App\Models\Invoice;
-use App\Models\PriceTier;
 use App\Models\User;
 use App\Services\Customer\CustomerOutstandingService;
 use App\Services\Customer\CustomerService;
@@ -33,7 +32,6 @@ class CustomerController extends Controller
         $query = Customer::query()
             ->with([
                 'type:id,code,name',
-                'priceTier:id,code,name',
                 'assignedSales:id,name',
             ])
             ->orderBy('name');
@@ -50,10 +48,6 @@ class CustomerController extends Controller
             $query->where('customer_type_id', $typeId);
         }
 
-        if ($tierId = $request->input('tier_id')) {
-            $query->where('price_tier_id', $tierId);
-        }
-
         if ($request->filled('active')) {
             $query->where('is_active', $request->boolean('active'));
         }
@@ -68,11 +62,9 @@ class CustomerController extends Controller
         return Inertia::render('Customers/Index', [
             'customers' => $query->paginate(25)->withQueryString(),
             'types' => CustomerType::query()->active()->orderBy('sort_order')->get(['id', 'code', 'name']),
-            'tiers' => PriceTier::query()->active()->orderBy('sort_order')->get(['id', 'code', 'name']),
             'filters' => [
                 'q' => $request->input('q'),
                 'type_id' => $request->input('type_id'),
-                'tier_id' => $request->input('tier_id'),
                 'active' => $request->input('active'),
             ],
             'stats' => [
@@ -100,7 +92,6 @@ class CustomerController extends Controller
 
         $customer->load([
             'type:id,code,name',
-            'priceTier:id,code,name',
             'assignedSales:id,name',
             'photos.uploader:id,name',
             'geoPendings' => fn ($q) => $q->where('status', 'pending')->latest(),
@@ -110,7 +101,6 @@ class CustomerController extends Controller
         return Inertia::render('Customers/Show', [
             'customer' => $customer,
             'types' => CustomerType::query()->active()->orderBy('sort_order')->get(['id', 'code', 'name']),
-            'tiers' => PriceTier::query()->active()->orderBy('sort_order')->get(['id', 'code', 'name']),
             'salesUsers' => User::query()
                 ->whereHas('role', fn ($q) => $q->where('code', 'sales'))
                 ->where('is_active', true)

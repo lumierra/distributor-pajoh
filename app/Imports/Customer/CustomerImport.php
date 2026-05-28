@@ -3,7 +3,6 @@
 namespace App\Imports\Customer;
 
 use App\Models\CustomerType;
-use App\Models\PriceTier;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Customer\CustomerService;
@@ -38,8 +37,6 @@ class CustomerImport implements ToCollection, WithHeadingRow, WithStartRow
 
     private array $customerTypeMap;
 
-    private array $priceTierMap;
-
     private array $salesUserMap;
 
     public function __construct(
@@ -49,11 +46,6 @@ class CustomerImport implements ToCollection, WithHeadingRow, WithStartRow
         HeadingRowFormatter::default('slug');
 
         $this->customerTypeMap = CustomerType::query()
-            ->where('is_active', true)
-            ->pluck('id', 'code')
-            ->toArray();
-
-        $this->priceTierMap = PriceTier::query()
             ->where('is_active', true)
             ->pluck('id', 'code')
             ->toArray();
@@ -98,7 +90,6 @@ class CustomerImport implements ToCollection, WithHeadingRow, WithStartRow
                 'name' => ['required', 'string', 'max:128'],
                 'owner_name' => ['nullable', 'string', 'max:128'],
                 'customer_type_id' => ['nullable', 'integer', 'exists:customer_types,id'],
-                'price_tier_id' => ['required', 'integer', 'exists:price_tiers,id'],
                 'whatsapp' => ['nullable', 'string', 'max:32'],
                 'area' => ['nullable', 'string', 'max:128'],
                 'assigned_sales_id' => ['nullable', 'integer', 'exists:users,id'],
@@ -155,18 +146,6 @@ class CustomerImport implements ToCollection, WithHeadingRow, WithStartRow
             $resolved['customer_type_id'] = null;
         }
         unset($resolved['customer_type_code']);
-
-        $rawTierCode = $row['price_tier_code'] ?? null;
-        if ($rawTierCode !== null && $rawTierCode !== '') {
-            $id = $this->lookupCode($rawTierCode, $this->priceTierMap);
-            if ($id === null) {
-                $errors[] = "price_tier_code '{$rawTierCode}' tidak ditemukan di master.";
-            }
-            $resolved['price_tier_id'] = $id;
-        } else {
-            $resolved['price_tier_id'] = null;
-        }
-        unset($resolved['price_tier_code']);
 
         $rawSalesUsername = $row['assigned_sales_username'] ?? null;
         if ($rawSalesUsername !== null && $rawSalesUsername !== '') {

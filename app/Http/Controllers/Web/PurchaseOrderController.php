@@ -227,7 +227,7 @@ class PurchaseOrderController extends Controller
             'product_id' => $link->product->id,
             'sku' => $link->product->sku,
             'name' => $link->product->name,
-            'default_cost_price' => (float) $link->default_cost_price,
+            'default_cost_price' => 0.0, // legacy; harga modal sekarang dari pivot supplier_product_units
             'moq' => $link->moq,
             'units' => $link->product->units->map(fn ($u) => [
                 'id' => $u->id,

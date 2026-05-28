@@ -207,9 +207,8 @@ function fmtRp(v) {
                     <p class="text-xs text-muted-foreground font-mono">{{ salesOrder.customer?.code }}</p>
                     <p v-if="salesOrder.customer?.phone" class="text-xs">Phone: {{ salesOrder.customer.phone }}</p>
                     <p v-if="salesOrder.customer?.address" class="text-xs whitespace-pre-line">{{ salesOrder.customer.address }}</p>
-                    <p v-if="salesOrder.customer?.priceTier" class="text-xs">
-                        Tier: <strong>{{ salesOrder.customer.priceTier.name }}</strong>
-                        · Limit: <strong class="font-mono">{{ fmtRp(salesOrder.customer.credit_limit) }}</strong>
+                    <p v-if="salesOrder.customer?.credit_limit !== undefined" class="text-xs">
+                        Limit: <strong class="font-mono">{{ fmtRp(salesOrder.customer.credit_limit) }}</strong>
                     </p>
                 </dl>
             </div>

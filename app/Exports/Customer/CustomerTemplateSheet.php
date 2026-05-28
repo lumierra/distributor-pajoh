@@ -19,7 +19,6 @@ class CustomerTemplateSheet implements FromArray, WithHeadings, WithTitle
             'name',                    // wajib
             'owner_name',
             'customer_type_code',      // opsional, lihat sheet Reference
-            'price_tier_code',         // wajib, lihat sheet Reference
             'whatsapp',
             'area',
             'assigned_sales_username', // opsional, lihat sheet Reference
@@ -38,7 +37,6 @@ class CustomerTemplateSheet implements FromArray, WithHeadings, WithTitle
                 'Toko Berkah Jaya',
                 'Pak Ahmad',
                 'GROSIR',
-                'ECERAN',
                 '08123456789',
                 'Langsa Kota',
                 'sales1',
@@ -51,7 +49,6 @@ class CustomerTemplateSheet implements FromArray, WithHeadings, WithTitle
                 'Warung Sederhana',
                 '',
                 '',
-                'ECERAN',
                 '',
                 '',
                 '',

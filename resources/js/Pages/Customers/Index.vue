@@ -46,7 +46,6 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 const props = defineProps({
     customers: { type: Object, required: true },
     types: { type: Array, required: true },
-    tiers: { type: Array, required: true },
     filters: { type: Object, default: () => ({}) },
     stats: { type: Object, default: null },
     hasImportErrors: { type: Boolean, default: false },
@@ -65,7 +64,6 @@ const ALL = 'all';
 const filters = reactive({
     q: props.filters.q ?? '',
     type_id: props.filters.type_id ? String(props.filters.type_id) : ALL,
-    tier_id: props.filters.tier_id ? String(props.filters.tier_id) : ALL,
     active:
         props.filters.active === '' ||
         props.filters.active === null ||
@@ -83,7 +81,6 @@ watch(filters, () => {
             {
                 q: filters.q,
                 type_id: filters.type_id === ALL ? '' : filters.type_id,
-                tier_id: filters.tier_id === ALL ? '' : filters.tier_id,
                 active: filters.active === ALL ? '' : filters.active,
             },
             { preserveState: true, preserveScroll: true, replace: true },
@@ -94,7 +91,6 @@ watch(filters, () => {
 function reset() {
     filters.q = '';
     filters.type_id = ALL;
-    filters.tier_id = ALL;
     filters.active = ALL;
 }
 
@@ -219,17 +215,6 @@ function formatDate(value) {
                             </SelectItem>
                         </SelectContent>
                     </Select>
-                    <Select v-model="filters.tier_id">
-                        <SelectTrigger class="w-[140px] h-9 rounded-md">
-                            <SelectValue placeholder="Tier" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem :value="ALL">Semua Tier</SelectItem>
-                            <SelectItem v-for="t in tiers" :key="t.id" :value="String(t.id)">
-                                {{ t.name }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
                     <Select v-model="filters.active">
                         <SelectTrigger class="w-[130px] h-9 rounded-md">
                             <SelectValue placeholder="Status" />
@@ -252,7 +237,6 @@ function formatDate(value) {
                     <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">Customer</TableHead>
                         <TableHead>Tipe</TableHead>
-                        <TableHead>Tier</TableHead>
                         <TableHead>Sales</TableHead>
                         <TableHead>Kota</TableHead>
                         <TableHead>Status</TableHead>
@@ -294,10 +278,6 @@ function formatDate(value) {
                             >
                                 {{ c.type.name }}
                             </span>
-                            <span v-else class="text-muted-foreground">—</span>
-                        </TableCell>
-                        <TableCell class="text-xs">
-                            <span v-if="c.price_tier">{{ c.price_tier.name }}</span>
                             <span v-else class="text-muted-foreground">—</span>
                         </TableCell>
                         <TableCell class="text-xs">
@@ -366,10 +346,8 @@ function formatDate(value) {
             v-model:open="modalOpen"
             :customer="editing"
             :types="types"
-            :tiers="tiers"
             :sales-users="[]"
             :can-edit-credit-limit="false"
-            :can-edit-price-tier="true"
             :can-edit-assigned-sales="true"
             @saved="onSaved"
         />

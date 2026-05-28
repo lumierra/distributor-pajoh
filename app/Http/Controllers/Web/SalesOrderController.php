@@ -9,9 +9,8 @@ use App\Http\Requests\SalesOrder\RejectSoRequest;
 use App\Http\Requests\SalesOrder\StoreSoRequest;
 use App\Http\Requests\SalesOrder\UpdateSoRequest;
 use App\Models\Customer;
-use App\Models\PriceTier;
-use App\Models\ProductPrice;
 use App\Models\SalesOrder;
+use App\Models\SupplierProductUnit;
 use App\Models\User;
 use App\Services\Sales\SalesOrderService;
 use Illuminate\Http\JsonResponse;
@@ -103,10 +102,9 @@ class SalesOrderController extends Controller
         return Inertia::render('SalesOrders/Create', [
             'customers' => Customer::query()
                 ->where('is_active', true)
-                ->with('priceTier:id,code,name')
                 ->orderBy('name')
                 ->limit(500)
-                ->get(['id', 'code', 'name', 'price_tier_id', 'payment_term_days', 'credit_limit', 'tags']),
+                ->get(['id', 'code', 'name', 'payment_term_days', 'credit_limit', 'tags']),
             'salesUsers' => User::query()
                 ->whereHas('role', fn ($q) => $q->where('code', 'sales'))
                 ->where('is_active', true)
@@ -133,7 +131,7 @@ class SalesOrderController extends Controller
         $this->authorize('view', $salesOrder);
 
         $salesOrder->load([
-            'customer:id,code,name,phone,email,address,credit_limit,payment_term_days,price_tier_id',
+            'customer:id,code,name,phone,email,address,credit_limit,payment_term_days',
             'customer.priceTier:id,code,name',
             'sales:id,name',
             'items',
@@ -162,7 +160,7 @@ class SalesOrderController extends Controller
         $this->authorize('update', $salesOrder);
         abort_unless($salesOrder->canBeEdited(), 422, 'SO tidak bisa diedit.');
 
-        $salesOrder->load(['customer:id,code,name,price_tier_id,payment_term_days,credit_limit,tags', 'items']);
+        $salesOrder->load(['customer:id,code,name,payment_term_days,credit_limit,tags', 'items']);
 
         return Inertia::render('SalesOrders/Edit', [
             'salesOrder' => $salesOrder,
@@ -170,7 +168,7 @@ class SalesOrderController extends Controller
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->limit(500)
-                ->get(['id', 'code', 'name', 'price_tier_id', 'payment_term_days', 'credit_limit', 'tags']),
+                ->get(['id', 'code', 'name', 'payment_term_days', 'credit_limit', 'tags']),
         ]);
     }
 
@@ -236,39 +234,46 @@ class SalesOrderController extends Controller
     }
 
     /**
-     * AJAX: price matrix produk untuk tier customer (saat sales pilih produk).
+     * AJAX: katalog produk untuk SO. Tiap produk punya opsi
+     * (supplier × satuan) dengan cost & sell price dari supplier_product_units.
+     * Tidak customer-specific lagi sejak penghapusan tier.
      */
-    public function productPrices(Request $request, Customer $customer): JsonResponse
+    public function productPrices(): JsonResponse
     {
         $this->authorize('create', SalesOrder::class);
 
-        $tierId = (int) $customer->price_tier_id;
-
-        $prices = ProductPrice::query()
-            ->where('price_tier_id', $tierId)
-            ->with(['product:id,sku,name,is_active', 'unit:id,product_id,level,name,qty_to_base'])
+        // Semua kombinasi (produk × satuan × supplier) yang aktif.
+        $rows = SupplierProductUnit::query()
+            ->where('is_active', true)
+            ->with([
+                'product:id,sku,name,is_active',
+                'productUnit:id,product_id,level,name,qty_to_base',
+                'supplier:id,code,name',
+            ])
             ->whereHas('product', fn ($q) => $q->where('is_active', true))
             ->get();
 
-        $grouped = $prices->groupBy('product_id')->map(function ($rows) {
-            $first = $rows->first();
+        $grouped = $rows->groupBy('product_id')->map(function ($r) {
+            $first = $r->first();
 
             return [
                 'product_id' => $first->product->id,
                 'sku' => $first->product->sku,
                 'name' => $first->product->name,
-                'units' => $rows->map(fn ($p) => [
-                    'id' => $p->unit->id,
-                    'level' => $p->unit->level,
-                    'name' => $p->unit->name,
-                    'qty_to_base' => (int) $p->unit->qty_to_base,
-                    'price' => (float) $p->price,
+                'options' => $r->map(fn ($row) => [
+                    'supplier_id' => $row->supplier_id,
+                    'supplier_name' => $row->supplier->name,
+                    'product_unit_id' => $row->product_unit_id,
+                    'unit_level' => $row->productUnit->level,
+                    'unit_name' => $row->productUnit->name,
+                    'qty_to_base' => (int) $row->productUnit->qty_to_base,
+                    'cost_price' => (float) $row->cost_price,
+                    'sell_price' => (float) $row->sell_price,
                 ])->values(),
             ];
         })->values();
 
         return response()->json([
-            'tier' => PriceTier::query()->find($tierId)?->only(['id', 'code', 'name']),
             'products' => $grouped,
         ]);
     }

@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Product\StoreProductRequest;
 use App\Http\Requests\Product\UpdateProductRequest;
-use App\Models\PriceTier;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\Supplier;
+use App\Models\Unit;
 use App\Services\Product\ProductService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -86,16 +86,16 @@ class ProductController extends Controller
         $product->load([
             'category:id,code,name',
             'baseUnit',
-            'units',
-            'prices.unit:id,name,level',
-            'prices.tier:id,code,name',
+            'units.unit:id,name',
+            'supplierProductUnits.supplier:id,code,name',
+            'supplierProductUnits.productUnit:id,name,level',
             'supplierProducts.supplier:id,code,name',
         ]);
 
         return Inertia::render('Products/Show', [
             'product' => $product,
             'categories' => ProductCategory::query()->active()->orderBy('sort_order')->get(['id', 'code', 'name']),
-            'tiers' => PriceTier::query()->active()->orderBy('sort_order')->get(['id', 'code', 'name']),
+            'units' => Unit::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'suppliers' => Supplier::query()
                 ->where('is_active', true)
                 ->orderBy('name')

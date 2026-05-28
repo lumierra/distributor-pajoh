@@ -33,6 +33,7 @@ class StoreUnitRequest extends FormRequest
                     ->where('product_id', $product->id)
                     ->whereNull('deleted_at'),
             ],
+            'unit_id' => ['nullable', 'integer', 'exists:units,id'],
             'name' => ['required', 'string', 'max:32'],
             'qty_to_base' => ['required', 'integer', 'min:1'],
             'barcode' => ['nullable', 'string', 'max:64', 'unique:product_units,barcode'],
