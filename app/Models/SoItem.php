@@ -11,6 +11,7 @@ class SoItem extends Model
     protected $fillable = [
         'sales_order_id',
         'product_id',
+        'supplier_id',
         'product_unit_id',
         'product_name_snapshot',
         'product_sku_snapshot',
@@ -45,6 +46,11 @@ class SoItem extends Model
     public function salesOrder(): BelongsTo
     {
         return $this->belongsTo(SalesOrder::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     public function product(): BelongsTo

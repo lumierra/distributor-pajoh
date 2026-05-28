@@ -5,8 +5,10 @@ namespace App\Services\Payment;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\PaymentRequest;
+use App\Models\PaymentSupplierAllocation;
 use App\Models\User;
 use App\Services\Billing\InvoiceService;
+use App\Services\Customer\CustomerCreditLimitService;
 use App\Services\Numbering\NumberingService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -24,6 +26,7 @@ class PaymentService
     public function __construct(
         private readonly NumberingService $numbering,
         private readonly InvoiceService $invoiceService,
+        private readonly CustomerCreditLimitService $creditLimits,
     ) {}
 
     /**
@@ -93,10 +96,35 @@ class PaymentService
             if (! $isGiro && $applied > 0) {
                 $this->invoiceService->applyPayment($invoice, $applied, $by);
                 $payment->update(['applied_to_invoice_at' => now()]);
+                $this->allocateToSuppliers($payment, $invoice, $applied);
             }
 
             return $payment->refresh();
         });
+    }
+
+    /**
+     * Tulis prorata allocation ke per supplier untuk payment yang ter-apply.
+     * Idempotent — delete existing allocations payment ini lalu insert baru.
+     */
+    private function allocateToSuppliers(Payment $payment, Invoice $invoice, float $appliedAmount): void
+    {
+        PaymentSupplierAllocation::query()->where('payment_id', $payment->id)->delete();
+
+        $perSupplier = $this->creditLimits->prorateAllocation($invoice, $appliedAmount);
+
+        foreach ($perSupplier as $supplierId => $amount) {
+            if ($amount <= 0) {
+                continue;
+            }
+            PaymentSupplierAllocation::create([
+                'payment_id' => $payment->id,
+                'invoice_id' => $invoice->id,
+                'customer_id' => $invoice->customer_id,
+                'supplier_id' => $supplierId,
+                'amount' => $amount,
+            ]);
+        }
     }
 
     /**
@@ -130,6 +158,7 @@ class PaymentService
 
             if ($applied > 0) {
                 $this->invoiceService->applyPayment($invoice, $applied, $by);
+                $this->allocateToSuppliers($payment, $invoice, $applied);
             }
 
             return $payment->refresh();
@@ -158,6 +187,9 @@ class PaymentService
                     $by,
                 );
             }
+
+            // Cabut allocation supplier-nya (bounce = uang gak masuk).
+            PaymentSupplierAllocation::query()->where('payment_id', $payment->id)->delete();
 
             $payment->update([
                 'status' => Payment::STATUS_BOUNCED,

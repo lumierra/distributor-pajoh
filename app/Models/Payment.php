@@ -6,6 +6,7 @@ use App\Concerns\HasActivityLog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Payment extends Model
@@ -100,6 +101,11 @@ class Payment extends Model
     public function bouncer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'bounced_by');
+    }
+
+    public function supplierAllocations(): HasMany
+    {
+        return $this->hasMany(PaymentSupplierAllocation::class);
     }
 
     public function canBeCleared(): bool

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Customer;
+use App\Models\CustomerSupplierCreditLimit;
 use App\Models\PriceTier;
 use App\Models\ProductBatch;
 use App\Models\ProductCategory;
@@ -11,6 +12,8 @@ use App\Models\SalesOrder;
 use App\Models\SoReservation;
 use App\Models\StockBalance;
 use App\Models\StockLedger;
+use App\Models\Supplier;
+use App\Models\SupplierProduct;
 use App\Models\User;
 use App\Services\Inventory\StockLedgerWriter;
 use App\Services\Product\ProductService;
@@ -249,10 +252,29 @@ test('submit dengan stock kurang + allow_negative=true lolos', function (): void
     expect($so->fresh()->status)->toBe(SalesOrder::STATUS_SUBMITTED);
 });
 
-test('submit over credit limit → status pending_credit_review', function (): void {
+test('submit over credit limit per supplier → hard block (throw)', function (): void {
     $admin = soUser(Role::CODE_ADMIN);
     $ctx = soSetup(initialStock: 1000);
-    $ctx['customer']->update(['credit_limit' => 50_000]);
+
+    // Pasang supplier untuk produk + set limit.
+    $supplier = Supplier::create([
+        'code' => 'SUP-CL-'.random_int(1000, 9999),
+        'name' => 'Supplier CL Test',
+        'is_active' => true,
+        'payment_term_days' => 14,
+    ]);
+    SupplierProduct::create([
+        'supplier_id' => $supplier->id,
+        'product_id' => $ctx['product']->id,
+        'default_cost_price' => 5000,
+        'is_primary' => true,
+        'is_active' => true,
+    ]);
+    CustomerSupplierCreditLimit::create([
+        'customer_id' => $ctx['customer']->id,
+        'supplier_id' => $supplier->id,
+        'credit_limit' => 50_000,
+    ]);
 
     $so = app(SalesOrderService::class)->createDraft(
         ['customer_id' => $ctx['customer']->id, 'so_date' => now()->toDateString()],
@@ -260,11 +282,11 @@ test('submit over credit limit → status pending_credit_review', function (): v
         $admin,
     );
 
-    // Total = 100 × 10000 = 1jt; limit 50k → over.
-    app(SalesOrderService::class)->submit($so, $admin);
+    // Total = 100 × 10000 = 1jt; limit 50k → block.
+    expect(fn () => app(SalesOrderService::class)->submit($so, $admin))
+        ->toThrow(ValidationException::class);
 
-    expect($so->fresh()->status)->toBe(SalesOrder::STATUS_PENDING_CREDIT_REVIEW);
-    expect($so->fresh()->credit_review_required)->toBeTrue();
+    expect($so->fresh()->status)->toBe(SalesOrder::STATUS_DRAFT);
 });
 
 test('approve submitted SO → status approved + reservations created + balance.qty_reserved bumped', function (): void {
@@ -294,44 +316,6 @@ test('approve submitted SO → status approved + reservations created + balance.
         ->where('batch_id', $reservations->first()->batch_id)
         ->first();
     expect($balance->qty_reserved)->toBe(30);
-});
-
-test('admin biasa tidak bisa approve pending_credit_review', function (): void {
-    $admin = soUser(Role::CODE_ADMIN);
-    $ctx = soSetup(initialStock: 100);
-    $ctx['customer']->update(['credit_limit' => 1]);
-
-    $so = app(SalesOrderService::class)->createDraft(
-        ['customer_id' => $ctx['customer']->id, 'so_date' => now()->toDateString()],
-        [['product_id' => $ctx['product']->id, 'product_unit_id' => $ctx['unit']->id, 'qty' => 10]],
-        $admin,
-    );
-    app(SalesOrderService::class)->submit($so, $admin);
-
-    // status=pending_credit_review now
-    expect(fn () => app(SalesOrderService::class)->approve($so, $admin))
-        ->toThrow(ValidationException::class);
-});
-
-test('superadmin bisa approveOverride pending_credit_review', function (): void {
-    $admin = soUser(Role::CODE_ADMIN);
-    $sa = soUser(Role::CODE_SUPERADMIN);
-    $ctx = soSetup(initialStock: 100);
-    $ctx['customer']->update(['credit_limit' => 1]);
-
-    $so = app(SalesOrderService::class)->createDraft(
-        ['customer_id' => $ctx['customer']->id, 'so_date' => now()->toDateString()],
-        [['product_id' => $ctx['product']->id, 'product_unit_id' => $ctx['unit']->id, 'qty' => 10]],
-        $admin,
-    );
-    app(SalesOrderService::class)->submit($so, $admin);
-
-    app(SalesOrderService::class)->approveOverride($so, 'Customer trusted partner', $sa);
-
-    $so->refresh();
-    expect($so->status)->toBe(SalesOrder::STATUS_APPROVED);
-    expect($so->credit_override_approved_by)->toBe($sa->id);
-    expect($so->credit_override_reason)->toContain('trusted partner');
 });
 
 test('reject SO submitted → status rejected', function (): void {

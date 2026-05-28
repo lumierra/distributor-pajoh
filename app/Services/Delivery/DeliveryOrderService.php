@@ -493,6 +493,7 @@ class DeliveryOrderService
                     'so_item_id' => $soItem->id,
                     'reservation_id' => $res->id,
                     'product_id' => $soItem->product_id,
+                    'supplier_id' => $soItem->supplier_id,
                     'product_unit_id' => $soItem->product_unit_id,
                     'product_name_snapshot' => $soItem->product_name_snapshot,
                     'product_sku_snapshot' => $soItem->product_sku_snapshot,

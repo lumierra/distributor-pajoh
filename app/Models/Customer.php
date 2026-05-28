@@ -93,6 +93,16 @@ class Customer extends Model
         return $this->hasMany(CustomerGeoPending::class);
     }
 
+    public function supplierCreditLimits(): HasMany
+    {
+        return $this->hasMany(CustomerSupplierCreditLimit::class);
+    }
+
+    public function paymentSupplierAllocations(): HasMany
+    {
+        return $this->hasMany(PaymentSupplierAllocation::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);

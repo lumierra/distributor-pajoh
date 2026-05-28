@@ -12,6 +12,7 @@ class InvoiceItem extends Model
         'sales_order_item_id',
         'do_item_id',
         'product_id',
+        'supplier_id',
         'product_unit_id',
         'product_name_snapshot',
         'product_sku_snapshot',
@@ -55,6 +56,11 @@ class InvoiceItem extends Model
     public function doItem(): BelongsTo
     {
         return $this->belongsTo(DoItem::class, 'do_item_id');
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     public function product(): BelongsTo

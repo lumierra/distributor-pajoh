@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\SalesOrder;
 use App\Models\User;
+use App\Services\Customer\CustomerCreditLimitService;
 use App\Services\Customer\CustomerOutstandingService;
 use App\Services\Numbering\NumberingService;
 use Carbon\CarbonInterface;
@@ -29,6 +30,7 @@ class InvoiceService
     public function __construct(
         private readonly NumberingService $numbering,
         private readonly CustomerOutstandingService $outstanding,
+        private readonly CustomerCreditLimitService $creditLimits,
     ) {}
 
     /**
@@ -60,6 +62,13 @@ class InvoiceService
             $so = $do->salesOrder;
             /** @var Customer $customer */
             $customer = $so->customer;
+
+            // Hard block: cek credit limit per supplier sebelum invoice create.
+            // Incoming dihitung dari nilai DO yang akan jadi invoice (per supplier).
+            $incomingPerSupplier = $this->computeIncomingPerSupplier($do);
+            if (! empty($incomingPerSupplier)) {
+                $this->creditLimits->assertCanCharge($customer, $incomingPerSupplier, 'credit_limit');
+            }
 
             $invoiceDate = $do->delivered_at instanceof CarbonInterface
                 ? Carbon::parse($do->delivered_at)->startOfDay()
@@ -101,6 +110,36 @@ class InvoiceService
 
             return $invoice->refresh();
         });
+    }
+
+    /**
+     * Hitung nilai per supplier dari DO yang akan jadi invoice.
+     * Pakai qty_effective (delivered - returned) × unit_net_price dari SO item.
+     * Skip bonus & supplier_id null.
+     *
+     * @return array<int, float> [supplier_id => amount]
+     */
+    private function computeIncomingPerSupplier(DeliveryOrder $do): array
+    {
+        $do->loadMissing('items.soItem');
+        $result = [];
+        foreach ($do->items as $item) {
+            if ($item->is_bonus) {
+                continue;
+            }
+            $supplierId = $item->supplier_id ?? $item->soItem?->supplier_id;
+            if (! $supplierId) {
+                continue;
+            }
+            $qtyEffective = max(0, (int) $item->qty_delivered - (int) $item->qty_returned);
+            if ($qtyEffective <= 0) {
+                continue;
+            }
+            $netPrice = (float) ($item->soItem->unit_net_price ?? 0);
+            $result[(int) $supplierId] = ($result[(int) $supplierId] ?? 0.0) + ($netPrice * $qtyEffective);
+        }
+
+        return $result;
     }
 
     /**
@@ -171,6 +210,7 @@ class InvoiceService
                 'sales_order_item_id' => $soItem->id,
                 'do_item_id' => $doItem->id,
                 'product_id' => $doItem->product_id,
+                'supplier_id' => $doItem->supplier_id ?? $soItem->supplier_id,
                 'product_unit_id' => $doItem->product_unit_id,
                 'product_name_snapshot' => $doItem->product_name_snapshot,
                 'product_sku_snapshot' => $doItem->product_sku_snapshot,

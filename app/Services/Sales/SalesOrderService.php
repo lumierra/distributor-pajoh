@@ -7,9 +7,12 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\ProductPrice;
 use App\Models\ProductUnit;
+use App\Models\Role;
 use App\Models\SalesOrder;
 use App\Models\SoItem;
+use App\Models\SupplierProduct;
 use App\Models\User;
+use App\Services\Customer\CustomerCreditLimitService;
 use App\Services\Customer\CustomerOutstandingService;
 use App\Services\Inventory\ReservationService;
 use App\Services\Numbering\NumberingService;
@@ -26,6 +29,7 @@ class SalesOrderService
         private readonly SettingManager $settings,
         private readonly CustomerOutstandingService $outstanding,
         private readonly ReservationService $reservation,
+        private readonly CustomerCreditLimitService $creditLimits,
     ) {}
 
     /**
@@ -69,6 +73,7 @@ class SalesOrderService
 
             $this->syncItems($so, $customer, $itemsData);
             $this->recomputeTotals($so);
+            $this->assertSalesProductGroupRules($so->fresh());
 
             return $so->refresh();
         });
@@ -114,6 +119,7 @@ class SalesOrderService
 
             $this->syncItems($so, $customer, $itemsData);
             $this->recomputeTotals($so);
+            $this->assertSalesProductGroupRules($so->fresh());
 
             return $so->refresh();
         });
@@ -144,17 +150,27 @@ class SalesOrderService
                 }
             }
 
-            // 2. Credit check
+            // 2. Credit check per supplier (hard block — sales tidak bisa request
+            //    produk yang akan melebihi credit limit per supplier).
+            $incomingPerSupplier = [];
+            foreach ($so->items as $item) {
+                if ($item->is_bonus || ! $item->supplier_id) {
+                    continue;
+                }
+                $incomingPerSupplier[(int) $item->supplier_id] =
+                    ($incomingPerSupplier[(int) $item->supplier_id] ?? 0.0)
+                    + (float) $item->line_subtotal;
+            }
+            $this->creditLimits->assertCanCharge($so->customer, $incomingPerSupplier, 'credit_limit');
+
+            // 3. Legacy global outstanding snapshot (informational only).
             $outstanding = $this->outstanding->getTotal($so->customer);
-            $totalAfterSo = $outstanding + (float) $so->total;
-            $creditLimit = (float) $so->customer->credit_limit;
-            $isOver = $creditLimit > 0 && $totalAfterSo > $creditLimit;
 
             $so->update([
-                'status' => $isOver ? SalesOrder::STATUS_PENDING_CREDIT_REVIEW : SalesOrder::STATUS_SUBMITTED,
+                'status' => SalesOrder::STATUS_SUBMITTED,
                 'submitted_at' => now(),
                 'submitted_by' => $by->id,
-                'credit_review_required' => $isOver,
+                'credit_review_required' => false,
                 'credit_outstanding_snapshot' => $outstanding,
             ]);
 
@@ -365,6 +381,7 @@ class SalesOrderService
             SoItem::create([
                 'sales_order_id' => $so->id,
                 'product_id' => $product->id,
+                'supplier_id' => $this->resolveSupplierId($product->id),
                 'product_unit_id' => $unit->id,
                 'product_name_snapshot' => $product->name,
                 'product_sku_snapshot' => $product->sku,
@@ -380,6 +397,28 @@ class SalesOrderService
                 'sort_order' => $idx,
             ]);
         }
+    }
+
+    /**
+     * Resolve supplier_id untuk item SO. Pakai primary supplier kalau ada,
+     * fallback ke supplier active mana saja. Null kalau produk belum ada supplier-nya.
+     */
+    private function resolveSupplierId(int $productId): ?int
+    {
+        $primary = SupplierProduct::query()
+            ->where('product_id', $productId)
+            ->where('is_active', true)
+            ->where('is_primary', true)
+            ->value('supplier_id');
+
+        if ($primary) {
+            return (int) $primary;
+        }
+
+        return SupplierProduct::query()
+            ->where('product_id', $productId)
+            ->where('is_active', true)
+            ->value('supplier_id');
     }
 
     private function resolvePrice(int $productId, int $unitId, int $tierId): float
@@ -405,6 +444,95 @@ class SalesOrderService
             throw ValidationException::withMessages([
                 'customer_id' => 'Customer ditandai problem_outlet — SO baru di-block. Hubungi admin untuk clear flag.',
             ]);
+        }
+    }
+
+    /**
+     * Saat actor adalah sales: tiap produk yg dijual wajib berada dalam Product Group
+     * yang ter-assign ke sales tsb, dan total penjualan bulan berjalan per group tidak
+     * boleh melebihi `monthly_limit` (kalau di-set). Admin/kasir/superadmin di-bypass.
+     *
+     * Backwards-compat: kalau sales belum ter-assign group sama sekali, enforcement
+     * dilewat (opt-in saat admin sudah set Product Group untuk sales tsb).
+     */
+    private function assertSalesProductGroupRules(SalesOrder $so): void
+    {
+        $sales = User::query()->with('role')->find($so->sales_id);
+        if (! $sales || $sales->role?->code !== Role::CODE_SALES) {
+            return;
+        }
+
+        $sales->load(['productGroups' => function ($q): void {
+            $q->where('product_groups.is_active', true)->with('products:id');
+        }]);
+
+        if ($sales->productGroups->isEmpty()) {
+            return;
+        }
+
+        $productIdsInSo = $so->items()->pluck('product_id')->unique()->all();
+        if (empty($productIdsInSo)) {
+            return;
+        }
+
+        // 1) Setiap produk di SO harus ada di salah satu group yg ter-assign.
+        $allowedProductIds = [];
+        foreach ($sales->productGroups as $group) {
+            foreach ($group->products as $p) {
+                $allowedProductIds[$p->id] = true;
+            }
+        }
+
+        $forbidden = array_values(array_filter(
+            $productIdsInSo,
+            fn (int $pid): bool => ! isset($allowedProductIds[$pid]),
+        ));
+
+        if (! empty($forbidden)) {
+            $names = Product::query()->whereIn('id', $forbidden)->pluck('name')->implode(', ');
+            throw ValidationException::withMessages([
+                'items' => "Produk berikut tidak ada dalam Product Group sales {$sales->name}: {$names}.",
+            ]);
+        }
+
+        // 2) Cek monthly_limit per group untuk bulan SO ini.
+        $soDate = $so->so_date instanceof CarbonInterface ? $so->so_date : Carbon::parse($so->so_date);
+        $monthStart = $soDate->copy()->startOfMonth();
+        $monthEnd = $soDate->copy()->endOfMonth();
+
+        foreach ($sales->productGroups as $group) {
+            $limit = $group->pivot->monthly_limit ?? null;
+            if ($limit === null) {
+                continue;
+            }
+
+            $groupProductIds = $group->products->pluck('id')->all();
+            if (empty($groupProductIds)) {
+                continue;
+            }
+
+            // Total semua SO bulan ini yang lines-nya menyentuh produk group, exclude SO sendiri.
+            $mtd = (float) SoItem::query()
+                ->whereIn('product_id', $groupProductIds)
+                ->whereHas('salesOrder', function ($q) use ($sales, $monthStart, $monthEnd, $so): void {
+                    $q->where('sales_id', $sales->id)
+                        ->whereBetween('so_date', [$monthStart, $monthEnd])
+                        ->whereNotIn('status', [SalesOrder::STATUS_CANCELLED, SalesOrder::STATUS_REJECTED])
+                        ->where('id', '!=', $so->id);
+                })
+                ->sum('line_subtotal');
+
+            $thisSoTotal = (float) SoItem::query()
+                ->where('sales_order_id', $so->id)
+                ->whereIn('product_id', $groupProductIds)
+                ->sum('line_subtotal');
+
+            if (($mtd + $thisSoTotal) > (float) $limit) {
+                $fmt = fn (float $v): string => 'Rp '.number_format($v, 0, ',', '.');
+                throw ValidationException::withMessages([
+                    'items' => "Limit bulanan group {$group->name} terlampaui: total {$fmt($mtd + $thisSoTotal)} > limit {$fmt((float) $limit)}.",
+                ]);
+            }
         }
     }
 }

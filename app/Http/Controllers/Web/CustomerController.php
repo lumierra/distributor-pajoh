@@ -8,6 +8,7 @@ use App\Http\Requests\Customer\StoreCustomerRequest;
 use App\Http\Requests\Customer\UpdateCustomerRequest;
 use App\Models\Customer;
 use App\Models\CustomerType;
+use App\Models\Invoice;
 use App\Models\PriceTier;
 use App\Models\User;
 use App\Services\Customer\CustomerOutstandingService;
@@ -117,6 +118,16 @@ class CustomerController extends Controller
             'outstanding' => [
                 'total' => $this->outstanding->getTotal($customer),
                 'aging' => $this->outstanding->getAging($customer),
+                'invoices' => Invoice::query()
+                    ->where('customer_id', $customer->id)
+                    ->openOrPartial()
+                    ->where('outstanding', '>', 0)
+                    ->orderBy('due_date')
+                    ->limit(20)
+                    ->get([
+                        'id', 'invoice_number', 'invoice_date', 'due_date',
+                        'total', 'paid_amount', 'outstanding', 'status',
+                    ]),
             ],
             'canUpdate' => request()->user()?->can('update', $customer) ?? false,
             'canDelete' => request()->user()?->can('delete', $customer) ?? false,

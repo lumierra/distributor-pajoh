@@ -54,7 +54,7 @@ const form = useForm({
     area: '',
     assigned_sales_id: null,
     credit_limit: 0,
-    payment_term_days: 0,
+    payment_term_days: 14,
     is_active: true,
     notes: '',
     tags: [],
@@ -104,7 +104,7 @@ watch(
                 area: '',
                 assigned_sales_id: null,
                 credit_limit: 0,
-                payment_term_days: 0,
+                payment_term_days: 14,
                 is_active: true,
                 notes: '',
                 tags: [],
@@ -211,7 +211,8 @@ function submit() {
                                 {{ form.errors.price_tier_id }}
                             </p>
                         </div>
-                        <div class="space-y-1 sm:col-span-2">
+                        <!-- NPWP di-hide sementara -->
+                        <div v-if="false" class="space-y-1 sm:col-span-2">
                             <Label class="text-xs font-medium">NPWP (opsional)</Label>
                             <Input v-model="form.npwp" class="h-9 font-mono" />
                         </div>
@@ -224,18 +225,21 @@ function submit() {
                         Kontak
                     </p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Phone</Label>
-                            <Input v-model="form.phone" class="h-9 font-mono" />
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">WhatsApp</Label>
+                        <div class="space-y-1 sm:col-span-2">
+                            <Label class="text-xs font-medium">No. WhatsApp</Label>
                             <Input v-model="form.whatsapp" class="h-9 font-mono" />
                         </div>
-                        <div class="space-y-1 sm:col-span-2">
-                            <Label class="text-xs font-medium">Email</Label>
-                            <Input v-model="form.email" type="email" class="h-9" />
-                        </div>
+                        <!-- Phone & Email di-hide sementara -->
+                        <template v-if="false">
+                            <div class="space-y-1">
+                                <Label class="text-xs font-medium">Phone</Label>
+                                <Input v-model="form.phone" class="h-9 font-mono" />
+                            </div>
+                            <div class="space-y-1 sm:col-span-2">
+                                <Label class="text-xs font-medium">Email</Label>
+                                <Input v-model="form.email" type="email" class="h-9" />
+                            </div>
+                        </template>
                     </div>
                 </div>
 
@@ -257,7 +261,8 @@ function submit() {
                             <Label class="text-xs font-medium">Provinsi</Label>
                             <Input v-model="form.province" class="h-9" />
                         </div>
-                        <div class="space-y-1">
+                        <!-- Kode Pos di-hide sementara -->
+                        <div v-if="false" class="space-y-1">
                             <Label class="text-xs font-medium">Kode Pos</Label>
                             <Input v-model="form.postal_code" class="h-9 font-mono" />
                         </div>
