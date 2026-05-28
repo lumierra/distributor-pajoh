@@ -165,53 +165,41 @@ function docExpiryBadge(d) {
             </template>
         </PageHeader>
 
-        <!-- Summary strip -->
-        <section class="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 mb-5">
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 flex items-start gap-4">
-                <div class="size-12 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <Factory class="size-6" />
+        <!-- Compact summary bar + tabs -->
+        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm mb-4 overflow-hidden">
+            <div class="px-4 py-2.5 flex items-center gap-3 border-b border-border/70">
+                <div class="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <Factory class="size-4" />
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <p class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                         {{ supplier.legal_form ? `${supplier.legal_form} · ` : '' }}{{ supplier.code }}
                     </p>
-                    <h2 class="text-base font-bold tracking-tight text-foreground truncate">
+                    <h2 class="text-sm font-bold tracking-tight text-foreground truncate leading-tight">
                         {{ supplier.name }}
                     </h2>
-                    <p class="text-xs text-muted-foreground mt-1">
-                        {{ [supplier.city, supplier.province].filter(Boolean).join(', ') || 'Alamat belum diisi' }}
-                    </p>
                 </div>
-                <div class="flex flex-col items-end gap-1.5">
-                    <span
-                        v-if="supplier.is_active"
-                        class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-                    >
-                        Aktif
-                    </span>
-                    <span
-                        v-else
-                        class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground"
-                    >
-                        Nonaktif
-                    </span>
-                </div>
-            </div>
-            <div
-                v-if="canUpdate"
-                class="flex flex-row lg:flex-col gap-2 lg:items-stretch lg:justify-center"
-            >
-                <Button variant="outline" size="default" @click="toggleActive">
-                    <component :is="supplier.is_active ? Ban : UserCheck" class="size-4" />
+                <span
+                    v-if="supplier.is_active"
+                    class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                >
+                    Aktif
+                </span>
+                <span
+                    v-else
+                    class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground"
+                >
+                    Nonaktif
+                </span>
+                <Button v-if="canUpdate" variant="outline" size="sm" @click="toggleActive">
+                    <component :is="supplier.is_active ? Ban : UserCheck" class="size-3.5" />
                     {{ supplier.is_active ? 'Nonaktifkan' : 'Aktifkan' }}
                 </Button>
             </div>
+            <div class="px-4 py-2">
+                <TabsPill v-model="tab" :tabs="tabs" />
+            </div>
         </section>
-
-        <!-- Tabs -->
-        <div class="mb-4">
-            <TabsPill v-model="tab" :tabs="tabs" />
-        </div>
 
         <!-- Tab: Info -->
         <section v-show="tab === 'info'" class="space-y-4">
@@ -233,18 +221,21 @@ function docExpiryBadge(d) {
                             </dt>
                             <dd class="mt-0.5">{{ supplier.legal_form || '—' }}</dd>
                         </div>
-                        <div>
-                            <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-                                NPWP
-                            </dt>
-                            <dd class="font-mono mt-0.5">{{ supplier.npwp || '—' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-                                NIB
-                            </dt>
-                            <dd class="font-mono mt-0.5">{{ supplier.nib || '—' }}</dd>
-                        </div>
+                        <!-- NPWP & NIB di-hide sementara -->
+                        <template v-if="false">
+                            <div>
+                                <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                                    NPWP
+                                </dt>
+                                <dd class="font-mono mt-0.5">{{ supplier.npwp || '—' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                                    NIB
+                                </dt>
+                                <dd class="font-mono mt-0.5">{{ supplier.nib || '—' }}</dd>
+                            </div>
+                        </template>
                         <div>
                             <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
                                 Kategori
@@ -259,28 +250,32 @@ function docExpiryBadge(d) {
                         <h3 class="text-sm font-semibold">Kontak</h3>
                     </header>
                     <dl class="px-5 py-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                        <div>
+                        <div class="sm:col-span-2">
                             <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-                                Phone
+                                No. HP / Phone
                             </dt>
                             <dd class="font-mono mt-0.5">{{ supplier.phone || '—' }}</dd>
                         </div>
-                        <div>
-                            <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-                                WhatsApp
-                            </dt>
-                            <dd class="font-mono mt-0.5">{{ supplier.whatsapp || '—' }}</dd>
-                        </div>
-                        <div class="sm:col-span-2">
-                            <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-                                Email
-                            </dt>
-                            <dd class="mt-0.5">{{ supplier.email || '—' }}</dd>
-                        </div>
+                        <!-- WhatsApp & Email di-hide sementara -->
+                        <template v-if="false">
+                            <div>
+                                <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                                    WhatsApp
+                                </dt>
+                                <dd class="font-mono mt-0.5">{{ supplier.whatsapp || '—' }}</dd>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                                    Email
+                                </dt>
+                                <dd class="mt-0.5">{{ supplier.email || '—' }}</dd>
+                            </div>
+                        </template>
                     </dl>
                 </div>
 
-                <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
+                <!-- Alamat (hidden sementara) -->
+                <div v-if="false" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
                     <header class="border-b border-border/70 px-5 py-3">
                         <h3 class="text-sm font-semibold">Alamat</h3>
                     </header>
@@ -295,7 +290,8 @@ function docExpiryBadge(d) {
                     </div>
                 </div>
 
-                <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
+                <!-- PIC (hidden sementara) -->
+                <div v-if="false" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
                     <header class="border-b border-border/70 px-5 py-3">
                         <h3 class="text-sm font-semibold">PIC / Contact Person</h3>
                     </header>

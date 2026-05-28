@@ -38,10 +38,10 @@ const LEGAL_FORMS = ['PT', 'CV', 'UD', 'KOPERASI', 'PABRIK', 'LAINNYA'];
 
 const form = useForm({
     name: '',
-    legal_form: '',
+    legal_form: LEGAL_FORMS[0],
     npwp: '',
     nib: '',
-    supplier_category_id: null,
+    supplier_category_id: props.categories[0]?.id ?? null,
     phone: '',
     whatsapp: '',
     email: '',
@@ -85,10 +85,10 @@ watch(
         } else {
             form.defaults({
                 name: '',
-                legal_form: '',
+                legal_form: LEGAL_FORMS[0],
                 npwp: '',
                 nib: '',
-                supplier_category_id: null,
+                supplier_category_id: props.categories[0]?.id ?? null,
                 phone: '',
                 whatsapp: '',
                 email: '',
@@ -198,17 +198,20 @@ function submit() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">NPWP</Label>
-                            <Input v-model="form.npwp" class="h-9 font-mono" />
-                            <p v-if="form.errors.npwp" class="text-xs text-destructive">
-                                {{ form.errors.npwp }}
-                            </p>
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">NIB</Label>
-                            <Input v-model="form.nib" class="h-9 font-mono" />
-                        </div>
+                        <!-- NPWP & NIB di-hide sementara (next time mungkin dibutuhkan) -->
+                        <template v-if="false">
+                            <div class="space-y-1">
+                                <Label class="text-xs font-medium">NPWP</Label>
+                                <Input v-model="form.npwp" class="h-9 font-mono" />
+                                <p v-if="form.errors.npwp" class="text-xs text-destructive">
+                                    {{ form.errors.npwp }}
+                                </p>
+                            </div>
+                            <div class="space-y-1">
+                                <Label class="text-xs font-medium">NIB</Label>
+                                <Input v-model="form.nib" class="h-9 font-mono" />
+                            </div>
+                        </template>
                     </div>
                 </div>
 
@@ -218,26 +221,29 @@ function submit() {
                         Kontak
                     </p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Phone</Label>
+                        <div class="space-y-1 sm:col-span-2">
+                            <Label class="text-xs font-medium">No. HP / Phone</Label>
                             <Input v-model="form.phone" class="h-9" />
                         </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">WhatsApp</Label>
-                            <Input v-model="form.whatsapp" class="h-9" />
-                        </div>
-                        <div class="space-y-1 sm:col-span-2">
-                            <Label class="text-xs font-medium">Email</Label>
-                            <Input v-model="form.email" type="email" class="h-9" />
-                            <p v-if="form.errors.email" class="text-xs text-destructive">
-                                {{ form.errors.email }}
-                            </p>
-                        </div>
+                        <!-- WhatsApp & Email di-hide sementara -->
+                        <template v-if="false">
+                            <div class="space-y-1">
+                                <Label class="text-xs font-medium">WhatsApp</Label>
+                                <Input v-model="form.whatsapp" class="h-9" />
+                            </div>
+                            <div class="space-y-1 sm:col-span-2">
+                                <Label class="text-xs font-medium">Email</Label>
+                                <Input v-model="form.email" type="email" class="h-9" />
+                                <p v-if="form.errors.email" class="text-xs text-destructive">
+                                    {{ form.errors.email }}
+                                </p>
+                            </div>
+                        </template>
                     </div>
                 </div>
 
-                <!-- Alamat -->
-                <div class="space-y-3 pt-2 border-t border-border/70">
+                <!-- Alamat (hidden sementara) -->
+                <div v-if="false" class="space-y-3 pt-2 border-t border-border/70">
                     <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Alamat
                     </p>
@@ -257,8 +263,8 @@ function submit() {
                     </div>
                 </div>
 
-                <!-- PIC -->
-                <div class="space-y-3 pt-2 border-t border-border/70">
+                <!-- PIC (hidden sementara) -->
+                <div v-if="false" class="space-y-3 pt-2 border-t border-border/70">
                     <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         PIC / Contact Person
                     </p>
