@@ -62,21 +62,6 @@ test('admin bisa create driver dengan code auto-generated', function (): void {
     expect($driver->code)->toStartWith('DRV-');
 });
 
-test('show menampilkan driver detail', function (): void {
-    $admin = driverCrudUser(Role::CODE_ADMIN);
-    $driver = Driver::create([
-        'code' => 'DRV-0099',
-        'name' => 'Test Driver',
-    ]);
-
-    $this->actingAs($admin)
-        ->get(route('drivers.show', $driver))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('Drivers/Show')
-            ->where('driver.id', $driver->id),
-        );
-});
-
 test('admin bisa update driver', function (): void {
     $admin = driverCrudUser(Role::CODE_ADMIN);
     $driver = Driver::create(['code' => 'DRV-0100', 'name' => 'Old']);

@@ -1,15 +1,15 @@
 <script setup>
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import {
     Ban,
     CheckCircle2,
-    Eye,
     LogIn,
     Pause,
     Pencil,
     Plus,
     RotateCcw,
     Search,
+    Trash2,
     Truck,
     UserCog,
 } from '@lucide/vue';
@@ -51,6 +51,11 @@ const canCreate = computed(
     () =>
         page.props.auth?.user?.is_superadmin ||
         page.props.permissions?.['master.driver']?.create,
+);
+const canDelete = computed(
+    () =>
+        page.props.auth?.user?.is_superadmin ||
+        page.props.permissions?.['master.driver']?.delete,
 );
 
 const ALL = 'all';
@@ -113,9 +118,16 @@ function setUnavailable(d) {
     useForm({}).post(route('drivers.set-unavailable', d.id), { preserveScroll: true });
 }
 
-function formatDate(value) {
-    if (!value) return '—';
-    return new Date(value).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+function destroy(d) {
+    if (!window.confirm(`Hapus driver ${d.name}?`)) return;
+    useForm({}).delete(route('drivers.destroy', d.id), { preserveScroll: true });
+}
+
+function userInitials(name) {
+    if (!name) return '?';
+    const parts = String(name).trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 function statusBadgeClass(s) {
@@ -124,6 +136,14 @@ function statusBadgeClass(s) {
         on_delivery: 'bg-blue-50 text-blue-700 ring-blue-200',
         unavailable: 'bg-amber-50 text-amber-800 ring-amber-200',
     }[s] ?? 'bg-muted text-muted-foreground';
+}
+
+function statusLabel(s) {
+    return {
+        idle: 'Idle',
+        on_delivery: 'Lagi antar',
+        unavailable: 'Unavailable',
+    }[s] ?? s;
 }
 </script>
 
@@ -165,7 +185,7 @@ function statusBadgeClass(s) {
                     <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                     <Input
                         v-model="filters.q"
-                        placeholder="Cari nama, kode, phone, atau SIM…"
+                        placeholder="Cari nama, kode, atau no. HP…"
                         class="pl-8 h-9 rounded-md"
                     />
                 </div>
@@ -201,16 +221,15 @@ function statusBadgeClass(s) {
                 <TableHeader>
                     <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">Driver</TableHead>
-                        <TableHead>SIM</TableHead>
-                        <TableHead>Default Vehicle</TableHead>
+                        <TableHead>No. HP / WA</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Aktif</TableHead>
-                        <TableHead class="text-right pr-4">Aksi</TableHead>
+                        <TableHead class="text-center pr-4">Aksi</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody class="text-sm">
                     <TableRow v-if="drivers.data.length === 0">
-                        <TableCell colspan="6" class="text-center py-16">
+                        <TableCell colspan="5" class="text-center py-16">
                             <div class="flex flex-col items-center gap-2 text-muted-foreground">
                                 <UserCog class="size-7 opacity-40" />
                                 <p class="text-sm">Belum ada driver.</p>
@@ -220,36 +239,24 @@ function statusBadgeClass(s) {
                     <TableRow v-for="d in drivers.data" :key="d.id" class="hover:bg-muted/30 transition-colors">
                         <TableCell class="pl-4 py-2.5">
                             <div class="flex items-center gap-2.5">
-                                <div class="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                    <UserCog class="size-4" />
+                                <div class="size-8 rounded-md bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-semibold shadow-sm shrink-0">
+                                    {{ userInitials(d.name) }}
                                 </div>
                                 <div class="min-w-0">
-                                    <Link
-                                        :href="route('drivers.show', d.id)"
-                                        class="font-medium text-foreground truncate leading-tight hover:text-primary transition-colors block"
-                                    >
-                                        {{ d.name }}
-                                    </Link>
-                                    <p class="text-[11px] text-muted-foreground font-mono leading-tight">
-                                        {{ d.code }}<span v-if="d.phone"> · {{ d.phone }}</span>
-                                    </p>
+                                    <p class="font-medium text-foreground truncate leading-tight">{{ d.name }}</p>
+                                    <p class="text-[11px] text-muted-foreground font-mono leading-tight">{{ d.code }}</p>
                                 </div>
                             </div>
                         </TableCell>
-                        <TableCell class="text-xs">
-                            <span v-if="d.license_no" class="font-mono">{{ d.license_no }}</span>
-                            <span v-if="d.license_type" class="ml-1 text-[10px] uppercase">{{ d.license_type }}</span>
-                            <span v-else-if="!d.license_no" class="text-muted-foreground">—</span>
-                        </TableCell>
-                        <TableCell class="text-xs">
-                            <span v-if="d.default_vehicle" class="font-mono">{{ d.default_vehicle.plate_number }}</span>
+                        <TableCell>
+                            <span v-if="d.whatsapp" class="text-xs font-mono">{{ d.whatsapp }}</span>
                             <span v-else class="text-muted-foreground">—</span>
                         </TableCell>
                         <TableCell>
                             <span
                                 :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ring-1', statusBadgeClass(d.status)]"
                             >
-                                {{ d.status }}
+                                {{ statusLabel(d.status) }}
                             </span>
                         </TableCell>
                         <TableCell>
@@ -259,15 +266,10 @@ function statusBadgeClass(s) {
                             >Aktif</span>
                             <span v-else class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground">Nonaktif</span>
                         </TableCell>
-                        <TableCell class="py-3 px-4 text-right whitespace-nowrap">
+                        <TableCell class="py-3 px-4 text-center whitespace-nowrap">
                             <ActionGroup>
-                                <ActionButton :icon="Eye" label="Detail" as-child tone="brand">
-                                    <Link :href="route('drivers.show', d.id)">
-                                        <Eye class="w-4 h-4" />
-                                    </Link>
-                                </ActionButton>
                                 <ActionButton :icon="Pencil" label="Edit" tone="blue" @click="openEdit(d)" />
-                                <ActionButton :icon="Pause" label="Unavailable/Idle" tone="amber" @click="setUnavailable(d)" />
+                                <ActionButton :icon="Pause" label="Idle / Unavailable" tone="amber" @click="setUnavailable(d)" />
                                 <ActionButton
                                     v-if="d.is_active"
                                     :icon="Ban"
@@ -281,6 +283,13 @@ function statusBadgeClass(s) {
                                     label="Aktifkan"
                                     tone="emerald"
                                     @click="toggleActive(d)"
+                                />
+                                <ActionButton
+                                    v-if="canDelete"
+                                    :icon="Trash2"
+                                    label="Hapus"
+                                    tone="red"
+                                    @click="destroy(d)"
                                 />
                             </ActionGroup>
                         </TableCell>

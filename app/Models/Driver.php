@@ -7,7 +7,6 @@ use App\Concerns\HasAuditFields;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Driver extends Model
@@ -58,11 +57,6 @@ class Driver extends Model
     public function defaultVehicle(): BelongsTo
     {
         return $this->belongsTo(Vehicle::class, 'default_vehicle_id');
-    }
-
-    public function documents(): HasMany
-    {
-        return $this->hasMany(DriverDocument::class)->latest();
     }
 
     public function scopeActive(Builder $query): Builder

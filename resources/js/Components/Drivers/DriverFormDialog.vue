@@ -108,7 +108,7 @@ function submit() {
 
 <template>
     <Dialog :open="open" @update:open="(v) => $emit('update:open', v)">
-        <DialogContent class="sm:max-w-[600px] p-0 overflow-hidden">
+        <DialogContent class="sm:max-w-[460px] p-0 overflow-hidden">
             <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
                 <div class="flex items-start gap-3">
                     <div class="size-10 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 ring-1 ring-emerald-200">
@@ -125,108 +125,17 @@ function submit() {
                 </div>
             </DialogHeader>
 
-            <form class="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto" @submit.prevent="submit">
-                <div class="space-y-3">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Identitas</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div class="space-y-1 sm:col-span-2">
-                            <Label class="text-xs font-medium">Nama Lengkap *</Label>
-                            <Input v-model="form.name" required class="h-9" />
-                            <p v-if="form.errors.name" class="text-xs text-destructive">{{ form.errors.name }}</p>
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">NIK</Label>
-                            <Input v-model="form.nik" class="h-9 font-mono" />
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Phone</Label>
-                            <Input v-model="form.phone" class="h-9 font-mono" />
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">WhatsApp</Label>
-                            <Input v-model="form.whatsapp" class="h-9 font-mono" />
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Kota</Label>
-                            <Input v-model="form.city" class="h-9" />
-                        </div>
-                        <div class="space-y-1 sm:col-span-2">
-                            <Label class="text-xs font-medium">Alamat</Label>
-                            <Textarea v-model="form.address" rows="2" />
-                        </div>
-                    </div>
+            <form class="px-5 py-4 space-y-3.5" @submit.prevent="submit">
+                <div class="space-y-1">
+                    <Label class="text-xs font-medium">Nama Lengkap *</Label>
+                    <Input v-model="form.name" required class="h-9" />
+                    <p v-if="form.errors.name" class="text-xs text-destructive">{{ form.errors.name }}</p>
                 </div>
 
-                <div class="space-y-3 pt-2 border-t border-border/70">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">SIM</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">No. SIM</Label>
-                            <Input v-model="form.license_no" class="h-9 font-mono" />
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Tipe</Label>
-                            <Select
-                                :model-value="form.license_type ?? ''"
-                                @update:model-value="(v) => (form.license_type = v || null)"
-                            >
-                                <SelectTrigger class="h-9">
-                                    <SelectValue placeholder="Pilih tipe" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem v-for="t in LICENSE_TYPES" :key="t" :value="t">{{ t }}</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Berlaku Sampai</Label>
-                            <Input v-model="form.license_expired_date" type="date" class="h-9" />
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-3 pt-2 border-t border-border/70">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Kontak Darurat</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Nama</Label>
-                            <Input v-model="form.emergency_contact_name" class="h-9" />
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Phone</Label>
-                            <Input v-model="form.emergency_contact_phone" class="h-9 font-mono" />
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-3 pt-2 border-t border-border/70">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Operasional</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Tanggal Masuk</Label>
-                            <Input v-model="form.hire_date" type="date" class="h-9" />
-                        </div>
-                        <div class="space-y-1">
-                            <Label class="text-xs font-medium">Default Vehicle</Label>
-                            <Select
-                                :model-value="form.default_vehicle_id ? String(form.default_vehicle_id) : ''"
-                                @update:model-value="(v) => (form.default_vehicle_id = v ? Number(v) : null)"
-                            >
-                                <SelectTrigger class="h-9">
-                                    <SelectValue placeholder="Tanpa default" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem v-for="v in vehicles" :key="v.id" :value="String(v.id)">
-                                        {{ v.plate_number }} ({{ v.code }})
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div class="space-y-1 sm:col-span-2">
-                            <Label class="text-xs font-medium">Catatan</Label>
-                            <Textarea v-model="form.notes" rows="2" />
-                        </div>
-                    </div>
+                <div class="space-y-1">
+                    <Label class="text-xs font-medium">No. HP / WhatsApp</Label>
+                    <Input v-model="form.whatsapp" class="h-9 font-mono" placeholder="cth: 08123456789" />
+                    <p v-if="form.errors.whatsapp" class="text-xs text-destructive">{{ form.errors.whatsapp }}</p>
                 </div>
 
                 <div class="flex items-center justify-between rounded-md bg-muted/40 ring-1 ring-foreground/5 px-3.5 py-2.5">
@@ -236,6 +145,23 @@ function submit() {
                     </div>
                     <Switch v-model="form.is_active" />
                 </div>
+
+                <!-- Field detail (NIK, alamat, SIM, kontak darurat, hire date, default vehicle, catatan)
+                     di-hide sementara. Data DB tetap utuh untuk fitur lain (license check di DO, dll). -->
+                <template v-if="false">
+                    <Input v-model="form.nik" />
+                    <Input v-model="form.phone" />
+                    <Input v-model="form.city" />
+                    <Textarea v-model="form.address" />
+                    <Input v-model="form.license_no" />
+                    <Input v-model="form.license_type" />
+                    <Input v-model="form.license_expired_date" />
+                    <Input v-model="form.emergency_contact_name" />
+                    <Input v-model="form.emergency_contact_phone" />
+                    <Input v-model="form.hire_date" />
+                    <Input v-model="form.default_vehicle_id" />
+                    <Textarea v-model="form.notes" />
+                </template>
             </form>
 
             <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">

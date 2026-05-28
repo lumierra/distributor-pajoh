@@ -29,8 +29,7 @@ class DriverController extends Controller
             $query->where(function ($q) use ($search): void {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('code', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%")
-                    ->orWhere('license_no', 'like', "%{$search}%");
+                    ->orWhere('whatsapp', 'like', "%{$search}%");
             });
         }
 
@@ -70,25 +69,7 @@ class DriverController extends Controller
     {
         $driver = $this->service->create($request->validated());
 
-        return redirect()
-            ->route('drivers.show', $driver)
-            ->with('flash.success', "Driver {$driver->name} ({$driver->code}) dibuat.");
-    }
-
-    public function show(Driver $driver): Response
-    {
-        $this->authorize('view', $driver);
-
-        $driver->load([
-            'defaultVehicle:id,code,plate_number,type',
-            'documents.uploader:id,name',
-        ]);
-
-        return Inertia::render('Drivers/Show', [
-            'driver' => $driver,
-            'vehicles' => Vehicle::query()->active()->orderBy('plate_number')->get(['id', 'code', 'plate_number']),
-            'canUpdate' => request()->user()?->can('update', $driver) ?? false,
-        ]);
+        return back()->with('flash.success', "Driver {$driver->name} ({$driver->code}) dibuat.");
     }
 
     public function update(UpdateDriverRequest $request, Driver $driver): RedirectResponse
