@@ -1,4 +1,5 @@
 import './bootstrap';
+import 'vue-sonner/style.css';
 
 import { createApp, h } from 'vue';
 import VueApexCharts from 'vue3-apexcharts';

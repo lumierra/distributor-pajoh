@@ -1,19 +1,24 @@
 <?php
 
+use App\Models\Menu;
 use App\Models\PasswordResetLog;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserMenuOverride;
+use Database\Seeders\MenuSeeder;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\RoleSeeder;
+use Database\Seeders\SettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->seed(\Database\Seeders\SettingSeeder::class);
-    $this->seed(\Database\Seeders\RoleSeeder::class);
-    $this->seed(\Database\Seeders\MenuSeeder::class);
-    $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+    $this->seed(SettingSeeder::class);
+    $this->seed(RoleSeeder::class);
+    $this->seed(MenuSeeder::class);
+    $this->seed(RolePermissionSeeder::class);
 });
 
 function userControllerUser(string $roleCode, array $overrides = []): User
@@ -98,6 +103,25 @@ test('store user otomatis set force_password_change=true', function (): void {
     expect($u->force_password_change)->toBeTrue();
 });
 
+test('store user tanpa password pakai default 12345678', function (): void {
+    $super = userControllerUser(Role::CODE_SUPERADMIN);
+    $adminRoleId = Role::ofCode(Role::CODE_ADMIN)->value('id');
+
+    $this->actingAs($super)
+        ->post(route('users.store'), [
+            'name' => 'Default Pass',
+            'username' => 'defpass01',
+            'role_id' => $adminRoleId,
+            // password & password_confirmation kosong → backend pakai 12345678
+        ])
+        ->assertRedirect();
+
+    $u = User::where('username', 'defpass01')->first();
+    expect($u)->not->toBeNull();
+    expect(Hash::check('12345678', $u->password))->toBeTrue();
+    expect($u->force_password_change)->toBeTrue();
+});
+
 test('admin tidak bisa demote dirinya sendiri dari superadmin', function (): void {
     // skenario: admin yang ternyata superadmin coba ubah role dirinya
     $super = userControllerUser(Role::CODE_SUPERADMIN);
@@ -163,8 +187,8 @@ test('updateMenuOverrides menyimpan grant/deny dan hapus row bernilai null saja'
     $super = userControllerUser(Role::CODE_SUPERADMIN);
     $target = userControllerUser(Role::CODE_KASIR);
 
-    $menuSupplier = \App\Models\Menu::where('code', 'master.supplier')->first();
-    $menuInvoice = \App\Models\Menu::where('code', 'sales.invoice')->first();
+    $menuSupplier = Menu::where('code', 'master.supplier')->first();
+    $menuInvoice = Menu::where('code', 'sales.invoice')->first();
 
     $this->actingAs($super)
         ->put(route('users.menu-overrides.update', $target->id), [

@@ -2,14 +2,13 @@
 
 namespace App\Http\Requests\User;
 
-use App\Models\Role;
 use App\Models\User;
 use App\Rules\PasswordPolicy;
 use App\Rules\UniqueUsername;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreUserRequest extends FormRequest
+class StoreSalesUserRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -24,22 +23,23 @@ class StoreUserRequest extends FormRequest
         $username = $this->input('username');
 
         return [
+            // Identitas dasar
             'name' => ['required', 'string', 'max:128'],
             'username' => ['required', 'string', 'max:64', 'regex:/^[a-z0-9_.]+$/', new UniqueUsername],
             'email' => ['nullable', 'email', 'max:128'],
             'phone' => ['nullable', 'string', 'max:32'],
-            'role_id' => ['required', 'integer', 'exists:roles,id'],
+
+            // Password (opsional, default 12345678 kalau kosong)
             'password' => ['nullable', 'string', new PasswordPolicy(is_string($username) ? $username : null)],
             'password_confirmation' => ['nullable', 'same:password'],
+
+            // Status
             'is_active' => ['sometimes', 'boolean'],
-            'address' => ['nullable', 'string'],
-            'city' => ['nullable', 'string', 'max:64'],
-            'nik' => ['nullable', 'string', 'max:32'],
-            'emergency_contact_name' => ['nullable', 'string', 'max:128'],
-            'emergency_contact_phone' => ['nullable', 'string', 'max:32'],
-            'hire_date' => ['nullable', 'date'],
-            'default_area' => ['nullable', 'string', 'max:128'],
-            'monthly_target' => ['nullable', 'numeric', 'min:0'],
+
+            // Device pre-register (opsional — kalau admin sudah pegang HP-nya)
+            'device_uuid' => ['nullable', 'string', 'max:128', 'required_with:device_name,mac_address'],
+            'device_name' => ['nullable', 'string', 'max:128'],
+            'mac_address' => ['nullable', 'string', 'max:64'],
         ];
     }
 
@@ -49,22 +49,5 @@ class StoreUserRequest extends FormRequest
         if (is_string($username)) {
             $this->merge(['username' => strtolower(trim($username))]);
         }
-    }
-
-    /**
-     * Additional rule: hanya superadmin yang boleh membuat user role superadmin.
-     */
-    public function withValidator($validator): void
-    {
-        $validator->after(function ($validator): void {
-            $roleId = $this->input('role_id');
-            if (! $roleId) {
-                return;
-            }
-            $role = Role::find($roleId);
-            if ($role?->code === Role::CODE_SUPERADMIN && ! $this->user()?->isSuperadmin()) {
-                $validator->errors()->add('role_id', 'Hanya superadmin yang boleh membuat user superadmin.');
-            }
-        });
     }
 }

@@ -33,6 +33,14 @@ const emit = defineEmits(['update:open', 'saved']);
 
 const isEdit = computed(() => !!props.user);
 
+/**
+ * /users hanya untuk role NON-sales. Sales punya halaman tersendiri
+ * /sales-users karena butuh field tambahan (area, target, device).
+ */
+const assignableRoles = computed(() =>
+    props.roles.filter((r) => r.code !== 'sales'),
+);
+
 const form = useForm({
     name: '',
     username: '',
@@ -137,6 +145,22 @@ function submit() {
                             {{ form.errors.name }}
                         </p>
                     </div>
+                    <div class="space-y-1 sm:col-span-2">
+                        <Label class="text-xs font-medium">Role *</Label>
+                        <Select v-model="form.role_id">
+                            <SelectTrigger class="h-9 w-full">
+                                <SelectValue placeholder="Pilih role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem v-for="r in assignableRoles" :key="r.id" :value="r.id">
+                                    {{ r.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <p v-if="form.errors.role_id" class="text-xs text-destructive">
+                            {{ form.errors.role_id }}
+                        </p>
+                    </div>
                     <div class="space-y-1">
                         <Label for="username" class="text-xs font-medium">Username *</Label>
                         <Input
@@ -150,29 +174,13 @@ function submit() {
                         </p>
                     </div>
                     <div class="space-y-1">
-                        <Label class="text-xs font-medium">Role *</Label>
-                        <Select v-model="form.role_id">
-                            <SelectTrigger class="h-9">
-                                <SelectValue placeholder="Pilih role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem v-for="r in roles" :key="r.id" :value="r.id">
-                                    {{ r.name }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <p v-if="form.errors.role_id" class="text-xs text-destructive">
-                            {{ form.errors.role_id }}
-                        </p>
-                    </div>
-                    <div class="space-y-1">
                         <Label for="email" class="text-xs font-medium">Email</Label>
                         <Input id="email" type="email" v-model="form.email" class="h-9" />
                         <p v-if="form.errors.email" class="text-xs text-destructive">
                             {{ form.errors.email }}
                         </p>
                     </div>
-                    <div class="space-y-1">
+                    <div class="space-y-1 sm:col-span-2">
                         <Label for="phone" class="text-xs font-medium">No. HP / WhatsApp</Label>
                         <Input id="phone" v-model="form.phone" class="h-9" />
                         <p v-if="form.errors.phone" class="text-xs text-destructive">
@@ -182,11 +190,20 @@ function submit() {
                 </div>
 
                 <!-- Password section (create only) -->
-                <div v-if="!isEdit" class="space-y-3 pt-2 border-t border-border/70">
+                <div v-if="!isEdit" class="space-y-2 pt-2 border-t border-border/70">
+                    <p class="text-[11px] text-muted-foreground">
+                        Kosongkan untuk pakai password default
+                        <code class="font-mono px-1 rounded bg-muted">12345678</code>.
+                    </p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div class="space-y-1">
-                            <Label class="text-xs font-medium">Password *</Label>
-                            <Input v-model="form.password" type="password" required class="h-9" />
+                            <Label class="text-xs font-medium">Password</Label>
+                            <Input
+                                v-model="form.password"
+                                type="password"
+                                class="h-9"
+                                placeholder="default: 12345678"
+                            />
                             <ul
                                 v-if="Array.isArray(form.errors.password)"
                                 class="text-xs text-destructive list-disc pl-4 space-y-0.5"
@@ -198,12 +215,12 @@ function submit() {
                             </p>
                         </div>
                         <div class="space-y-1">
-                            <Label class="text-xs font-medium">Konfirmasi password *</Label>
+                            <Label class="text-xs font-medium">Konfirmasi password</Label>
                             <Input
                                 v-model="form.password_confirmation"
                                 type="password"
-                                required
                                 class="h-9"
+                                placeholder="ulangi bila diisi"
                             />
                         </div>
                     </div>

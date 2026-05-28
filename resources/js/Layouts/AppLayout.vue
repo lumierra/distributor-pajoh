@@ -7,7 +7,7 @@ import {
     Menu as MenuIcon,
     UserCog,
 } from "@lucide/vue";
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { toast, Toaster } from "vue-sonner";
 import {
     DropdownMenu,
@@ -48,15 +48,29 @@ const currentRouteName = computed(() => {
 
 const mobileMenuOpen = ref(false);
 
-watch(
-    () => page.props.flash,
-    (flash) => {
-        if (!flash) return;
-        if (flash.success) toast.success(flash.success);
-        if (flash.error) toast.error(flash.error);
-    },
-    { immediate: true, deep: true },
-);
+/**
+ * Tampilkan flash toast setiap response Inertia, BAHKAN ketika pesannya
+ * identik dengan sebelumnya (mis. klik Suspend 2× berturut-turut). Vue
+ * watcher tidak fire kalau reactive value persis sama, jadi kita pakai
+ * `router.on('success')` event Inertia.
+ */
+function showFlashToast() {
+    const flash = page.props.flash;
+    if (!flash) return;
+    if (flash.success) toast.success(flash.success);
+    if (flash.error) toast.error(flash.error);
+}
+
+let stopInertiaSuccessListener = null;
+onMounted(() => {
+    showFlashToast(); // initial load
+    stopInertiaSuccessListener = router.on("success", () => showFlashToast());
+});
+onUnmounted(() => {
+    if (typeof stopInertiaSuccessListener === "function") {
+        stopInertiaSuccessListener();
+    }
+});
 
 function userInitials(name) {
     if (!name) return "?";

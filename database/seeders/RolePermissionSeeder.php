@@ -70,6 +70,7 @@ class RolePermissionSeeder extends Seeder
     {
         return [
             'master.user' => ['view' => true, 'create' => true, 'update' => true, 'export' => true],
+            'master.sales_user' => ['view' => true, 'create' => true, 'update' => true, 'export' => true],
             'master.supplier' => ['view' => true, 'create' => true, 'update' => true, 'export' => true],
             'master.customer' => ['view' => true, 'create' => true, 'update' => true, 'export' => true],
             'master.product' => ['view' => true, 'create' => true, 'update' => true, 'export' => true],

@@ -63,9 +63,9 @@ function submit() {
 }
 
 function labelOf(value) {
-    if (value === true) return 'Grant';
-    if (value === false) return 'Deny';
-    return 'Inherit';
+    if (value === true) return 'Izinkan';
+    if (value === false) return 'Tolak';
+    return 'Default';
 }
 
 function selectValueOf(value) {
@@ -77,6 +77,22 @@ function fromSelectValue(v) {
     if (v === 'inherit') return null;
     return v === 'grant';
 }
+
+/**
+ * Mapping kolom action (DB column → label Bahasa Indonesia di header tabel).
+ */
+const ACTION_LABELS = {
+    can_view: 'Lihat',
+    can_create: 'Tambah',
+    can_update: 'Ubah',
+    can_delete: 'Hapus',
+    can_approve: 'Setujui',
+    can_export: 'Ekspor',
+};
+
+function actionLabel(action) {
+    return ACTION_LABELS[action] ?? action.replace('can_', '');
+}
 </script>
 
 <template>
@@ -85,14 +101,14 @@ function fromSelectValue(v) {
     <AppLayout>
         <PageHeader
             :title="`Menu Override — ${user.name}`"
-            description="Override izin per menu di luar default role. Set ke `Inherit` untuk ikut role."
+            description="Override izin per menu di luar default role. Pilih `Default` untuk ikut role."
             :icon="ShieldCheck"
         >
             <template #actions>
                 <Button as-child variant="ghost" size="lg">
-                    <Link :href="route('users.edit', user.id)">
+                    <Link :href="route('users.index')">
                         <ArrowLeft class="size-4" />
-                        Detail user
+                        Kembali ke daftar
                     </Link>
                 </Button>
             </template>
@@ -102,14 +118,14 @@ function fromSelectValue(v) {
             <section class="rounded-lg ring-1 ring-foreground/10 bg-card shadow-xs overflow-hidden">
                 <header class="border-b border-border/70 px-5 py-3.5">
                     <h2 class="text-sm font-semibold flex items-center gap-1.5">
-                        Override Matrix
+                        Matriks Override
                         <Badge variant="secondary" class="capitalize">
                             Role: {{ user.role?.name }}
                         </Badge>
                     </h2>
                     <p class="text-xs text-muted-foreground mt-0.5">
-                        Set <em>Grant</em> untuk menambah akses, <em>Deny</em> untuk mencabut,
-                        <em>Inherit</em> untuk ikuti role default.
+                        Pilih <em>Izinkan</em> untuk menambah akses, <em>Tolak</em> untuk mencabut,
+                        <em>Default</em> untuk ikuti role.
                     </p>
                 </header>
 
@@ -123,9 +139,9 @@ function fromSelectValue(v) {
                                 <TableHead
                                     v-for="a in actions"
                                     :key="a"
-                                    class="capitalize text-center"
+                                    class="text-center"
                                 >
-                                    {{ a.replace('can_', '') }}
+                                    {{ actionLabel(a) }}
                                 </TableHead>
                                 <TableHead class="min-w-[14rem] pr-5">Catatan</TableHead>
                             </TableRow>
@@ -162,9 +178,9 @@ function fromSelectValue(v) {
                                             <SelectValue>{{ labelOf(row[a]) }}</SelectValue>
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="inherit">Inherit</SelectItem>
-                                            <SelectItem value="grant">Grant</SelectItem>
-                                            <SelectItem value="deny">Deny</SelectItem>
+                                            <SelectItem value="inherit">Default</SelectItem>
+                                            <SelectItem value="grant">Izinkan</SelectItem>
+                                            <SelectItem value="deny">Tolak</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </TableCell>
@@ -173,7 +189,7 @@ function fromSelectValue(v) {
                                         v-model="row.note"
                                         rows="1"
                                         class="text-xs min-h-7"
-                                        placeholder="Alasan override (opsional)"
+                                        placeholder="Alasan (opsional)"
                                     />
                                 </TableCell>
                             </TableRow>
@@ -185,7 +201,7 @@ function fromSelectValue(v) {
                     class="border-t border-border/70 px-5 py-3 flex justify-end gap-2 bg-muted/20"
                 >
                     <Button type="button" variant="ghost" size="lg" as-child>
-                        <Link :href="route('users.edit', user.id)">Batal</Link>
+                        <Link :href="route('users.index')">Batal</Link>
                     </Button>
                     <Button type="submit" size="lg" :disabled="form.processing">
                         <Loader2 v-if="form.processing" class="size-4 animate-spin" />

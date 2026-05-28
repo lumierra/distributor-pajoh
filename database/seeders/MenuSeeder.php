@@ -66,8 +66,9 @@ class MenuSeeder extends Seeder
         return [
             // master
             ['parent' => 'master', 'code' => 'master.user', 'label' => 'User', 'icon' => 'User', 'route' => 'users.index', 'order' => 1],
-            ['parent' => 'master', 'code' => 'master.role', 'label' => 'Role', 'icon' => 'Shield', 'route' => 'roles.index', 'order' => 2],
-            ['parent' => 'master', 'code' => 'master.menu', 'label' => 'Menu (Permission)', 'icon' => 'Menu', 'route' => 'menus.index', 'order' => 3],
+            ['parent' => 'master', 'code' => 'master.sales_user', 'label' => 'Sales', 'icon' => 'UserCog', 'route' => 'sales-users.index', 'order' => 2],
+            ['parent' => 'master', 'code' => 'master.role', 'label' => 'Role', 'icon' => 'Shield', 'route' => 'roles.index', 'order' => 3],
+            ['parent' => 'master', 'code' => 'master.menu', 'label' => 'Menu (Permission)', 'icon' => 'Menu', 'route' => 'menus.index', 'order' => 4],
             ['parent' => 'master', 'code' => 'master.supplier', 'label' => 'Supplier', 'icon' => 'Factory', 'route' => 'suppliers.index', 'order' => 4],
             ['parent' => 'master', 'code' => 'master.customer', 'label' => 'Customer', 'icon' => 'Store', 'route' => 'customers.index', 'order' => 5],
             ['parent' => 'master', 'code' => 'master.product', 'label' => 'Produk', 'icon' => 'Package', 'route' => 'products.index', 'order' => 6],

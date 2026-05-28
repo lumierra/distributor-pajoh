@@ -32,8 +32,13 @@ class UserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
+        // /users hanya untuk role NON-sales. User sales punya halaman terpisah
+        // /sales-users karena butuh field tambahan (area, target, device).
+        $salesRoleId = Role::ofCode(Role::CODE_SALES)->value('id');
+
         $query = User::query()
             ->with('role:id,code,name')
+            ->when($salesRoleId, fn ($q) => $q->where('role_id', '!=', $salesRoleId))
             ->orderBy('name');
 
         if ($search = trim((string) $request->input('q'))) {
@@ -53,14 +58,32 @@ class UserController extends Controller
         }
 
         $totals = User::query()
+            ->when($salesRoleId, fn ($q) => $q->where('role_id', '!=', $salesRoleId))
             ->selectRaw('COUNT(*) AS total')
             ->selectRaw('SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) AS active')
             ->selectRaw('SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) AS inactive')
             ->first();
         $superadmin = User::ofRole(Role::CODE_SUPERADMIN)->count();
 
+        $paginated = $query->paginate(20)->withQueryString();
+        $actor = $request->user();
+
+        // Decorate setiap row dengan flag permission supaya UserDetailDialog
+        // di /users (Index) bisa show/hide action button tanpa redirect ke /edit.
+        $paginated->getCollection()->transform(function (User $u) use ($actor): User {
+            $u->setAttribute('permissions_summary', [
+                'canUpdate' => $actor?->can('update', $u) ?? false,
+                'canResetPassword' => $actor?->can('resetPassword', $u) ?? false,
+                'canForceLogout' => $actor?->can('forceLogout', $u) ?? false,
+                'canDelete' => $actor?->can('delete', $u) ?? false,
+                'canManageOverrides' => $actor?->can('updateMenuOverrides', $u) ?? false,
+            ]);
+
+            return $u;
+        });
+
         return Inertia::render('Users/Index', [
-            'users' => $query->paginate(20)->withQueryString(),
+            'users' => $paginated,
             'roles' => Role::query()->orderBy('sort_order')->get(['id', 'code', 'name']),
             'filters' => [
                 'q' => $request->input('q'),
@@ -97,11 +120,16 @@ class UserController extends Controller
         $data['force_password_change'] = true;
         $data['is_active'] = $data['is_active'] ?? true;
 
+        // Default password kalau admin tidak mengisi.
+        if (empty($data['password'])) {
+            $data['password'] = '12345678';
+        }
+
         $user = User::create($data);
 
         return redirect()
-            ->route('users.edit', $user)
-            ->with('flash.success', "User {$user->name} berhasil dibuat.");
+            ->route('users.index')
+            ->with('flash.success', "User {$user->name} berhasil dibuat. Klik Edit untuk melengkapi data karyawan.");
     }
 
     public function edit(User $user): Response
