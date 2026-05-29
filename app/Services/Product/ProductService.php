@@ -57,10 +57,9 @@ class ProductService
 
             $baseUnitId = null;
             foreach ($units as $i => $u) {
-                $unitMasterName = Unit::query()->where('id', $u['unit_id'])->value('name') ?? 'STD';
+                $unitMasterName = Unit::query()->where('id', $u['unit_id'])->value('name') ?? 'UNIT';
                 $created = $product->units()->create([
                     'unit_id' => $u['unit_id'],
-                    'level' => 'STD', // deprecated, fill with generic value
                     'name' => $unitMasterName,
                     'qty_to_base' => (int) $u['qty_to_base'],
                     'barcode' => $u['barcode'] ?? null,

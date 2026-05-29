@@ -12,18 +12,9 @@ class ProductUnit extends Model
 {
     use HasAuditFields, SoftDeletes;
 
-    public const LEVEL_BSR = 'BSR'; // Besar (Karton/Box)
-
-    public const LEVEL_TGH = 'TGH'; // Tengah (Pak/Pack)
-
-    public const LEVEL_KCL = 'KCL'; // Kecil (Pcs) — base unit
-
-    public const LEVELS = [self::LEVEL_BSR, self::LEVEL_TGH, self::LEVEL_KCL];
-
     protected $fillable = [
         'product_id',
         'unit_id',
-        'level',
         'name',
         'qty_to_base',
         'barcode',

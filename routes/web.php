@@ -169,9 +169,11 @@ Route::middleware('auth')->group(function (): void {
 
     // ── Product ───────────────────────────────────────────────────────
     Route::middleware('menu:master.product')->group(function (): void {
-        Route::resource('products', ProductController::class)->except(['create', 'edit']);
+        Route::resource('products', ProductController::class)->except(['create', 'edit', 'show']);
         Route::post('products/{product}/toggle-active', [ProductController::class, 'toggleActive'])
             ->name('products.toggle-active');
+        Route::get('products/{product}/details', [ProductController::class, 'details'])
+            ->name('products.details');
 
         // Product Units (nested)
         Route::post('products/{product}/units', [ProductUnitController::class, 'store'])

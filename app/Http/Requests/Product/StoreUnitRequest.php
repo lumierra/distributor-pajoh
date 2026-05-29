@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Product;
 
 use App\Models\Product;
-use App\Models\ProductUnit;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,14 +25,15 @@ class StoreUnitRequest extends FormRequest
         $product = $this->route('product');
 
         return [
-            'level' => [
+            'unit_id' => [
                 'required',
-                Rule::in(ProductUnit::LEVELS),
-                Rule::unique('product_units', 'level')
+                'integer',
+                'exists:units,id',
+                // Satu master unit cuma boleh ditambahkan sekali per produk.
+                Rule::unique('product_units', 'unit_id')
                     ->where('product_id', $product->id)
                     ->whereNull('deleted_at'),
             ],
-            'unit_id' => ['nullable', 'integer', 'exists:units,id'],
             'name' => ['required', 'string', 'max:32'],
             'qty_to_base' => ['required', 'integer', 'min:1'],
             'barcode' => ['nullable', 'string', 'max:64', 'unique:product_units,barcode'],

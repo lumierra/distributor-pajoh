@@ -3,24 +3,24 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import {
     Ban,
     CheckCircle2,
-    Eye,
-    Layers,
     LogIn,
     Package,
     Pencil,
     Plus,
     RotateCcw,
     Search,
+    Settings,
     Tags,
     Trash2,
 } from '@lucide/vue';
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import ActionButton from '@/Components/Shared/ActionButton.vue';
 import ActionGroup from '@/Components/Shared/ActionGroup.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import StatCard from '@/Components/Shared/StatCard.vue';
 import ProductFormDialog from '@/Components/Products/ProductFormDialog.vue';
+import ProductManageDialog from '@/Components/Products/ProductManageDialog.vue';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import {
@@ -93,6 +93,8 @@ function reset() {
 
 const modalOpen = ref(false);
 const editing = ref(null);
+const manageOpen = ref(false);
+const manageProductId = ref(null);
 
 function openCreate() {
     editing.value = null;
@@ -104,9 +106,35 @@ function openEdit(p) {
     modalOpen.value = true;
 }
 
-function onSaved() {
-    router.reload({ only: ['products', 'stats'] });
+function openManage(p) {
+    manageProductId.value = p.id;
+    manageOpen.value = true;
 }
+
+function onSaved() {
+    // Setelah create, auto-buka modal Kelola untuk produk yang baru dibuat
+    // supaya admin langsung bisa set satuan tambahan / harga supplier.
+    const newId = page.props.flash?.newly_created_product_id;
+    router.reload({
+        only: ['products', 'stats'],
+        onSuccess: () => {
+            if (newId) {
+                manageProductId.value = newId;
+                manageOpen.value = true;
+            }
+        },
+    });
+}
+
+// Kalau page di-render dgn newly_created_product_id (dari flash redirect),
+// auto buka modal Kelola
+onMounted(() => {
+    const newId = page.props.flash?.newly_created_product_id;
+    if (newId) {
+        manageProductId.value = newId;
+        manageOpen.value = true;
+    }
+});
 
 function toggleActive(p) {
     useForm({}).post(route('products.toggle-active', p.id), { preserveScroll: true });
@@ -133,7 +161,7 @@ function formatDate(value) {
     <AppLayout>
         <PageHeader
             title="Produk"
-            description="Master produk — UoM bertingkat (BSR/TGH/KCL), harga per tier, dan supplier."
+            description="Master produk — satuan dinamis dgn konversi base unit + harga per (supplier × satuan)."
             :icon="Package"
         >
             <template #actions>
@@ -141,12 +169,6 @@ function formatDate(value) {
                     <Link :href="route('product-categories.index')">
                         <Tags class="size-4" />
                         Kategori
-                    </Link>
-                </Button>
-                <Button as-child variant="outline" size="default">
-                    <Link :href="route('price-tiers.index')">
-                        <Layers class="size-4" />
-                        Tier Harga
                     </Link>
                 </Button>
                 <Button v-if="canCreate" size="default" variant="secondary" @click="openCreate">
@@ -241,12 +263,13 @@ function formatDate(value) {
                                     <Package class="size-4" />
                                 </div>
                                 <div class="min-w-0">
-                                    <Link
-                                        :href="route('products.show', p.id)"
-                                        class="font-medium text-foreground truncate leading-tight hover:text-primary transition-colors block"
+                                    <button
+                                        type="button"
+                                        class="font-medium text-foreground truncate leading-tight hover:text-primary transition-colors block text-left"
+                                        @click="openManage(p)"
                                     >
                                         {{ p.name }}
-                                    </Link>
+                                    </button>
                                     <p class="text-[11px] text-muted-foreground font-mono leading-tight">
                                         {{ p.sku }}
                                     </p>
@@ -285,11 +308,12 @@ function formatDate(value) {
                         </TableCell>
                         <TableCell class="py-3 px-4 text-right whitespace-nowrap">
                             <ActionGroup>
-                                <ActionButton :icon="Eye" label="Detail" as-child tone="brand">
-                                    <Link :href="route('products.show', p.id)">
-                                        <Eye class="w-4 h-4" />
-                                    </Link>
-                                </ActionButton>
+                                <ActionButton
+                                    :icon="Settings"
+                                    label="Kelola (satuan, supplier & harga)"
+                                    tone="brand"
+                                    @click="openManage(p)"
+                                />
                                 <ActionButton
                                     :icon="Pencil"
                                     label="Edit"
@@ -334,6 +358,12 @@ function formatDate(value) {
             :units-master="unitsMaster"
             :suppliers="suppliers"
             @saved="onSaved"
+        />
+        <ProductManageDialog
+            v-model:open="manageOpen"
+            :product-id="manageProductId"
+            :suppliers="suppliers"
+            :can-update="canCreate"
         />
     </AppLayout>
 </template>

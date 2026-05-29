@@ -25,8 +25,8 @@ class ProductUnitController extends Controller
     {
         $this->authorize('update', $unit->product);
 
-        if ($unit->level === ProductUnit::LEVEL_KCL) {
-            return back()->withErrors(['delete' => 'Unit KCL (base) tidak bisa dihapus.']);
+        if ((int) $unit->qty_to_base === 1) {
+            return back()->withErrors(['delete' => 'Satuan base unit (qty=1) tidak bisa dihapus.']);
         }
 
         $unit->delete();

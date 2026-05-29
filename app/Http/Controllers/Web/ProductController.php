@@ -10,6 +10,7 @@ use App\Models\ProductCategory;
 use App\Models\Supplier;
 use App\Models\Unit;
 use App\Services\Product\ProductService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -76,34 +77,31 @@ class ProductController extends Controller
 
         $product = $this->service->create($data, $units, $supplierIds);
 
-        return redirect()
-            ->route('products.show', $product)
-            ->with('flash.success', "Produk {$product->name} ({$product->sku}) berhasil dibuat.");
+        return back()->with([
+            'flash.success' => "Produk {$product->name} ({$product->sku}) berhasil dibuat.",
+            'newly_created_product_id' => $product->id,
+        ]);
     }
 
-    public function show(Product $product): Response
+    /**
+     * AJAX endpoint untuk memuat detail produk lengkap (satuan + supplier-harga + tagging)
+     * ke modal Kelola di halaman /products. Pengganti halaman Show.
+     */
+    public function details(Product $product): JsonResponse
     {
         $this->authorize('view', $product);
 
         $product->load([
             'category:id,code,name',
-            'baseUnit',
+            'baseUnit:id,product_id,name,qty_to_base',
             'units.unit:id,name',
             'supplierProductUnits.supplier:id,code,name',
-            'supplierProductUnits.productUnit:id,name,level',
+            'supplierProductUnits.productUnit:id,name,qty_to_base',
             'supplierProducts.supplier:id,code,name',
         ]);
 
-        return Inertia::render('Products/Show', [
+        return response()->json([
             'product' => $product,
-            'categories' => ProductCategory::query()->active()->orderBy('sort_order')->get(['id', 'code', 'name']),
-            'units' => Unit::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
-            'suppliers' => Supplier::query()
-                ->where('is_active', true)
-                ->orderBy('name')
-                ->get(['id', 'code', 'name']),
-            'canUpdate' => request()->user()?->can('update', $product) ?? false,
-            'canDelete' => request()->user()?->can('delete', $product) ?? false,
         ]);
     }
 
