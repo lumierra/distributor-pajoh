@@ -4,19 +4,22 @@ namespace App\Services\Product;
 
 use App\Models\Product;
 use App\Models\ProductCategory;
-use App\Models\ProductUnit;
+use App\Models\SupplierProduct;
+use App\Models\Unit;
 use App\Services\Numbering\NumberingService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 /**
- * Orchestrator untuk Product CRUD. Per blueprint T04:
- *  - SKU auto-generate via NumberingService dengan context kategori
- *  - Wizard create: insert product → insert KCL unit (wajib) + optional TGH/BSR →
- *    update base_unit_id ke KCL → auto-generate price matrix (semua kombinasi
- *    unit × tier dengan price=0)
- *  - Semua dalam DB::transaction
- *  - Cache `products:active` invalidate setelah mutasi
+ * Orchestrator untuk Product CRUD.
+ *
+ * Flow create:
+ *  - SKU auto-generate via NumberingService dgn context kategori
+ *  - Insert product → insert N satuan (dinamis, level concept dihapus)
+ *  - Tepat 1 satuan harus qty_to_base=1 (jadi base_unit_id)
+ *  - Tag supplier(s) ke pivot supplier_products (wajib minimal 1)
+ *  - Harga ditentukan setelah create lewat tab Supplier & Harga
  */
 class ProductService
 {
@@ -30,58 +33,62 @@ class ProductService
     ) {}
 
     /**
-     * Create produk lengkap dengan unit + price matrix.
-     *
      * @param  array<string, mixed>  $productData
-     * @param  array<int, array{level:string, name:string, qty_to_base:int, barcode?:?string}>  $units
-     *                                                                                                  Minimal harus ada 1 unit dengan level=KCL & qty_to_base=1.
+     * @param  array<int, array{unit_id:int, qty_to_base:int, barcode?:?string}>  $units
+     *                                                                                    Minimal 1 satuan, salah satunya wajib qty_to_base=1 (base).
+     * @param  array<int, int>  $supplierIds  minimal 1 supplier wajib (tagging).
      */
-    public function create(array $productData, array $units): Product
+    public function create(array $productData, array $units, array $supplierIds): Product
     {
         $this->uom->validateHierarchy($units);
 
-        return DB::transaction(function () use ($productData, $units): Product {
-            // 1. Generate SKU dengan context kategori
+        if (empty($supplierIds)) {
+            throw new InvalidArgumentException('Minimal 1 supplier wajib di-tag ke produk.');
+        }
+
+        return DB::transaction(function () use ($productData, $units, $supplierIds): Product {
             $categoryCode = $this->resolveCategoryCode($productData['category_id'] ?? null);
             $productData['sku'] ??= $this->numbering->next('product_sku', ['cat' => $categoryCode]);
             $productData['is_active'] = $productData['is_active'] ?? true;
 
-            // 2. Insert product (tanpa base_unit_id dulu)
+            unset($productData['brand']); // brand di-deprecate, ganti tagging supplier
+
             $product = Product::create($productData);
 
-            // 3. Insert units. Sort biar KCL pertama supaya base_unit_id pasti diset.
-            $unitsCollection = collect($units)->sortBy(fn ($u) => match ($u['level']) {
-                ProductUnit::LEVEL_KCL => 0,
-                ProductUnit::LEVEL_TGH => 1,
-                ProductUnit::LEVEL_BSR => 2,
-                default => 99,
-            });
-
-            $kclUnit = null;
-            $createdUnits = [];
-            foreach ($unitsCollection as $i => $u) {
-                $unit = $product->units()->create([
-                    'level' => $u['level'],
-                    'name' => $u['name'],
+            $baseUnitId = null;
+            foreach ($units as $i => $u) {
+                $unitMasterName = Unit::query()->where('id', $u['unit_id'])->value('name') ?? 'STD';
+                $created = $product->units()->create([
+                    'unit_id' => $u['unit_id'],
+                    'level' => 'STD', // deprecated, fill with generic value
+                    'name' => $unitMasterName,
                     'qty_to_base' => (int) $u['qty_to_base'],
                     'barcode' => $u['barcode'] ?? null,
                     'sort_order' => $i,
                 ]);
-                if ($unit->level === ProductUnit::LEVEL_KCL) {
-                    $kclUnit = $unit;
+
+                if ((int) $u['qty_to_base'] === 1) {
+                    $baseUnitId = $created->id;
                 }
-                $createdUnits[] = $unit;
             }
 
-            // 4. Update base_unit_id ke KCL
-            $product->base_unit_id = $kclUnit->id;
+            $product->base_unit_id = $baseUnitId;
             $product->save();
 
-            // 5. Harga di-set via tab "Supplier & Harga" di halaman produk
-            //    (pivot supplier_product_units). Tidak auto-generate apa-apa.
+            // Tag suppliers — first one jadi primary
+            $supplierIds = array_values(array_unique(array_map('intval', $supplierIds)));
+            foreach ($supplierIds as $idx => $sid) {
+                SupplierProduct::create([
+                    'supplier_id' => $sid,
+                    'product_id' => $product->id,
+                    'is_primary' => $idx === 0,
+                    'is_active' => true,
+                ]);
+            }
+
             $this->invalidateCache();
 
-            return $product->fresh(['category', 'baseUnit', 'units']);
+            return $product->fresh(['category', 'baseUnit', 'units', 'supplierProducts.supplier']);
         });
     }
 
@@ -91,7 +98,8 @@ class ProductService
     public function update(Product $product, array $data): Product
     {
         return DB::transaction(function () use ($product, $data): Product {
-            unset($data['sku']); // SKU adalah read-only setelah create
+            unset($data['sku']); // SKU read-only setelah create
+            unset($data['brand']); // brand deprecated
             $product->update($data);
             $this->invalidateCache();
 

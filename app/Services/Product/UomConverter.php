@@ -57,31 +57,46 @@ class UomConverter
 
     /**
      * Validasi hirarki UoM (BSR > TGH > KCL=1).
+     * Validasi:
+     *  - Minimal 1 unit.
+     *  - Tepat 1 unit dengan qty_to_base = 1 (base unit, sumber stok).
+     *  - Semua unit punya qty_to_base > 0.
+     *  - unit_id tidak duplikat (1 master unit hanya boleh ditambahkan sekali per produk).
      *
-     * @param  array<int, array{level:string, qty_to_base:int}>  $units
+     * @param  array<int, array{unit_id?:int, qty_to_base:int}>  $units
      *
      * @throws InvalidArgumentException
      */
     public function validateHierarchy(array $units): void
     {
-        $byLevel = collect($units)->keyBy('level');
-
-        $kcl = $byLevel->get(ProductUnit::LEVEL_KCL);
-        if (! $kcl || (int) $kcl['qty_to_base'] !== 1) {
-            throw new InvalidArgumentException('Unit KCL wajib ada dan qty_to_base harus = 1.');
+        if (empty($units)) {
+            throw new InvalidArgumentException('Minimal 1 satuan wajib ditambahkan.');
         }
 
-        if ($tgh = $byLevel->get(ProductUnit::LEVEL_TGH)) {
-            if ((int) $tgh['qty_to_base'] <= 1) {
-                throw new InvalidArgumentException('Unit TGH harus punya qty_to_base > 1 (lebih besar dari KCL).');
+        $baseCount = 0;
+        $seenUnitIds = [];
+        foreach ($units as $u) {
+            $qty = (int) ($u['qty_to_base'] ?? 0);
+            if ($qty <= 0) {
+                throw new InvalidArgumentException('qty_to_base setiap satuan harus > 0.');
+            }
+            if ($qty === 1) {
+                $baseCount++;
+            }
+            $unitId = $u['unit_id'] ?? null;
+            if ($unitId !== null) {
+                if (in_array($unitId, $seenUnitIds, true)) {
+                    throw new InvalidArgumentException('Satuan duplikat: pilih satuan yang berbeda untuk tiap baris.');
+                }
+                $seenUnitIds[] = $unitId;
             }
         }
 
-        if ($bsr = $byLevel->get(ProductUnit::LEVEL_BSR)) {
-            $tghQty = $tgh ? (int) $tgh['qty_to_base'] : 1;
-            if ((int) $bsr['qty_to_base'] <= $tghQty) {
-                throw new InvalidArgumentException('Unit BSR harus punya qty_to_base > TGH.');
-            }
+        if ($baseCount === 0) {
+            throw new InvalidArgumentException('Wajib ada minimal 1 satuan dengan qty_to_base = 1 (base unit).');
+        }
+        if ($baseCount > 1) {
+            throw new InvalidArgumentException('Hanya boleh ada 1 satuan dengan qty_to_base = 1 (base unit).');
         }
     }
 }

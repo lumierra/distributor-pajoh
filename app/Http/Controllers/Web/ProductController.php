@@ -30,8 +30,7 @@ class ProductController extends Controller
         if ($search = trim((string) $request->input('q'))) {
             $query->where(function ($q) use ($search): void {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('brand', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -52,6 +51,8 @@ class ProductController extends Controller
         return Inertia::render('Products/Index', [
             'products' => $query->paginate(25)->withQueryString(),
             'categories' => ProductCategory::query()->active()->orderBy('sort_order')->get(['id', 'code', 'name']),
+            'unitsMaster' => Unit::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'suppliers' => Supplier::query()->where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']),
             'filters' => [
                 'q' => $request->input('q'),
                 'category' => $request->input('category'),
@@ -70,9 +71,10 @@ class ProductController extends Controller
     {
         $data = $request->validated();
         $units = $data['units'];
-        unset($data['units']);
+        $supplierIds = $data['supplier_ids'];
+        unset($data['units'], $data['supplier_ids']);
 
-        $product = $this->service->create($data, $units);
+        $product = $this->service->create($data, $units, $supplierIds);
 
         return redirect()
             ->route('products.show', $product)

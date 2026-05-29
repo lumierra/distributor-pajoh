@@ -43,6 +43,8 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 const props = defineProps({
     products: { type: Object, required: true },
     categories: { type: Array, required: true },
+    unitsMaster: { type: Array, default: () => [] },
+    suppliers: { type: Array, default: () => [] },
     filters: { type: Object, default: () => ({}) },
     stats: { type: Object, default: null },
 });
@@ -175,7 +177,7 @@ function formatDate(value) {
                     <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                     <Input
                         v-model="filters.q"
-                        placeholder="Cari nama, SKU, atau brand…"
+                        placeholder="Cari nama atau SKU…"
                         class="pl-8 h-9 rounded-md"
                     />
                 </div>
@@ -213,7 +215,6 @@ function formatDate(value) {
                     <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">Produk</TableHead>
                         <TableHead>Kategori</TableHead>
-                        <TableHead>Brand</TableHead>
                         <TableHead>Base</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Dibuat</TableHead>
@@ -222,7 +223,7 @@ function formatDate(value) {
                 </TableHeader>
                 <TableBody class="text-sm">
                     <TableRow v-if="products.data.length === 0">
-                        <TableCell colspan="7" class="text-center py-16">
+                        <TableCell colspan="6" class="text-center py-16">
                             <div class="flex flex-col items-center gap-2 text-muted-foreground">
                                 <Package class="size-7 opacity-40" />
                                 <p class="text-sm">Belum ada produk.</p>
@@ -259,10 +260,6 @@ function formatDate(value) {
                             >
                                 {{ p.category.name }}
                             </span>
-                            <span v-else class="text-muted-foreground">—</span>
-                        </TableCell>
-                        <TableCell class="text-xs">
-                            <span v-if="p.brand">{{ p.brand }}</span>
                             <span v-else class="text-muted-foreground">—</span>
                         </TableCell>
                         <TableCell class="text-xs">
@@ -334,6 +331,8 @@ function formatDate(value) {
             v-model:open="modalOpen"
             :product="editing"
             :categories="categories"
+            :units-master="unitsMaster"
+            :suppliers="suppliers"
             @saved="onSaved"
         />
     </AppLayout>

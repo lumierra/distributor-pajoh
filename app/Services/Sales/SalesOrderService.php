@@ -375,6 +375,17 @@ class SalesOrderService
                 ]);
             }
 
+            // Supplier wajib ada di tagging produk (supplier_products M2M).
+            $isLinked = $product->supplierProducts()
+                ->where('supplier_id', $supplierId)
+                ->where('is_active', true)
+                ->exists();
+            if (! $isLinked) {
+                throw ValidationException::withMessages([
+                    "items.{$idx}.supplier_id" => "Supplier yang dipilih tidak ter-link ke produk '{$product->name}'.",
+                ]);
+            }
+
             $isBonus = (bool) ($row['is_bonus'] ?? false);
             $unitPrice = $isBonus ? 0.0 : $this->resolveSellPrice($product->id, $unit->id, $supplierId);
 

@@ -76,13 +76,12 @@ class ProductGroupController extends Controller
             ->where('is_active', true)
             ->with(['suppliers:id,name,code'])
             ->orderBy('name')
-            ->get(['id', 'sku', 'name', 'brand'])
+            ->get(['id', 'sku', 'name'])
             ->map(function ($p) {
                 return [
                     'id' => $p->id,
                     'sku' => $p->sku,
                     'name' => $p->name,
-                    'brand' => $p->brand,
                     'supplier_ids' => $p->suppliers->pluck('id')->all(),
                 ];
             });

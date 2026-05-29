@@ -27,7 +27,6 @@ class InventoryController extends Controller
                 'products.id',
                 'products.sku',
                 'products.name',
-                'products.brand',
                 'products.category_id',
                 'products.base_unit_id',
                 'products.is_active',
@@ -40,7 +39,6 @@ class InventoryController extends Controller
                 'products.id',
                 'products.sku',
                 'products.name',
-                'products.brand',
                 'products.category_id',
                 'products.base_unit_id',
                 'products.is_active',
@@ -50,8 +48,7 @@ class InventoryController extends Controller
         if ($search = trim((string) $request->input('q'))) {
             $query->where(function ($q) use ($search): void {
                 $q->where('products.name', 'like', "%{$search}%")
-                    ->orWhere('products.sku', 'like', "%{$search}%")
-                    ->orWhere('products.brand', 'like', "%{$search}%");
+                    ->orWhere('products.sku', 'like', "%{$search}%");
             });
         }
 
