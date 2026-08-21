@@ -271,6 +271,7 @@ class SettingSeeder extends Seeder
             ['key' => 'credit_note', 'format' => 'CN-{YY}{MM}-{seq:04d}', 'reset' => 'yearly', 'label' => 'Format No Credit Note'],
             ['key' => 'adjustment', 'format' => 'ADJ-{YY}{MM}-{seq:04d}', 'reset' => 'yearly', 'label' => 'Format No Adjustment'],
             ['key' => 'opname', 'format' => 'OPN-{YY}{MM}-{seq:04d}', 'reset' => 'yearly', 'label' => 'Format No Opname'],
+            ['key' => 'opening', 'format' => 'OB-{YY}{MM}-{seq:04d}', 'reset' => 'yearly', 'label' => 'Format No Stok Awal'],
         ];
 
         $out = [];

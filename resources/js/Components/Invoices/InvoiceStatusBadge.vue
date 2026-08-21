@@ -7,17 +7,18 @@ const props = defineProps({
 
 const config = computed(() => {
     const map = {
-        open: { label: 'Open', class: 'bg-blue-50 text-blue-700 ring-blue-200' },
-        partial_paid: { label: 'Partial Paid', class: 'bg-amber-50 text-amber-800 ring-amber-200' },
-        paid: { label: 'Paid', class: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
-        overdue: { label: 'Overdue', class: 'bg-red-50 text-red-700 ring-red-200' },
+        open: { label: 'Belum Bayar', text: 'text-blue-700', dot: 'bg-blue-500' },
+        partial_paid: { label: 'Bayar Sebagian', text: 'text-amber-700', dot: 'bg-amber-500' },
+        paid: { label: 'Lunas', text: 'text-emerald-700', dot: 'bg-emerald-600' },
+        overdue: { label: 'Jatuh Tempo', text: 'text-red-700', dot: 'bg-red-500' },
     };
-    return map[props.status] ?? { label: props.status, class: 'bg-muted text-muted-foreground' };
+    return map[props.status] ?? { label: props.status, text: 'text-muted-foreground', dot: 'bg-muted-foreground/50' };
 });
 </script>
 
 <template>
-    <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ring-1', config.class]">
+    <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium', config.text]">
+        <span :class="['size-1.5 rounded-full', config.dot]" />
         {{ config.label }}
     </span>
 </template>

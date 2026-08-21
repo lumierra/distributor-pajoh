@@ -17,6 +17,7 @@ import ActionButton from '@/Components/Shared/ActionButton.vue';
 import ActionGroup from '@/Components/Shared/ActionGroup.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
+import { confirm } from '@/Composables/useConfirm';
 import { Button } from '@/Components/ui/button';
 import {
     Dialog,
@@ -143,8 +144,8 @@ function submit() {
     }
 }
 
-function destroy(g) {
-    if (!window.confirm(`Hapus Product Group "${g.name}"?`)) return;
+async function destroy(g) {
+    if (!(await confirm({ title: `Hapus Product Group "${g.name}"?`, destructive: true }))) return;
     useForm({}).delete(route('product-groups.destroy', g.id), { preserveScroll: true });
 }
 </script>
@@ -159,26 +160,31 @@ function destroy(g) {
             :icon="Layers"
         >
             <template #actions>
-                <Button v-if="canCreate" size="default" variant="secondary" @click="openCreate">
+                <Button
+                    v-if="canCreate"
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                    @click="openCreate"
+                >
                     <Plus class="size-4" />
                     Tambah Group
                 </Button>
             </template>
         </PageHeader>
 
-        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <div class="border-b border-border/70 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+        <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
                 <div class="relative flex-1">
-                    <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                     <Input
                         v-model="filters.q"
                         placeholder="Cari kode / nama group…"
-                        class="pl-8 h-9 rounded-md"
+                        class="pl-8 h-9 rounded-full bg-muted/50 border-transparent focus-visible:bg-card"
                     />
                 </div>
                 <div class="flex items-center gap-2">
                     <Select v-model="filters.active">
-                        <SelectTrigger class="w-[130px] h-9 rounded-md">
+                        <SelectTrigger class="w-[130px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -187,16 +193,22 @@ function destroy(g) {
                             <SelectItem value="0">Nonaktif</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button type="button" variant="outline" size="default" @click="reset">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="default"
+                        class="rounded-full"
+                        @click="reset"
+                    >
                         <RotateCcw class="size-3.5" />
                         Reset
                     </Button>
                 </div>
             </div>
 
-            <Table>
+            <Table class="border-t border-foreground/5">
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5 hover:bg-transparent">
                         <TableHead class="pl-4">Kode</TableHead>
                         <TableHead>Nama Group</TableHead>
                         <TableHead class="text-right">Produk</TableHead>
@@ -217,7 +229,7 @@ function destroy(g) {
                     <TableRow
                         v-for="g in groups.data"
                         :key="g.id"
-                        class="hover:bg-muted/30 transition-colors"
+                        class="hover:bg-foreground/2.5 transition-colors border-foreground/5"
                     >
                         <TableCell class="pl-4 py-2.5 font-mono text-xs">{{ g.code }}</TableCell>
                         <TableCell>
@@ -245,60 +257,64 @@ function destroy(g) {
                         </TableCell>
                         <TableCell class="text-center">
                             <span
-                                v-if="g.is_active"
-                                class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                                :class="[
+                                    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium',
+                                    g.is_active ? 'text-emerald-700' : 'text-muted-foreground',
+                                ]"
                             >
-                                Aktif
-                            </span>
-                            <span
-                                v-else
-                                class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground"
-                            >
-                                Nonaktif
+                                <span
+                                    :class="[
+                                        'size-1.5 rounded-full',
+                                        g.is_active ? 'bg-emerald-500' : 'bg-muted-foreground/50',
+                                    ]"
+                                />
+                                {{ g.is_active ? 'Aktif' : 'Nonaktif' }}
                             </span>
                         </TableCell>
                         <TableCell class="text-center pr-4 whitespace-nowrap">
-                            <ActionGroup>
-                                <ActionButton
-                                    :icon="Eye"
-                                    label="Detail & assignment"
-                                    tone="indigo"
-                                    @click="$inertia.visit(route('product-groups.show', g.id))"
-                                />
-                                <ActionButton
-                                    v-if="canUpdate"
-                                    :icon="Pencil"
-                                    label="Edit"
-                                    tone="blue"
-                                    @click="openEdit(g)"
-                                />
-                                <ActionButton
-                                    v-if="canDelete"
-                                    :icon="Trash2"
-                                    label="Hapus"
-                                    tone="red"
-                                    @click="destroy(g)"
-                                />
-                            </ActionGroup>
+                            <div class="flex justify-center">
+                                <ActionGroup class="rounded-full">
+                                    <ActionButton
+                                        :icon="Eye"
+                                        label="Detail & assignment"
+                                        tone="indigo"
+                                        @click="$inertia.visit(route('product-groups.show', g.id))"
+                                    />
+                                    <ActionButton
+                                        v-if="canUpdate"
+                                        :icon="Pencil"
+                                        label="Edit"
+                                        tone="blue"
+                                        @click="openEdit(g)"
+                                    />
+                                    <ActionButton
+                                        v-if="canDelete"
+                                        :icon="Trash2"
+                                        label="Hapus"
+                                        tone="red"
+                                        @click="destroy(g)"
+                                    />
+                                </ActionGroup>
+                            </div>
                         </TableCell>
                     </TableRow>
                 </TableBody>
             </Table>
 
-            <div v-if="groups.data.length > 0" class="border-t border-border/70 px-4 py-2.5">
+            <div v-if="groups.data.length > 0" class="border-t border-foreground/5 px-4 py-3">
                 <Pagination :meta="groups" />
             </div>
         </section>
 
         <Dialog v-model:open="open">
-            <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden">
-                <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
-                    <div class="flex items-start gap-3">
-                        <div class="size-10 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 ring-1 ring-emerald-200">
+            <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl gap-0">
+                <DialogHeader class="px-6 pt-6 pb-4">
+                    <div class="flex items-start gap-3.5">
+                        <div class="size-11 rounded-full bg-brand-light/70 text-brand flex items-center justify-center shrink-0">
                             <Layers class="size-5" />
                         </div>
-                        <div>
-                            <DialogTitle class="text-base font-bold tracking-tight">
+                        <div class="pt-0.5">
+                            <DialogTitle class="text-base font-semibold tracking-tight">
                                 {{ isEdit ? `Edit Group — ${editing.name}` : 'Tambah Product Group' }}
                             </DialogTitle>
                             <DialogDescription class="text-xs text-muted-foreground mt-0.5">
@@ -308,39 +324,56 @@ function destroy(g) {
                     </div>
                 </DialogHeader>
 
-                <form class="px-5 py-4 space-y-3.5" @submit.prevent="submit">
+                <form class="px-6 pb-2 space-y-3.5" @submit.prevent="submit">
                     <div v-if="!isEdit" class="space-y-1">
                         <Label class="text-xs font-medium">Code *</Label>
-                        <Input v-model="form.code" required class="h-9 font-mono uppercase" placeholder="SUPPA_FROZEN" />
+                        <Input
+                            v-model="form.code"
+                            required
+                            class="h-10 rounded-xl font-mono uppercase"
+                            placeholder="SUPPA_FROZEN"
+                        />
                         <p v-if="form.errors.code" class="text-xs text-destructive">{{ form.errors.code }}</p>
                     </div>
                     <div class="space-y-1">
                         <Label class="text-xs font-medium">Nama *</Label>
-                        <Input v-model="form.name" required class="h-9" placeholder="cth: Supplier A — Frozen" />
+                        <Input
+                            v-model="form.name"
+                            required
+                            class="h-10 rounded-xl"
+                            placeholder="cth: Supplier A — Frozen"
+                        />
                         <p v-if="form.errors.name" class="text-xs text-destructive">{{ form.errors.name }}</p>
                     </div>
                     <div class="space-y-1">
                         <Label class="text-xs font-medium">Deskripsi</Label>
-                        <Textarea v-model="form.description" rows="2" placeholder="Catatan internal mis. range produk / supplier" />
+                        <Textarea
+                            v-model="form.description"
+                            rows="2"
+                            class="rounded-xl"
+                            placeholder="Catatan internal mis. range produk / supplier"
+                        />
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="flex items-center justify-between rounded-md bg-muted/40 ring-1 ring-foreground/5 px-3.5 py-2.5">
-                            <Label class="text-xs font-medium block cursor-pointer">Aktif</Label>
+                    <div class="grid grid-cols-2 gap-3.5">
+                        <div class="flex items-center justify-between rounded-2xl bg-muted/40 px-4 py-3">
+                            <Label class="text-xs font-medium block cursor-pointer mb-0">Aktif</Label>
                             <Switch v-model="form.is_active" />
                         </div>
                         <div class="space-y-1">
                             <Label class="text-xs font-medium">Sort order</Label>
-                            <Input v-model="form.sort_order" type="number" min="0" class="h-9" />
+                            <Input v-model="form.sort_order" type="number" min="0" class="h-10 rounded-xl" />
                         </div>
                     </div>
                 </form>
 
-                <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">
-                    <Button type="button" variant="outline" size="default" @click="open = false">Batal</Button>
+                <DialogFooter class="px-6 py-4 gap-2">
+                    <Button type="button" variant="outline" size="default" class="rounded-full" @click="open = false">
+                        Batal
+                    </Button>
                     <Button
                         type="button"
-                        variant="secondary"
                         size="default"
+                        class="rounded-full bg-brand text-white hover:bg-brand-dark"
                         :disabled="form.processing"
                         @click="submit"
                     >

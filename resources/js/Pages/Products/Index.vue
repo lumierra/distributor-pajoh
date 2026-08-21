@@ -9,18 +9,16 @@ import {
     Plus,
     RotateCcw,
     Search,
-    Settings,
     Tags,
     Trash2,
 } from '@lucide/vue';
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import ActionButton from '@/Components/Shared/ActionButton.vue';
 import ActionGroup from '@/Components/Shared/ActionGroup.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
-import StatCard from '@/Components/Shared/StatCard.vue';
+import { confirm } from '@/Composables/useConfirm';
 import ProductFormDialog from '@/Components/Products/ProductFormDialog.vue';
-import ProductManageDialog from '@/Components/Products/ProductManageDialog.vue';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import {
@@ -93,8 +91,6 @@ function reset() {
 
 const modalOpen = ref(false);
 const editing = ref(null);
-const manageOpen = ref(false);
-const manageProductId = ref(null);
 
 function openCreate() {
     editing.value = null;
@@ -106,42 +102,16 @@ function openEdit(p) {
     modalOpen.value = true;
 }
 
-function openManage(p) {
-    manageProductId.value = p.id;
-    manageOpen.value = true;
-}
-
 function onSaved() {
-    // Setelah create, auto-buka modal Kelola untuk produk yang baru dibuat
-    // supaya admin langsung bisa set satuan tambahan / harga supplier.
-    const newId = page.props.flash?.newly_created_product_id;
-    router.reload({
-        only: ['products', 'stats'],
-        onSuccess: () => {
-            if (newId) {
-                manageProductId.value = newId;
-                manageOpen.value = true;
-            }
-        },
-    });
+    router.reload({ only: ['products', 'stats'] });
 }
-
-// Kalau page di-render dgn newly_created_product_id (dari flash redirect),
-// auto buka modal Kelola
-onMounted(() => {
-    const newId = page.props.flash?.newly_created_product_id;
-    if (newId) {
-        manageProductId.value = newId;
-        manageOpen.value = true;
-    }
-});
 
 function toggleActive(p) {
     useForm({}).post(route('products.toggle-active', p.id), { preserveScroll: true });
 }
 
-function destroy(p) {
-    if (! window.confirm(`Hapus produk ${p.name}?`)) return;
+async function destroy(p) {
+    if (!(await confirm({ title: `Hapus produk ${p.name}?`, destructive: true }))) return;
     useForm({}).delete(route('products.destroy', p.id), { preserveScroll: true });
 }
 
@@ -153,6 +123,16 @@ function formatDate(value) {
         year: 'numeric',
     });
 }
+
+const statTiles = computed(() => {
+    if (!props.stats) return [];
+    return [
+        { label: 'Total Produk', value: props.stats.total ?? 0, icon: Package },
+        { label: 'Aktif', value: props.stats.active ?? 0, icon: CheckCircle2 },
+        { label: 'Nonaktif', value: props.stats.inactive ?? 0, icon: Ban },
+        { label: 'Kategori', value: props.stats.categories ?? 0, icon: Tags },
+    ];
+});
 </script>
 
 <template>
@@ -165,47 +145,60 @@ function formatDate(value) {
             :icon="Package"
         >
             <template #actions>
-                <Button as-child variant="outline" size="default">
+                <Button as-child variant="outline" size="default" class="rounded-full">
                     <Link :href="route('product-categories.index')">
                         <Tags class="size-4" />
                         Kategori
                     </Link>
                 </Button>
-                <Button v-if="canCreate" size="default" variant="secondary" @click="openCreate">
+                <Button
+                    v-if="canCreate"
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                    @click="openCreate"
+                >
                     <Plus class="size-4" />
                     Tambah Produk
                 </Button>
             </template>
         </PageHeader>
 
+        <!-- ── Stat tiles — soft red tint, angka+label kiri, ikon kanan ── -->
         <section v-if="stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <StatCard label="Total Produk" :value="stats.total ?? 0" tone="brand">
-                <template #icon><Package class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Aktif" :value="stats.active ?? 0" tone="brand">
-                <template #icon><CheckCircle2 class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Nonaktif" :value="stats.inactive ?? 0" tone="brand">
-                <template #icon><Ban class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Kategori" :value="stats.categories ?? 0" tone="brand-orange">
-                <template #icon><Tags class="size-5" /></template>
-            </StatCard>
+            <div
+                v-for="tile in statTiles"
+                :key="tile.label"
+                class="rounded-2xl bg-brand-light/60 ring-1 ring-brand/10 shadow-sm px-4 py-3.5 flex items-center justify-between gap-3 transition-all duration-200 hover:ring-brand/25 hover:shadow-md hover:-translate-y-0.5"
+            >
+                <div class="min-w-0">
+                    <p class="text-lg font-semibold tracking-tight leading-tight text-brand-dark">
+                        {{ tile.value }}
+                    </p>
+                    <p class="text-[12px] text-brand-dark/70 truncate leading-tight mt-0.5">
+                        {{ tile.label }}
+                    </p>
+                </div>
+                <div
+                    class="size-9 rounded-full bg-brand/10 text-brand flex items-center justify-center shrink-0"
+                >
+                    <component :is="tile.icon" class="size-4.5" />
+                </div>
+            </div>
         </section>
 
-        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <div class="border-b border-border/70 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+        <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
                 <div class="relative flex-1">
-                    <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                     <Input
                         v-model="filters.q"
                         placeholder="Cari nama atau SKU…"
-                        class="pl-8 h-9 rounded-md"
+                        class="pl-8 h-9 rounded-full bg-muted/50 border-transparent focus-visible:bg-card"
                     />
                 </div>
                 <div class="flex items-center gap-2">
                     <Select v-model="filters.category">
-                        <SelectTrigger class="w-[160px] h-9 rounded-md">
+                        <SelectTrigger class="w-[160px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Kategori" />
                         </SelectTrigger>
                         <SelectContent>
@@ -216,7 +209,7 @@ function formatDate(value) {
                         </SelectContent>
                     </Select>
                     <Select v-model="filters.active">
-                        <SelectTrigger class="w-[130px] h-9 rounded-md">
+                        <SelectTrigger class="w-[130px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -225,16 +218,22 @@ function formatDate(value) {
                             <SelectItem value="0">Nonaktif</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button type="button" variant="outline" size="default" @click="reset">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="default"
+                        class="rounded-full"
+                        @click="reset"
+                    >
                         <RotateCcw class="size-3.5" />
                         Reset
                     </Button>
                 </div>
             </div>
 
-            <Table>
+            <Table class="border-t border-foreground/5">
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5 hover:bg-transparent">
                         <TableHead class="pl-4">Produk</TableHead>
                         <TableHead>Kategori</TableHead>
                         <TableHead>Base</TableHead>
@@ -255,22 +254,22 @@ function formatDate(value) {
                     <TableRow
                         v-for="p in products.data"
                         :key="p.id"
-                        class="hover:bg-muted/30 transition-colors"
+                        class="hover:bg-foreground/2.5 transition-colors border-foreground/5"
                     >
                         <TableCell class="pl-4 py-2.5">
-                            <div class="flex items-center gap-2.5">
-                                <div class="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                            <div class="flex items-center gap-3">
+                                <div class="size-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                                     <Package class="size-4" />
                                 </div>
                                 <div class="min-w-0">
                                     <button
                                         type="button"
                                         class="font-medium text-foreground truncate leading-tight hover:text-primary transition-colors block text-left"
-                                        @click="openManage(p)"
+                                        @click="openEdit(p)"
                                     >
                                         {{ p.name }}
                                     </button>
-                                    <p class="text-[11px] text-muted-foreground font-mono leading-tight">
+                                    <p class="text-[12px] text-muted-foreground font-mono leading-tight">
                                         {{ p.sku }}
                                     </p>
                                 </div>
@@ -279,7 +278,7 @@ function formatDate(value) {
                         <TableCell>
                             <span
                                 v-if="p.category"
-                                class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground"
+                                class="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-medium bg-muted/70 text-muted-foreground"
                             >
                                 {{ p.category.name }}
                             </span>
@@ -291,62 +290,60 @@ function formatDate(value) {
                         </TableCell>
                         <TableCell>
                             <span
-                                v-if="p.is_active"
-                                class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                                :class="[
+                                    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium',
+                                    p.is_active ? 'text-emerald-700' : 'text-muted-foreground',
+                                ]"
                             >
-                                Aktif
-                            </span>
-                            <span
-                                v-else
-                                class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground"
-                            >
-                                Nonaktif
+                                <span
+                                    :class="[
+                                        'size-1.5 rounded-full',
+                                        p.is_active ? 'bg-emerald-500' : 'bg-muted-foreground/50',
+                                    ]"
+                                />
+                                {{ p.is_active ? 'Aktif' : 'Nonaktif' }}
                             </span>
                         </TableCell>
                         <TableCell class="text-xs text-muted-foreground whitespace-nowrap">
                             {{ formatDate(p.created_at) }}
                         </TableCell>
                         <TableCell class="py-3 px-4 text-right whitespace-nowrap">
-                            <ActionGroup>
-                                <ActionButton
-                                    :icon="Settings"
-                                    label="Kelola (satuan, supplier & harga)"
-                                    tone="brand"
-                                    @click="openManage(p)"
-                                />
-                                <ActionButton
-                                    :icon="Pencil"
-                                    label="Edit"
-                                    tone="blue"
-                                    @click="openEdit(p)"
-                                />
-                                <ActionButton
-                                    v-if="p.is_active"
-                                    :icon="Ban"
-                                    label="Nonaktifkan"
-                                    tone="amber"
-                                    @click="toggleActive(p)"
-                                />
-                                <ActionButton
-                                    v-else
-                                    :icon="LogIn"
-                                    label="Aktifkan"
-                                    tone="emerald"
-                                    @click="toggleActive(p)"
-                                />
-                                <ActionButton
-                                    :icon="Trash2"
-                                    label="Hapus"
-                                    tone="red"
-                                    @click="destroy(p)"
-                                />
-                            </ActionGroup>
+                            <div class="flex justify-end">
+                                <ActionGroup class="rounded-full">
+                                    <ActionButton
+                                        :icon="Pencil"
+                                        label="Edit"
+                                        tone="blue"
+                                        @click="openEdit(p)"
+                                    />
+                                    <ActionButton
+                                        v-if="p.is_active"
+                                        :icon="Ban"
+                                        label="Nonaktifkan"
+                                        tone="amber"
+                                        @click="toggleActive(p)"
+                                    />
+                                    <ActionButton
+                                        v-else
+                                        :icon="LogIn"
+                                        label="Aktifkan"
+                                        tone="emerald"
+                                        @click="toggleActive(p)"
+                                    />
+                                    <ActionButton
+                                        :icon="Trash2"
+                                        label="Hapus"
+                                        tone="red"
+                                        @click="destroy(p)"
+                                    />
+                                </ActionGroup>
+                            </div>
                         </TableCell>
                     </TableRow>
                 </TableBody>
             </Table>
 
-            <div v-if="products.data.length > 0" class="border-t border-border/70 px-4 py-2.5">
+            <div v-if="products.data.length > 0" class="border-t border-foreground/5 px-4 py-3">
                 <Pagination :meta="products" />
             </div>
         </section>
@@ -358,12 +355,6 @@ function formatDate(value) {
             :units-master="unitsMaster"
             :suppliers="suppliers"
             @saved="onSaved"
-        />
-        <ProductManageDialog
-            v-model:open="manageOpen"
-            :product-id="manageProductId"
-            :suppliers="suppliers"
-            :can-update="canCreate"
         />
     </AppLayout>
 </template>

@@ -7,8 +7,9 @@ use App\Http\Requests\Supplier\UploadDocumentRequest;
 use App\Models\Supplier;
 use App\Models\SupplierDocument;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class SupplierDocumentController extends Controller
 {
@@ -19,7 +20,7 @@ class SupplierDocumentController extends Controller
 
         // Storage path: suppliers/{id}/{type}/{uuid}.{ext}
         $directory = "suppliers/{$supplier->id}/{$data['type']}";
-        $filename = (string) \Illuminate\Support\Str::uuid().'.'.$file->getClientOriginalExtension();
+        $filename = (string) Str::uuid().'.'.$file->getClientOriginalExtension();
         $path = $file->storeAs($directory, $filename, 'local');
 
         $supplier->documents()->create([
@@ -37,7 +38,7 @@ class SupplierDocumentController extends Controller
         return back()->with('flash.success', 'Dokumen diunggah.');
     }
 
-    public function show(SupplierDocument $document): HttpResponse
+    public function show(SupplierDocument $document): BinaryFileResponse
     {
         $this->authorize('view', $document->supplier);
 

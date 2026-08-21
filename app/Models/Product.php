@@ -16,6 +16,7 @@ class Product extends Model
     use HasActivityLog, HasAuditFields, SoftDeletes;
 
     protected $fillable = [
+        'supplier_id',
         'sku',
         'name',
         'category_id',
@@ -35,6 +36,11 @@ class Product extends Model
         ];
     }
 
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(ProductCategory::class, 'category_id');
@@ -50,30 +56,24 @@ class Product extends Model
         return $this->hasMany(ProductUnit::class)->orderBy('qty_to_base', 'desc');
     }
 
-    public function supplierProductUnits(): HasMany
+    public function batches(): HasMany
     {
-        return $this->hasMany(SupplierProductUnit::class);
+        return $this->hasMany(ProductBatch::class);
     }
 
-    public function suppliers(): BelongsToMany
+    /**
+     * Paket harga bernama milik produk ini. Tiap paket berisi baris
+     * (satuan → modal + jual). Paket di-assign ke sales lewat Product Group.
+     */
+    public function pricePackages(): HasMany
     {
-        return $this->belongsToMany(Supplier::class, 'supplier_products')
-            ->using(SupplierProduct::class)
-            ->withPivot([
-                'supplier_sku', 'moq',
-                'is_primary', 'is_active', 'notes',
-            ])
-            ->withTimestamps();
-    }
-
-    public function supplierProducts(): HasMany
-    {
-        return $this->hasMany(SupplierProduct::class);
+        return $this->hasMany(ProductPricePackage::class)->orderBy('sort_order');
     }
 
     public function groups(): BelongsToMany
     {
         return $this->belongsToMany(ProductGroup::class, 'product_group_items')
+            ->withPivot('price_package_id')
             ->withTimestamps();
     }
 

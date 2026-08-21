@@ -94,6 +94,7 @@ class InvoiceService
                 'status' => Invoice::STATUS_OPEN,
                 'fiscal_year' => (int) $invoiceDate->format('Y'),
                 'header_discount_amount' => $this->prorateHeaderDiscount($so, $do),
+                'cashback_amount' => $this->prorateSoAmount($so, $do, (float) $so->cashback),
                 'delivery_notes_snapshot' => $do->receiver_notes,
                 'created_by' => $by?->id,
             ]);
@@ -143,13 +144,21 @@ class InvoiceService
     }
 
     /**
-     * Header discount SO di-distribusikan ke invoice ini secara proporsional
-     * berdasar nilai item DO ini relatif terhadap total SO.
+     * Header discount SO → prorata ke invoice ini.
      */
     private function prorateHeaderDiscount(SalesOrder $so, DeliveryOrder $do): float
     {
-        $soHeaderDiscount = (float) $so->header_discount_amount;
-        if ($soHeaderDiscount <= 0) {
+        return $this->prorateSoAmount($so, $do, (float) $so->header_discount_amount);
+    }
+
+    /**
+     * Distribusikan sebuah nilai potongan tingkat-SO (header discount / cashback)
+     * ke invoice per-DO secara proporsional: berdasar nilai item DO ini relatif
+     * terhadap subtotal SO.
+     */
+    private function prorateSoAmount(SalesOrder $so, DeliveryOrder $do, float $soAmount): float
+    {
+        if ($soAmount <= 0) {
             return 0.0;
         }
 
@@ -158,7 +167,6 @@ class InvoiceService
             return 0.0;
         }
 
-        // Hitung subtotal effective DO ini (qty_delivered - qty_returned × net_price)
         $doSubtotal = 0.0;
         foreach ($do->items as $item) {
             if ($item->is_bonus) {
@@ -173,7 +181,7 @@ class InvoiceService
             return 0.0;
         }
 
-        return round($soHeaderDiscount * $doSubtotal / $soSubtotal, 2);
+        return round($soAmount * $doSubtotal / $soSubtotal, 2);
     }
 
     private function cloneItems(Invoice $invoice, DeliveryOrder $do): void
@@ -192,8 +200,6 @@ class InvoiceService
 
             $soItem = $doItem->soItem;
             $unitPrice = (float) ($soItem->unit_price ?? 0);
-            $z1 = (float) ($soItem->discount_z1_pct ?? 0);
-            $z2 = (float) ($soItem->discount_z2_pct ?? 0);
             $isBonus = (bool) $doItem->is_bonus;
 
             $unitNet = $isBonus
@@ -218,8 +224,10 @@ class InvoiceService
                 'batch_code_snapshot' => $doItem->batch_code_snapshot,
                 'qty' => $qtyForLine,
                 'unit_price' => $unitPrice,
-                'discount_z1_pct' => $z1,
-                'discount_z2_pct' => $z2,
+                'discount_z1_pct' => 0,
+                'discount_z2_pct' => 0,
+                'discount_type' => $isBonus ? null : $soItem->discount_type,
+                'discount_value' => $isBonus ? 0 : (float) ($soItem->discount_value ?? 0),
                 'unit_net_price' => $unitNet,
                 'line_subtotal' => $lineSubtotal,
                 'is_bonus' => $isBonus,
@@ -232,7 +240,7 @@ class InvoiceService
     public function recomputeTotals(Invoice $invoice): Invoice
     {
         $subtotal = (float) $invoice->items()->sum('line_subtotal');
-        $total = max(0, $subtotal - (float) $invoice->header_discount_amount);
+        $total = max(0, $subtotal - (float) $invoice->header_discount_amount - (float) $invoice->cashback_amount);
 
         $invoice->update([
             'subtotal' => $subtotal,

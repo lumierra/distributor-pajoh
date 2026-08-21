@@ -52,18 +52,23 @@ function onSaved() {
             :icon="Shield"
         >
             <template #actions>
-                <Button v-if="canCreate" size="default" variant="secondary" @click="openCreate">
+                <Button
+                    v-if="canCreate"
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                    @click="openCreate"
+                >
                     <Plus class="size-4" />
                     Tambah Role
                 </Button>
             </template>
         </PageHeader>
 
-        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <Table>
+        <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <Table class="border-t border-foreground/5">
                 <TableHeader>
                     <TableRow
-                        class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5"
+                        class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5 hover:bg-transparent"
                     >
                         <TableHead class="pl-4">Role</TableHead>
                         <TableHead>Tipe</TableHead>
@@ -75,12 +80,12 @@ function onSaved() {
                     <TableRow
                         v-for="r in roles"
                         :key="r.id"
-                        class="hover:bg-muted/30 transition-colors"
+                        class="hover:bg-foreground/2.5 transition-colors border-foreground/5"
                     >
                         <TableCell class="pl-4 py-3">
-                            <div class="flex items-center gap-2.5">
+                            <div class="flex items-center gap-3">
                                 <div
-                                    class="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0"
+                                    class="size-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0"
                                 >
                                     <ShieldCheck class="size-4" />
                                 </div>
@@ -93,7 +98,7 @@ function onSaved() {
                                         {{ r.name }}
                                     </button>
                                     <p
-                                        class="text-[11px] text-muted-foreground font-mono leading-tight mt-0.5"
+                                        class="text-[12px] text-muted-foreground font-mono leading-tight mt-0.5"
                                     >
                                         {{ r.code }}
                                     </p>
@@ -103,37 +108,39 @@ function onSaved() {
                         <TableCell>
                             <span
                                 v-if="r.is_system"
-                                class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground"
+                                class="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-medium bg-muted/70 text-muted-foreground"
                             >
                                 System
                             </span>
                             <span
                                 v-else
-                                class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-warning-soft text-warning"
+                                class="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-medium bg-brand-light/70 text-brand-dark"
                             >
                                 Custom
                             </span>
                         </TableCell>
                         <TableCell class="text-right tabular-nums">{{ r.users_count }}</TableCell>
                         <TableCell class="py-3 px-4 text-center whitespace-nowrap">
-                            <ActionGroup>
-                                <ActionButton
-                                    :icon="Pencil"
-                                    label="Edit Detail"
-                                    tone="blue"
-                                    @click="openEdit(r)"
-                                />
-                                <ActionButton
-                                    :icon="ShieldCheck"
-                                    label="Edit Permission"
-                                    as-child
-                                    tone="brand"
-                                >
-                                    <Link :href="route('roles.permissions.edit', r.id)">
-                                        <ShieldCheck class="w-4 h-4" />
-                                    </Link>
-                                </ActionButton>
-                            </ActionGroup>
+                            <div class="flex justify-center">
+                                <ActionGroup class="rounded-full">
+                                    <ActionButton
+                                        :icon="Pencil"
+                                        label="Edit Detail"
+                                        tone="blue"
+                                        @click="openEdit(r)"
+                                    />
+                                    <ActionButton
+                                        :icon="ShieldCheck"
+                                        label="Edit Permission"
+                                        as-child
+                                        tone="brand"
+                                    >
+                                        <Link :href="route('roles.permissions.edit', r.id)">
+                                            <ShieldCheck class="w-4 h-4" />
+                                        </Link>
+                                    </ActionButton>
+                                </ActionGroup>
+                            </div>
                         </TableCell>
                     </TableRow>
                 </TableBody>

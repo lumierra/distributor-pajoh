@@ -12,6 +12,7 @@ import {
 } from '@lucide/vue';
 import { ref } from 'vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
+import { confirm } from '@/Composables/useConfirm';
 import PoStatusBadge from '@/Components/PurchaseOrders/PoStatusBadge.vue';
 import { Button } from '@/Components/ui/button';
 import {
@@ -41,8 +42,8 @@ const approveForm = useForm({});
 const cancelForm = useForm({ cancel_reason: '' });
 const closeForm = useForm({ close_reason: '' });
 
-function approve() {
-    if (!window.confirm(`Approve PO ${props.purchaseOrder.po_number}? PDF akan di-generate.`)) return;
+async function approve() {
+    if (!(await confirm({ title: `Approve PO ${props.purchaseOrder.po_number}?`, description: 'PDF akan di-generate.' }))) return;
     approveForm.post(route('purchase-orders.approve', props.purchaseOrder.id), { preserveScroll: true });
 }
 
@@ -80,33 +81,38 @@ function formatRp(v) {
             :icon="ShoppingCart"
         >
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('purchase-orders.index')">
                         <ArrowLeft class="size-4" />
                         Daftar PO
                     </Link>
                 </Button>
-                <Button v-if="canEdit" as-child size="default" variant="outline">
+                <Button v-if="canEdit" as-child size="default" variant="outline" class="rounded-full">
                     <Link :href="route('purchase-orders.edit', purchaseOrder.id)">
                         <Pencil class="size-4" />
                         Edit
                     </Link>
                 </Button>
-                <Button v-if="canApprove" size="default" variant="secondary" @click="approve">
+                <Button
+                    v-if="canApprove"
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                    @click="approve"
+                >
                     <CheckCircle2 class="size-4" />
                     Approve
                 </Button>
-                <Button v-if="purchaseOrder.pdf_path" as-child size="default" variant="outline">
+                <Button v-if="purchaseOrder.pdf_path" as-child size="default" variant="outline" class="rounded-full">
                     <a :href="route('purchase-orders.pdf', purchaseOrder.id)" target="_blank" rel="noopener">
                         <FileText class="size-4" />
                         Download PDF
                     </a>
                 </Button>
-                <Button v-if="canCancel" size="default" variant="outline" @click="cancelOpen = true">
+                <Button v-if="canCancel" size="default" variant="outline" class="rounded-full" @click="cancelOpen = true">
                     <Ban class="size-4" />
                     Cancel
                 </Button>
-                <Button v-if="canClose" size="default" variant="outline" @click="closeOpen = true">
+                <Button v-if="canClose" size="default" variant="outline" class="rounded-full" @click="closeOpen = true">
                     <Lock class="size-4" />
                     Close
                 </Button>
@@ -114,37 +120,37 @@ function formatRp(v) {
         </PageHeader>
 
         <!-- Summary -->
-        <section class="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 mb-5">
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 flex items-start gap-4">
-                <div class="size-12 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+        <section class="mb-4">
+            <div class="rounded-2xl bg-brand-light/60 ring-1 ring-brand/10 shadow-sm p-4 flex items-start gap-4">
+                <div class="size-12 rounded-full bg-brand/10 text-brand flex items-center justify-center shrink-0">
                     <ShoppingCart class="size-6" />
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-brand-dark/70">
                         FY {{ purchaseOrder.fiscal_year }}<span v-if="purchaseOrder.is_carry_over"> · Carry-over</span>
                     </p>
-                    <h2 class="text-base font-bold tracking-tight text-foreground truncate font-mono">
+                    <h2 class="text-base font-bold tracking-tight text-brand-dark truncate font-mono">
                         {{ purchaseOrder.po_number }}
                     </h2>
-                    <p class="text-xs text-muted-foreground mt-1">
+                    <p class="text-xs text-brand-dark/70 mt-1">
                         Supplier: <strong>{{ purchaseOrder.supplier?.name ?? '—' }}</strong>
                         <span class="font-mono"> ({{ purchaseOrder.supplier?.code }})</span>
                     </p>
                 </div>
                 <div class="flex flex-col items-end gap-1.5">
                     <PoStatusBadge :status="purchaseOrder.status" />
-                    <p class="text-xs text-muted-foreground">{{ formatDate(purchaseOrder.po_date) }}</p>
+                    <p class="text-xs text-brand-dark/70">{{ formatDate(purchaseOrder.po_date) }}</p>
                 </div>
             </div>
         </section>
 
         <!-- Detail header -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-                <header class="border-b border-border/70 px-5 py-3">
+            <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+                <header class="px-5 py-3 border-b border-foreground/5">
                     <h3 class="text-sm font-semibold">Detail</h3>
                 </header>
-                <dl class="px-5 py-3 grid grid-cols-2 gap-3 text-sm">
+                <dl class="px-5 py-3.5 grid grid-cols-2 gap-3 text-sm">
                     <div>
                         <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Tgl PO</dt>
                         <dd class="mt-0.5">{{ formatDate(purchaseOrder.po_date) }}</dd>
@@ -167,11 +173,11 @@ function formatRp(v) {
                 </dl>
             </div>
 
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-                <header class="border-b border-border/70 px-5 py-3">
+            <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+                <header class="px-5 py-3 border-b border-foreground/5">
                     <h3 class="text-sm font-semibold">Supplier</h3>
                 </header>
-                <dl class="px-5 py-3 text-sm space-y-1">
+                <dl class="px-5 py-3.5 text-sm space-y-1">
                     <p class="font-medium">{{ purchaseOrder.supplier?.name }}</p>
                     <p class="text-xs text-muted-foreground font-mono">{{ purchaseOrder.supplier?.code }}</p>
                     <p v-if="purchaseOrder.supplier?.phone" class="text-xs">Telp: {{ purchaseOrder.supplier.phone }}</p>
@@ -181,38 +187,45 @@ function formatRp(v) {
         </div>
 
         <!-- Items -->
-        <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden mb-4">
-            <header class="border-b border-border/70 px-5 py-3">
+        <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden mb-4">
+            <header class="px-5 py-3 border-b border-foreground/5">
                 <h3 class="text-sm font-semibold">Items ({{ purchaseOrder.items?.length ?? 0 }})</h3>
             </header>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/70">
-                            <th class="text-left py-2.5 px-5">Produk</th>
-                            <th class="text-left py-2.5 px-3">Unit</th>
-                            <th class="text-right py-2.5 px-3">Qty</th>
-                            <th class="text-right py-2.5 px-3">Diterima</th>
-                            <th class="text-right py-2.5 px-3">Bonus</th>
-                            <th class="text-right py-2.5 px-3">Net/Unit</th>
-                            <th class="text-right py-2.5 px-5">Subtotal</th>
+                        <tr class="text-[11px] uppercase tracking-wider text-muted-foreground border-b border-foreground/5">
+                            <th class="text-left py-2.5 px-5 font-semibold">Produk</th>
+                            <th class="text-left py-2.5 px-3 font-semibold">Unit</th>
+                            <th class="text-right py-2.5 px-3 font-semibold">Qty</th>
+                            <th class="text-right py-2.5 px-3 font-semibold">Diterima</th>
+                            <th class="text-right py-2.5 px-3 font-semibold">Pending</th>
+                            <th class="text-right py-2.5 px-3 font-semibold">Bonus</th>
+                            <th class="text-right py-2.5 px-3 font-semibold">Net/Unit</th>
+                            <th class="text-right py-2.5 px-5 font-semibold">Subtotal</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-border/40">
-                        <tr v-for="i in purchaseOrder.items" :key="i.id" class="hover:bg-muted/20">
+                    <tbody class="divide-y divide-foreground/5">
+                        <tr v-for="i in purchaseOrder.items" :key="i.id" class="hover:bg-foreground/2.5 transition-colors">
                             <td class="py-2.5 px-5">
                                 <p class="font-medium">{{ i.product_name_snapshot }}</p>
-                                <p class="text-[11px] text-muted-foreground font-mono">{{ i.product_sku_snapshot }}</p>
+                                <p class="text-[12px] text-muted-foreground font-mono">{{ i.product_sku_snapshot }}</p>
                             </td>
                             <td class="py-2.5 px-3">{{ i.product_unit_name_snapshot }}</td>
                             <td class="py-2.5 px-3 text-right font-mono">{{ i.qty_ordered }}</td>
                             <td class="py-2.5 px-3 text-right font-mono">{{ i.qty_received }}</td>
                             <td class="py-2.5 px-3 text-right font-mono">
+                                <span v-if="Math.max(0, i.qty_ordered - i.qty_received) > 0" class="text-amber-700">
+                                    {{ i.qty_ordered - i.qty_received }}
+                                </span>
+                                <span v-else class="text-muted-foreground">—</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-right font-mono">
                                 {{ i.bonus_qty > 0 ? `${i.bonus_qty} / ${i.bonus_qty_received}` : '—' }}
                             </td>
                             <td class="py-2.5 px-3 text-right font-mono">
                                 {{ formatRp(i.unit_net_cost) }}
-                                <span v-if="Number(i.discount_z1_pct) > 0 || Number(i.discount_z2_pct) > 0" class="block text-[10px] text-muted-foreground">
+                                <span v-if="Number(i.discount_z1_pct) > 0 || Number(i.discount_z2_pct) > 0" class="block text-[11px] text-muted-foreground">
                                     Z1 {{ Number(i.discount_z1_pct) }}% · Z2 {{ Number(i.discount_z2_pct) }}%
                                 </span>
                             </td>
@@ -221,7 +234,7 @@ function formatRp(v) {
                     </tbody>
                 </table>
             </div>
-            <div class="border-t border-border/70 px-5 py-3 flex justify-end">
+            <div class="border-t border-foreground/5 px-5 py-3.5 flex justify-end">
                 <div class="w-full max-w-sm space-y-1.5 text-sm">
                     <div class="flex justify-between">
                         <span class="text-muted-foreground">Subtotal</span>
@@ -236,7 +249,7 @@ function formatRp(v) {
                         </span>
                         <span class="font-mono">− {{ formatRp(purchaseOrder.header_discount_amount) }}</span>
                     </div>
-                    <div class="flex justify-between pt-2 border-t border-border/70 font-bold">
+                    <div class="flex justify-between pt-2 border-t border-foreground/5 font-bold">
                         <span>TOTAL</span>
                         <span class="font-mono">{{ formatRp(purchaseOrder.total) }}</span>
                     </div>
@@ -245,12 +258,12 @@ function formatRp(v) {
         </div>
 
         <!-- Notes & history -->
-        <div v-if="purchaseOrder.notes" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5 mb-4">
+        <div v-if="purchaseOrder.notes" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-5 mb-4">
             <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Catatan</p>
             <p class="text-sm whitespace-pre-line">{{ purchaseOrder.notes }}</p>
         </div>
 
-        <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5">
+        <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-5">
             <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Riwayat</p>
             <ul class="text-xs space-y-1">
                 <li>
@@ -275,28 +288,28 @@ function formatRp(v) {
 
         <!-- Cancel Dialog -->
         <Dialog v-model:open="cancelOpen">
-            <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden">
-                <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
-                    <div class="flex items-start gap-3">
-                        <div class="size-10 rounded-md bg-red-50 text-red-700 flex items-center justify-center shrink-0 ring-1 ring-red-200">
+            <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl gap-0">
+                <DialogHeader class="px-6 pt-6 pb-4">
+                    <div class="flex items-start gap-3.5">
+                        <div class="size-11 rounded-full bg-red-50 text-red-600 flex items-center justify-center shrink-0">
                             <Ban class="size-5" />
                         </div>
-                        <div>
-                            <DialogTitle class="text-base font-bold tracking-tight">Cancel PO</DialogTitle>
+                        <div class="flex-1 min-w-0 pt-0.5">
+                            <DialogTitle class="text-base font-semibold tracking-tight">Cancel PO</DialogTitle>
                             <DialogDescription class="text-xs text-muted-foreground mt-0.5">
                                 PO yang sudah ada GRN posted tidak bisa di-cancel.
                             </DialogDescription>
                         </div>
                     </div>
                 </DialogHeader>
-                <form class="px-5 py-4" @submit.prevent="submitCancel">
+                <form class="px-6 pb-2" @submit.prevent="submitCancel">
                     <Label class="text-xs font-medium">Alasan *</Label>
-                    <Textarea v-model="cancelForm.cancel_reason" rows="3" required class="mt-1" />
+                    <Textarea v-model="cancelForm.cancel_reason" rows="3" required class="mt-1.5 rounded-xl" />
                     <p v-if="cancelForm.errors.cancel_reason" class="text-xs text-destructive mt-1">{{ cancelForm.errors.cancel_reason }}</p>
                 </form>
-                <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">
-                    <Button type="button" variant="outline" @click="cancelOpen = false">Batal</Button>
-                    <Button type="button" variant="destructive" :disabled="cancelForm.processing" @click="submitCancel">
+                <DialogFooter class="px-6 py-4 gap-2">
+                    <Button type="button" variant="outline" class="rounded-full" @click="cancelOpen = false">Batal</Button>
+                    <Button type="button" variant="destructive" class="rounded-full" :disabled="cancelForm.processing" @click="submitCancel">
                         <RefreshCw v-if="cancelForm.processing" class="size-4 animate-spin" />
                         Cancel PO
                     </Button>
@@ -306,28 +319,28 @@ function formatRp(v) {
 
         <!-- Close Dialog -->
         <Dialog v-model:open="closeOpen">
-            <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden">
-                <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
-                    <div class="flex items-start gap-3">
-                        <div class="size-10 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 ring-1 ring-amber-200">
+            <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl gap-0">
+                <DialogHeader class="px-6 pt-6 pb-4">
+                    <div class="flex items-start gap-3.5">
+                        <div class="size-11 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
                             <Lock class="size-5" />
                         </div>
-                        <div>
-                            <DialogTitle class="text-base font-bold tracking-tight">Close PO (Manual)</DialogTitle>
+                        <div class="flex-1 min-w-0 pt-0.5">
+                            <DialogTitle class="text-base font-semibold tracking-tight">Close PO (Manual)</DialogTitle>
                             <DialogDescription class="text-xs text-muted-foreground mt-0.5">
                                 Untuk PO yang short-shipped — tutup walau belum 100% diterima.
                             </DialogDescription>
                         </div>
                     </div>
                 </DialogHeader>
-                <form class="px-5 py-4" @submit.prevent="submitClose">
+                <form class="px-6 pb-2" @submit.prevent="submitClose">
                     <Label class="text-xs font-medium">Alasan *</Label>
-                    <Textarea v-model="closeForm.close_reason" rows="3" required class="mt-1" />
+                    <Textarea v-model="closeForm.close_reason" rows="3" required class="mt-1.5 rounded-xl" />
                     <p v-if="closeForm.errors.close_reason" class="text-xs text-destructive mt-1">{{ closeForm.errors.close_reason }}</p>
                 </form>
-                <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">
-                    <Button type="button" variant="outline" @click="closeOpen = false">Batal</Button>
-                    <Button type="button" variant="secondary" :disabled="closeForm.processing" @click="submitClose">
+                <DialogFooter class="px-6 py-4 gap-2">
+                    <Button type="button" variant="outline" class="rounded-full" @click="closeOpen = false">Batal</Button>
+                    <Button type="button" class="rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="closeForm.processing" @click="submitClose">
                         <RefreshCw v-if="closeForm.processing" class="size-4 animate-spin" />
                         Tutup PO
                     </Button>

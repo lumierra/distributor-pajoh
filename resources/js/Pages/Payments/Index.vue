@@ -151,7 +151,7 @@ function fmtRp(v) {
 
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">No. Payment</TableHead>
                         <TableHead>Invoice</TableHead>
                         <TableHead>Customer</TableHead>
@@ -181,10 +181,10 @@ function fmtRp(v) {
                         <TableCell class="font-mono text-xs">{{ p.invoice?.invoice_number ?? '—' }}</TableCell>
                         <TableCell>
                             <p class="font-medium">{{ p.customer?.name ?? '—' }}</p>
-                            <p class="text-[11px] text-muted-foreground font-mono">{{ p.customer?.code }}</p>
+                            <p class="text-[12px] text-muted-foreground font-mono">{{ p.customer?.code }}</p>
                         </TableCell>
                         <TableCell class="text-xs">
-                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase bg-muted text-muted-foreground">
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase bg-muted text-muted-foreground">
                                 {{ p.method }}
                             </span>
                         </TableCell>

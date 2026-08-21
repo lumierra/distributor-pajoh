@@ -7,21 +7,22 @@ const props = defineProps({
 
 const config = computed(() => {
     const map = {
-        draft: { label: 'Draft', class: 'bg-muted text-muted-foreground' },
-        submitted: { label: 'Submitted', class: 'bg-blue-50 text-blue-700 ring-blue-200' },
-        pending_credit_review: { label: 'Pending Credit', class: 'bg-warning-soft text-amber-800 ring-warning/30' },
-        approved: { label: 'Approved', class: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
-        rejected: { label: 'Rejected', class: 'bg-red-50 text-red-700 ring-red-200' },
-        partially_delivered: { label: 'Partial Delivery', class: 'bg-blue-50 text-blue-700 ring-blue-200' },
-        delivered: { label: 'Delivered', class: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
-        cancelled: { label: 'Cancelled', class: 'bg-red-50 text-red-700 ring-red-200' },
+        draft: { label: 'Draft', text: 'text-muted-foreground', dot: 'bg-muted-foreground/50' },
+        submitted: { label: 'Submitted', text: 'text-blue-700', dot: 'bg-blue-500' },
+        pending_credit_review: { label: 'Review Kredit', text: 'text-amber-700', dot: 'bg-amber-500' },
+        approved: { label: 'Approved', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+        rejected: { label: 'Ditolak', text: 'text-red-700', dot: 'bg-red-500' },
+        partially_delivered: { label: 'Terkirim Sebagian', text: 'text-indigo-700', dot: 'bg-indigo-500' },
+        delivered: { label: 'Terkirim', text: 'text-emerald-700', dot: 'bg-emerald-600' },
+        cancelled: { label: 'Dibatalkan', text: 'text-red-700', dot: 'bg-red-400' },
     };
-    return map[props.status] ?? { label: props.status, class: 'bg-muted text-muted-foreground' };
+    return map[props.status] ?? { label: props.status, text: 'text-muted-foreground', dot: 'bg-muted-foreground/50' };
 });
 </script>
 
 <template>
-    <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ring-1', config.class]">
+    <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium', config.text]">
+        <span :class="['size-1.5 rounded-full', config.dot]" />
         {{ config.label }}
     </span>
 </template>

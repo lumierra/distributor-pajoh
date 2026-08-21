@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductGroup;
+use App\Models\ProductPricePackage;
 use App\Models\Role;
 use App\Models\Supplier;
 use App\Models\User;
@@ -58,9 +59,11 @@ class ProductGroupController extends Controller
         $this->authorize('view', $productGroup);
 
         $productGroup->load([
-            'products:id,sku,name,brand,is_active',
+            'products:id,sku,name,is_active',
             'salesUsers:id,name,username,is_active',
         ]);
+
+        // Pivot price_package_id ikut ter-load lewat withPivot pada relasi.
 
         $salesRoleId = Role::ofCode(Role::CODE_SALES)->value('id');
 
@@ -70,19 +73,27 @@ class ProductGroupController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'username']);
 
-        // Tiap produk dilampirkan list supplier_ids (dari supplier_products)
-        // supaya frontend bisa filter "produk dari supplier X".
+        // Tiap produk: supplier tunggal (1 produk = 1 supplier) + daftar paket
+        // harga miliknya, supaya admin bisa memilih paket mana yang dipakai
+        // sales ketika produk ini masuk ke group.
         $availableProducts = Product::query()
             ->where('is_active', true)
-            ->with(['suppliers:id,name,code'])
+            ->with([
+                'supplier:id,name,code',
+                'pricePackages' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order'),
+            ])
             ->orderBy('name')
-            ->get(['id', 'sku', 'name'])
-            ->map(function ($p) {
+            ->get(['id', 'sku', 'name', 'supplier_id'])
+            ->map(function (Product $p) {
                 return [
                     'id' => $p->id,
                     'sku' => $p->sku,
                     'name' => $p->name,
-                    'supplier_ids' => $p->suppliers->pluck('id')->all(),
+                    'supplier_id' => $p->supplier_id,
+                    'supplier_name' => $p->supplier?->name,
+                    'packages' => $p->pricePackages
+                        ->map(fn ($pkg) => ['id' => $pkg->id, 'name' => $pkg->name])
+                        ->values(),
                 ];
             });
 
@@ -142,18 +153,51 @@ class ProductGroupController extends Controller
     }
 
     /**
-     * Sync daftar produk yang masuk ke group. Diberikan array product_ids penuh.
+     * Sync daftar produk yang masuk ke group beserta paket harga yang dipakai
+     * sales untuk tiap produk.
+     *
+     * Input: products => [{ product_id, price_package_id|null }, ...]
+     * price_package_id harus milik product bersangkutan; kalau tidak valid /
+     * null maka pivot disimpan null (server fallback ke paket default produk
+     * saat resolve harga SO).
      */
     public function syncProducts(Request $request, ProductGroup $productGroup): RedirectResponse
     {
         $this->authorize('update', $productGroup);
 
         $data = $request->validate([
-            'product_ids' => ['present', 'array'],
-            'product_ids.*' => ['integer', 'exists:products,id'],
+            'products' => ['present', 'array'],
+            'products.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'products.*.price_package_id' => ['nullable', 'integer', 'exists:product_price_packages,id'],
         ]);
 
-        $productGroup->products()->sync($data['product_ids'] ?? []);
+        // Petakan paket -> produk pemiliknya untuk validasi silang.
+        $packageIds = collect($data['products'])
+            ->pluck('price_package_id')
+            ->filter()
+            ->unique()
+            ->all();
+        $packageOwner = empty($packageIds)
+            ? []
+            : ProductPricePackage::query()
+                ->whereIn('id', $packageIds)
+                ->pluck('product_id', 'id')
+                ->all();
+
+        $sync = [];
+        foreach ($data['products'] as $row) {
+            $productId = (int) $row['product_id'];
+            $packageId = $row['price_package_id'] ?? null;
+
+            // Buang paket yang bukan milik produk ini.
+            if ($packageId !== null && (int) ($packageOwner[$packageId] ?? 0) !== $productId) {
+                $packageId = null;
+            }
+
+            $sync[$productId] = ['price_package_id' => $packageId];
+        }
+
+        $productGroup->products()->sync($sync);
 
         return back()->with('flash.success', 'Daftar produk pada group diperbarui.');
     }

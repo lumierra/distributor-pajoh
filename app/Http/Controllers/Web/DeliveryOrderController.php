@@ -14,6 +14,7 @@ use App\Models\Driver;
 use App\Models\SalesOrder;
 use App\Models\Vehicle;
 use App\Services\Delivery\DeliveryOrderService;
+use App\Services\Delivery\DoEscposRenderer;
 use App\Services\Delivery\DoPdfRenderer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -22,12 +23,14 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class DeliveryOrderController extends Controller
 {
     public function __construct(
         private readonly DeliveryOrderService $service,
         private readonly DoPdfRenderer $pdf,
+        private readonly DoEscposRenderer $escpos,
     ) {}
 
     public function index(Request $request): InertiaResponse
@@ -252,14 +255,12 @@ class DeliveryOrderController extends Controller
         $this->service->markDelivered(
             $deliveryOrder,
             [
-                'receiver_name' => $data['receiver_name'],
+                'receiver_name' => $data['receiver_name'] ?? null,
                 'receiver_notes' => $data['receiver_notes'] ?? null,
-                'latitude' => $data['latitude'] ?? null,
-                'longitude' => $data['longitude'] ?? null,
                 'item_quantities' => $data['item_quantities'],
             ],
-            $request->file('proof_photo'),
-            $request->file('digital_signature'),
+            null,
+            null,
             $request->user(),
         );
 
@@ -273,20 +274,38 @@ class DeliveryOrderController extends Controller
         return back()->with('flash.success', "DO {$deliveryOrder->do_number} dibatalkan.");
     }
 
-    public function downloadPdf(DeliveryOrder $deliveryOrder): Response
+    public function downloadPdf(DeliveryOrder $deliveryOrder): BinaryFileResponse
     {
         $this->authorize('view', $deliveryOrder);
 
-        abort_if(
-            $deliveryOrder->pdf_path === null || ! Storage::disk('local')->exists($deliveryOrder->pdf_path),
-            404,
-            'PDF belum tersedia. Mark packed untuk generate.',
-        );
+        // PDF baru tersedia setelah DO di-packed (punya pdf_path pertama kali).
+        abort_if($deliveryOrder->pdf_path === null, 404, 'PDF belum tersedia. Mark packed untuk generate.');
+
+        // Selalu generate ulang saat dibuka supaya data terbaru (profil
+        // perusahaan, customer, harga) ikut — tidak perlu regenerate manual.
+        $path = $this->pdf->generate($deliveryOrder);
 
         return response()->file(
-            Storage::disk('local')->path($deliveryOrder->pdf_path),
+            Storage::disk('local')->path($path),
             ['Content-Type' => 'application/pdf'],
         );
+    }
+
+    /**
+     * Payload ESC/P (teks + kode kontrol) untuk cetak native dot-matrix.
+     * Diunduh sebagai .txt: uji dengan `copy /b file.txt PRN` / dikirim oleh
+     * Print Agent. Bukan PDF raster — hasil tajam & presisi di Epson LX/LQ.
+     */
+    public function printEscp(DeliveryOrder $deliveryOrder): Response
+    {
+        $this->authorize('view', $deliveryOrder);
+
+        $payload = $this->escpos->render($deliveryOrder);
+
+        return response($payload, 200, [
+            'Content-Type' => 'application/octet-stream',
+            'Content-Disposition' => 'attachment; filename="'.$deliveryOrder->do_number.'.escp.txt"',
+        ]);
     }
 
     /**

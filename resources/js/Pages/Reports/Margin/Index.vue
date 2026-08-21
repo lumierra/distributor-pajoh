@@ -100,7 +100,7 @@ function fmtRp(v) {
                 <h3 class="text-sm font-semibold px-4 py-3 border-b">Top Produk by Margin</h3>
                 <Table>
                     <TableHeader>
-                        <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:text-muted-foreground">
+                        <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:text-muted-foreground">
                             <TableHead class="pl-4">Produk</TableHead>
                             <TableHead class="text-right">Revenue</TableHead>
                             <TableHead class="text-right pr-4">Margin</TableHead>
@@ -123,7 +123,7 @@ function fmtRp(v) {
                 <h3 class="text-sm font-semibold px-4 py-3 border-b">Top Customer by Margin</h3>
                 <Table>
                     <TableHeader>
-                        <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:text-muted-foreground">
+                        <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:text-muted-foreground">
                             <TableHead class="pl-4">Customer</TableHead>
                             <TableHead class="text-right">Revenue</TableHead>
                             <TableHead class="text-right pr-4">Margin</TableHead>

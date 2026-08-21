@@ -33,12 +33,12 @@ function fmt(v) {
             <section class="lg:col-span-2 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-3">
                 <h3 class="text-sm font-semibold">Detail</h3>
                 <dl class="grid grid-cols-2 gap-3 text-sm">
-                    <div><dt class="text-[11px] uppercase text-muted-foreground">Category</dt><dd>{{ notification.category }}</dd></div>
-                    <div><dt class="text-[11px] uppercase text-muted-foreground">Status</dt><dd class="font-semibold">{{ notification.status }}</dd></div>
-                    <div><dt class="text-[11px] uppercase text-muted-foreground">Recipient</dt><dd>{{ notification.recipient_name ?? '—' }} ({{ notification.recipient_phone }})</dd></div>
-                    <div><dt class="text-[11px] uppercase text-muted-foreground">Created</dt><dd>{{ fmt(notification.created_at) }}</dd></div>
-                    <div v-if="notification.sent_at"><dt class="text-[11px] uppercase text-muted-foreground">Sent</dt><dd>{{ fmt(notification.sent_at) }}</dd></div>
-                    <div v-if="notification.retry_count"><dt class="text-[11px] uppercase text-muted-foreground">Retry Count</dt><dd>{{ notification.retry_count }}</dd></div>
+                    <div><dt class="text-[12px] uppercase text-muted-foreground">Category</dt><dd>{{ notification.category }}</dd></div>
+                    <div><dt class="text-[12px] uppercase text-muted-foreground">Status</dt><dd class="font-semibold">{{ notification.status }}</dd></div>
+                    <div><dt class="text-[12px] uppercase text-muted-foreground">Recipient</dt><dd>{{ notification.recipient_name ?? '—' }} ({{ notification.recipient_phone }})</dd></div>
+                    <div><dt class="text-[12px] uppercase text-muted-foreground">Created</dt><dd>{{ fmt(notification.created_at) }}</dd></div>
+                    <div v-if="notification.sent_at"><dt class="text-[12px] uppercase text-muted-foreground">Sent</dt><dd>{{ fmt(notification.sent_at) }}</dd></div>
+                    <div v-if="notification.retry_count"><dt class="text-[12px] uppercase text-muted-foreground">Retry Count</dt><dd>{{ notification.retry_count }}</dd></div>
                 </dl>
                 <div>
                     <h4 class="text-xs font-semibold uppercase text-muted-foreground mb-1">Message</h4>

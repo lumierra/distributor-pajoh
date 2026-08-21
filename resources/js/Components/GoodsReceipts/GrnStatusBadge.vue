@@ -7,18 +7,19 @@ const props = defineProps({
 
 const config = computed(() => {
     const map = {
-        draft: { label: 'Draft', class: 'bg-muted text-muted-foreground' },
-        submitted: { label: 'Submitted', class: 'bg-blue-50 text-blue-700 ring-blue-200' },
-        rejected: { label: 'Rejected', class: 'bg-amber-50 text-amber-800 ring-amber-200' },
-        posted: { label: 'Posted', class: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
-        cancelled: { label: 'Cancelled', class: 'bg-red-50 text-red-700 ring-red-200' },
+        draft: { label: 'Draft', text: 'text-muted-foreground', dot: 'bg-muted-foreground/50' },
+        submitted: { label: 'Submitted', text: 'text-blue-700', dot: 'bg-blue-500' },
+        rejected: { label: 'Rejected', text: 'text-amber-700', dot: 'bg-amber-500' },
+        posted: { label: 'Posted', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+        cancelled: { label: 'Cancelled', text: 'text-red-700', dot: 'bg-red-500' },
     };
-    return map[props.status] ?? { label: props.status, class: 'bg-muted text-muted-foreground' };
+    return map[props.status] ?? { label: props.status, text: 'text-muted-foreground', dot: 'bg-muted-foreground/50' };
 });
 </script>
 
 <template>
-    <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ring-1', config.class]">
+    <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium', config.text]">
+        <span :class="['size-1.5 rounded-full', config.dot]" />
         {{ config.label }}
     </span>
 </template>

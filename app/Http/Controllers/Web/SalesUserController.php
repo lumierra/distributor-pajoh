@@ -5,7 +5,11 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\User\StoreSalesUserRequest;
 use App\Http\Requests\User\UpdateSalesUserRequest;
+use App\Models\Customer;
+use App\Models\PaymentRequest;
 use App\Models\Role;
+use App\Models\SalesOrder;
+use App\Models\SalesVisit;
 use App\Models\User;
 use App\Models\UserDevice;
 use Illuminate\Http\RedirectResponse;
@@ -200,5 +204,47 @@ class SalesUserController extends Controller
 
             return back()->with('flash.success', 'Data sales diperbarui.');
         });
+    }
+
+    /**
+     * Hapus user sales — hanya boleh kalau tidak ada transaksi yang masih
+     * mengikat ke sales ini (SO, kunjungan, payment request, atau customer
+     * yang di-assign). DB sudah restrictOnDelete untuk SO/Visit/PaymentRequest,
+     * tapi dicek eksplisit di sini supaya errornya jadi pesan yang jelas
+     * (bukan QueryException mentah), dan customer assignment ikut dicek
+     * karena itu nullOnDelete di DB (tidak diblokir otomatis).
+     */
+    public function destroy(User $user): RedirectResponse
+    {
+        $this->authorize('delete', $user);
+
+        $blockers = [];
+
+        if (SalesOrder::query()->where('sales_id', $user->id)->exists()) {
+            $blockers[] = 'Sales Order';
+        }
+        if (SalesVisit::query()->where('sales_id', $user->id)->exists()) {
+            $blockers[] = 'Riwayat Kunjungan';
+        }
+        if (PaymentRequest::query()->where('sales_id', $user->id)->exists()) {
+            $blockers[] = 'Payment Request';
+        }
+        if (Customer::query()->where('assigned_sales_id', $user->id)->exists()) {
+            $blockers[] = 'Customer yang di-assign';
+        }
+
+        if ($blockers !== []) {
+            return back()->with(
+                'flash.error',
+                "User {$user->name} tidak bisa dihapus karena masih punya data terkait: "
+                    .implode(', ', $blockers).'. Nonaktifkan (suspend) saja.',
+            );
+        }
+
+        $user->delete();
+
+        return redirect()
+            ->route('sales-users.index')
+            ->with('flash.success', "Sales {$user->name} dihapus.");
     }
 }

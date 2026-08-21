@@ -146,7 +146,7 @@ function formatDate(v) {
                 <section class="rounded-lg ring-1 ring-foreground/10 bg-card shadow-xs overflow-hidden">
                     <header class="border-b border-border/70 px-5 py-3.5">
                         <h2 class="text-sm font-semibold">Login Terbaru</h2>
-                        <p class="text-[11px] text-muted-foreground mt-0.5">20 entri terakhir.</p>
+                        <p class="text-[12px] text-muted-foreground mt-0.5">20 entri terakhir.</p>
                     </header>
                     <ul class="divide-y divide-border/70">
                         <li

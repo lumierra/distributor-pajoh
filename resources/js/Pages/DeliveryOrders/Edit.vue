@@ -51,7 +51,7 @@ function submit() {
     <AppLayout>
         <PageHeader :title="`Edit DO ${deliveryOrder.do_number}`" description="Hanya draft yang bisa diedit." :icon="Truck">
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('delivery-orders.show', deliveryOrder.id)">
                         <ArrowLeft class="size-4" /> Kembali ke Detail
                     </Link>
@@ -60,7 +60,7 @@ function submit() {
         </PageHeader>
 
         <form @submit.prevent="submit">
-            <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5 mb-4">
+            <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-5 mb-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div class="space-y-1">
                         <Label class="text-xs font-medium">Tgl DO *</Label>
@@ -77,23 +77,23 @@ function submit() {
                 </div>
             </section>
 
-            <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden mb-4">
-                <header class="border-b border-border/70 px-5 py-3">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Items</p>
+            <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden mb-4">
+                <header class="border-b border-foreground/5 px-5 py-3">
+                    <p class="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Items</p>
                 </header>
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/70">
+                        <tr class="text-[11px] uppercase tracking-wider text-muted-foreground border-b border-foreground/5">
                             <th class="text-left py-2 px-5">Produk</th>
                             <th class="text-left py-2 px-3">Unit</th>
                             <th class="text-right py-2 px-5 w-[15%]">Qty Plan</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-border/40">
-                        <tr v-for="(row, idx) in form.items" :key="idx" class="hover:bg-muted/20">
+                    <tbody class="divide-y divide-foreground/5">
+                        <tr v-for="(row, idx) in form.items" :key="idx" class="hover:bg-foreground/2.5 transition-colors">
                             <td class="py-2 px-5">
                                 <p class="font-medium text-xs">{{ row.product_name }}</p>
-                                <p class="text-[10px] text-muted-foreground font-mono">{{ row.product_sku }}</p>
+                                <p class="text-[11px] text-muted-foreground font-mono">{{ row.product_sku }}</p>
                             </td>
                             <td class="py-2 px-3 text-xs">{{ row.unit_name }}</td>
                             <td class="py-2 px-5">
@@ -105,10 +105,10 @@ function submit() {
             </section>
 
             <div class="flex justify-end gap-2">
-                <Button as-child type="button" variant="outline" size="default">
+                <Button as-child type="button" variant="outline" size="default" class="rounded-full">
                     <Link :href="route('delivery-orders.show', deliveryOrder.id)">Batal</Link>
                 </Button>
-                <Button type="submit" variant="secondary" size="default" :disabled="form.processing">
+                <Button type="submit" size="default" class="rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="form.processing">
                     <Loader2 v-if="form.processing" class="size-4 animate-spin" />
                     Simpan
                 </Button>

@@ -123,7 +123,7 @@ function fmtRp(v) {
 
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">Produk</TableHead>
                         <TableHead>Batch</TableHead>
                         <TableHead class="text-right">Qty</TableHead>
@@ -141,7 +141,7 @@ function fmtRp(v) {
                         <TableCell class="pl-4 py-2.5">
                             <Link :href="route('reports.stock.drill-down', { productId: row.product_id, batchId: row.batch_id ?? '' })" class="hover:text-primary">
                                 <p class="font-medium">{{ row.product?.name ?? '—' }}</p>
-                                <p class="text-[11px] text-muted-foreground font-mono">{{ row.product?.sku }}</p>
+                                <p class="text-[12px] text-muted-foreground font-mono">{{ row.product?.sku }}</p>
                             </Link>
                         </TableCell>
                         <TableCell class="font-mono text-xs">{{ row.batch?.batch_code ?? '—' }}</TableCell>

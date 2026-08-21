@@ -17,7 +17,7 @@ import ActionGroup from '@/Components/Shared/ActionGroup.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import SoStatusBadge from '@/Components/SalesOrders/SoStatusBadge.vue';
-import StatCard from '@/Components/Shared/StatCard.vue';
+import StatTile from '@/Components/Shared/StatTile.vue';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import {
@@ -105,7 +105,12 @@ function fmtRp(v) {
     <AppLayout>
         <PageHeader title="Sales Order" description="Pesanan penjualan dari sales ke customer. SO → DO → Invoice." :icon="ShoppingBag">
             <template #actions>
-                <Button v-if="canCreate" as-child size="default" variant="secondary">
+                <Button
+                    v-if="canCreate"
+                    as-child
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                >
                     <Link :href="route('sales-orders.create')">
                         <Plus class="size-4" /> Buat SO
                     </Link>
@@ -114,32 +119,22 @@ function fmtRp(v) {
         </PageHeader>
 
         <section v-if="stats" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
-            <StatCard label="Total SO" :value="stats.total ?? 0" tone="brand">
-                <template #icon><ShoppingBag class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Draft" :value="stats.draft ?? 0" tone="brand">
-                <template #icon><FileText class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Submitted" :value="stats.submitted ?? 0" tone="brand">
-                <template #icon><Send class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Pending Credit" :value="stats.pending_credit ?? 0" tone="brand-orange">
-                <template #icon><ClipboardCheck class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Approved" :value="stats.approved ?? 0" tone="brand">
-                <template #icon><CheckCircle2 class="size-5" /></template>
-            </StatCard>
+            <StatTile label="Total SO" :value="stats.total ?? 0" :icon="ShoppingBag" />
+            <StatTile label="Draft" :value="stats.draft ?? 0" :icon="FileText" />
+            <StatTile label="Submitted" :value="stats.submitted ?? 0" :icon="Send" />
+            <StatTile label="Pending Credit" :value="stats.pending_credit ?? 0" :icon="ClipboardCheck" :tone="(stats.pending_credit ?? 0) > 0 ? 'warn' : 'brand'" />
+            <StatTile label="Approved" :value="stats.approved ?? 0" :icon="CheckCircle2" />
         </section>
 
-        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <div class="border-b border-border/70 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+        <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
                 <div class="relative flex-1">
-                    <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                    <Input v-model="filters.q" placeholder="Cari no. SO atau nama customer…" class="pl-8 h-9 rounded-md" />
+                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                    <Input v-model="filters.q" placeholder="Cari no. SO atau nama customer…" class="pl-8 h-9 rounded-full bg-muted/50 border-transparent focus-visible:bg-card" />
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <Select v-model="filters.status">
-                        <SelectTrigger class="w-[160px] h-9 rounded-md">
+                        <SelectTrigger class="w-[160px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -155,7 +150,7 @@ function fmtRp(v) {
                         </SelectContent>
                     </Select>
                     <Select v-model="filters.customer_id">
-                        <SelectTrigger class="w-[180px] h-9 rounded-md">
+                        <SelectTrigger class="w-[180px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Customer" />
                         </SelectTrigger>
                         <SelectContent>
@@ -166,7 +161,7 @@ function fmtRp(v) {
                         </SelectContent>
                     </Select>
                     <Select v-model="filters.sales_id">
-                        <SelectTrigger class="w-[160px] h-9 rounded-md">
+                        <SelectTrigger class="w-[160px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Sales" />
                         </SelectTrigger>
                         <SelectContent>
@@ -177,7 +172,7 @@ function fmtRp(v) {
                         </SelectContent>
                     </Select>
                     <Select v-model="filters.year">
-                        <SelectTrigger class="w-[110px] h-9 rounded-md">
+                        <SelectTrigger class="w-[110px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Tahun" />
                         </SelectTrigger>
                         <SelectContent>
@@ -185,22 +180,22 @@ function fmtRp(v) {
                             <SelectItem v-for="y in years" :key="y" :value="String(y)">{{ y }}</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button type="button" variant="outline" size="default" @click="reset">
+                    <Button type="button" variant="ghost" size="default" class="rounded-full" @click="reset">
                         <RotateCcw class="size-3.5" /> Reset
                     </Button>
                 </div>
             </div>
 
-            <Table>
+            <Table class="border-t border-foreground/5">
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">SO</TableHead>
                         <TableHead>Customer</TableHead>
                         <TableHead>Sales</TableHead>
                         <TableHead>Tgl SO</TableHead>
                         <TableHead class="text-right">Total</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead class="text-right pr-4">Aksi</TableHead>
+                        <TableHead class="text-center pr-4">Aksi</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody class="text-sm">
@@ -212,10 +207,10 @@ function fmtRp(v) {
                             </div>
                         </TableCell>
                     </TableRow>
-                    <TableRow v-for="so in salesOrders.data" :key="so.id" class="hover:bg-muted/30 transition-colors">
+                    <TableRow v-for="so in salesOrders.data" :key="so.id" class="hover:bg-foreground/2.5 transition-colors border-foreground/5">
                         <TableCell class="pl-4 py-2.5">
                             <div class="flex items-center gap-2.5">
-                                <div class="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <div class="size-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                                     <ShoppingBag class="size-4" />
                                 </div>
                                 <Link :href="route('sales-orders.show', so.id)" class="font-medium text-foreground font-mono hover:text-primary transition-colors">
@@ -225,7 +220,7 @@ function fmtRp(v) {
                         </TableCell>
                         <TableCell>
                             <p class="font-medium">{{ so.customer?.name ?? '—' }}</p>
-                            <p class="text-[11px] text-muted-foreground font-mono">{{ so.customer?.code }}</p>
+                            <p class="text-[12px] text-muted-foreground font-mono">{{ so.customer?.code }}</p>
                         </TableCell>
                         <TableCell class="text-xs">{{ so.sales?.name ?? '—' }}</TableCell>
                         <TableCell class="text-xs">{{ formatDate(so.so_date) }}</TableCell>
@@ -233,20 +228,22 @@ function fmtRp(v) {
                         <TableCell>
                             <SoStatusBadge :status="so.status" />
                         </TableCell>
-                        <TableCell class="py-3 px-4 text-right whitespace-nowrap">
-                            <ActionGroup>
-                                <ActionButton :icon="Eye" label="Detail" as-child tone="brand">
-                                    <Link :href="route('sales-orders.show', so.id)">
-                                        <Eye class="w-4 h-4" />
-                                    </Link>
-                                </ActionButton>
-                            </ActionGroup>
+                        <TableCell class="py-3 pr-4 text-center">
+                            <div class="flex justify-center">
+                                <ActionGroup class="rounded-full">
+                                    <ActionButton :icon="Eye" label="Detail" as-child tone="brand">
+                                        <Link :href="route('sales-orders.show', so.id)">
+                                            <Eye class="w-4 h-4" />
+                                        </Link>
+                                    </ActionButton>
+                                </ActionGroup>
+                            </div>
                         </TableCell>
                     </TableRow>
                 </TableBody>
             </Table>
 
-            <div v-if="salesOrders.data.length > 0" class="border-t border-border/70 px-4 py-2.5">
+            <div v-if="salesOrders.data.length > 0" class="border-t border-foreground/5 px-4 py-3">
                 <Pagination :meta="salesOrders" />
             </div>
         </section>

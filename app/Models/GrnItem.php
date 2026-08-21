@@ -28,6 +28,9 @@ class GrnItem extends Model
         'production_date',
         'expired_date',
         'qty_reguler',
+        'qty_delivery_note',
+        'pending_settled_at',
+        'pending_settled_by',
         'qty_bonus',
         'qty_damaged',
         'qty_returned_to_supplier',
@@ -48,6 +51,8 @@ class GrnItem extends Model
             'production_date' => 'date',
             'expired_date' => 'date',
             'qty_reguler' => 'integer',
+            'qty_delivery_note' => 'integer',
+            'pending_settled_at' => 'datetime',
             'qty_bonus' => 'integer',
             'qty_damaged' => 'integer',
             'qty_returned_to_supplier' => 'integer',
@@ -83,5 +88,21 @@ class GrnItem extends Model
     public function batch(): BelongsTo
     {
         return $this->belongsTo(ProductBatch::class, 'batch_id');
+    }
+
+    public function pendingSettler(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'pending_settled_by');
+    }
+
+    /**
+     * Item penerimaan langsung (tanpa po_item) yang masih punya pending surat
+     * jalan (qty_delivery_note > qty_reguler) yang belum ditandai selesai.
+     */
+    public function hasUnsettledPending(): bool
+    {
+        return $this->po_item_id === null
+            && $this->pending_settled_at === null
+            && (int) $this->qty_delivery_note > (int) $this->qty_reguler;
     }
 }

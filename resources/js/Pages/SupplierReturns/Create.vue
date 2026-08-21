@@ -172,7 +172,7 @@ function fmtRp(v) {
                 <ul v-else class="space-y-1 text-sm max-h-64 overflow-y-auto">
                     <li v-for="(src, idx) in allSources" :key="idx" class="flex items-center justify-between p-2 rounded ring-1 ring-border/60 hover:bg-muted/30">
                         <div>
-                            <span class="text-[10px] font-semibold uppercase text-muted-foreground mr-2">{{ src.source_type }}</span>
+                            <span class="text-[11px] font-semibold uppercase text-muted-foreground mr-2">{{ src.source_type }}</span>
                             <span>{{ src._label }}</span>
                             <span v-if="src.cost_price" class="text-xs text-muted-foreground ml-2">cost: {{ fmtRp(src.cost_price) }}</span>
                         </div>
@@ -188,20 +188,20 @@ function fmtRp(v) {
                 <div class="space-y-2">
                     <div v-for="(item, idx) in form.items" :key="idx" class="grid grid-cols-12 gap-2 items-end p-2 rounded ring-1 ring-border/60">
                         <div class="col-span-4">
-                            <Label class="text-[10px]">Source</Label>
+                            <Label class="text-[11px]">Source</Label>
                             <p class="text-xs">{{ item.source_type }}</p>
                             <p class="font-medium text-sm">{{ item.product_name }}</p>
                         </div>
                         <div class="col-span-2">
-                            <Label class="text-[10px]">Batch</Label>
+                            <Label class="text-[11px]">Batch</Label>
                             <p class="font-mono text-xs">{{ item.batch_code ?? '—' }}</p>
                         </div>
                         <div class="col-span-2">
-                            <Label class="text-[10px]">Qty (max {{ item.available_qty }})</Label>
+                            <Label class="text-[11px]">Qty (max {{ item.available_qty }})</Label>
                             <Input v-model.number="item.qty" type="number" :min="1" :max="item.available_qty" />
                         </div>
                         <div class="col-span-3">
-                            <Label class="text-[10px]">Cost Price</Label>
+                            <Label class="text-[11px]">Cost Price</Label>
                             <Input v-model.number="item.cost_price" type="number" min="0" step="0.01" />
                         </div>
                         <div class="col-span-1 flex justify-end">

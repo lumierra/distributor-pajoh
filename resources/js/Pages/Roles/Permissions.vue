@@ -112,7 +112,7 @@ function submit() {
                     <Table>
                         <TableHeader>
                             <TableRow
-                                class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground bg-muted/30"
+                                class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground bg-muted/30"
                             >
                                 <TableHead class="pl-5 min-w-[18rem]">Menu</TableHead>
                                 <TableHead
@@ -142,7 +142,7 @@ function submit() {
                                 >
                                     <div class="flex flex-col leading-tight">
                                         <span>{{ row.menu_label }}</span>
-                                        <span class="text-[10px] text-muted-foreground font-mono">
+                                        <span class="text-[11px] text-muted-foreground font-mono">
                                             {{ row.menu_code }}
                                         </span>
                                     </div>

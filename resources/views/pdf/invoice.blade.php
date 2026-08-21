@@ -83,7 +83,7 @@
                 <th style="width:8%;">Unit</th>
                 <th style="width:8%;" class="right">Qty</th>
                 <th style="width:13%;" class="right">Harga</th>
-                <th style="width:9%;" class="right">Z1/Z2</th>
+                <th style="width:9%;" class="right">Disc</th>
                 <th style="width:14%;" class="right">Subtotal</th>
             </tr>
         </thead>
@@ -97,7 +97,7 @@
                     <td>{{ $item->product_unit_name_snapshot }}</td>
                     <td class="num">{{ number_format($item->qty, 0, ',', '.') }}</td>
                     <td class="num">{{ number_format((float) $item->unit_price, 0, ',', '.') }}</td>
-                    <td class="num">{{ rtrim(rtrim(number_format((float) $item->discount_z1_pct, 2, ',', '.'), '0'), ',') }}/{{ rtrim(rtrim(number_format((float) $item->discount_z2_pct, 2, ',', '.'), '0'), ',') }}</td>
+                    <td class="num">@if($item->discount_type === 'percent'){{ rtrim(rtrim(number_format((float) $item->discount_value, 2, ',', '.'), '0'), ',') }}%@elseif($item->discount_type === 'rp'){{ number_format((float) $item->discount_value, 0, ',', '.') }}@else—@endif</td>
                     <td class="num">{{ number_format((float) $item->line_subtotal, 0, ',', '.') }}</td>
                 </tr>
             @endforeach
@@ -128,6 +128,12 @@
             <tr>
                 <td class="label">Diskon</td>
                 <td class="value">− Rp {{ number_format((float) $inv->header_discount_amount, 0, ',', '.') }}</td>
+            </tr>
+        @endif
+        @if((float) $inv->cashback_amount > 0)
+            <tr>
+                <td class="label">Cashback</td>
+                <td class="value">− Rp {{ number_format((float) $inv->cashback_amount, 0, ',', '.') }}</td>
             </tr>
         @endif
         <tr class="grand">

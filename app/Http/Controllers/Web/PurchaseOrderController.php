@@ -7,17 +7,17 @@ use App\Http\Requests\PurchaseOrder\CancelPurchaseOrderRequest;
 use App\Http\Requests\PurchaseOrder\ClosePurchaseOrderRequest;
 use App\Http\Requests\PurchaseOrder\StorePurchaseOrderRequest;
 use App\Http\Requests\PurchaseOrder\UpdatePurchaseOrderRequest;
+use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
-use App\Models\SupplierProduct;
 use App\Services\Purchasing\PurchaseOrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PurchaseOrderController extends Controller
 {
@@ -185,7 +185,7 @@ class PurchaseOrderController extends Controller
         return back()->with('flash.success', "PO {$purchaseOrder->po_number} ditutup.");
     }
 
-    public function downloadPdf(PurchaseOrder $purchaseOrder): Response
+    public function downloadPdf(PurchaseOrder $purchaseOrder): BinaryFileResponse
     {
         $this->authorize('downloadPdf', $purchaseOrder);
 
@@ -211,31 +211,31 @@ class PurchaseOrderController extends Controller
     }
 
     /**
-     * AJAX endpoint untuk product picker — list produk tertaut ke supplier.
+     * AJAX endpoint untuk product picker — list produk milik supplier.
+     * 1 produk = 1 supplier, jadi cukup filter products.supplier_id.
      */
     public function productsForSupplier(Supplier $supplier): JsonResponse
     {
         $this->authorize('create', PurchaseOrder::class);
 
-        $links = SupplierProduct::query()
-            ->with(['product:id,sku,name,base_unit_id', 'product.units:id,product_id,level,name,qty_to_base'])
+        $products = Product::query()
+            ->with('units:id,product_id,name,qty_to_base')
             ->where('supplier_id', $supplier->id)
             ->where('is_active', true)
-            ->get();
-
-        $products = $links->map(fn (SupplierProduct $link): array => [
-            'product_id' => $link->product->id,
-            'sku' => $link->product->sku,
-            'name' => $link->product->name,
-            'default_cost_price' => 0.0, // legacy; harga modal sekarang dari pivot supplier_product_units
-            'moq' => $link->moq,
-            'units' => $link->product->units->map(fn ($u) => [
-                'id' => $u->id,
-                'level' => $u->level,
-                'name' => $u->name,
-                'qty_to_base' => $u->qty_to_base,
-            ])->values(),
-        ])->values();
+            ->orderBy('name')
+            ->get(['id', 'sku', 'name', 'base_unit_id'])
+            ->map(fn (Product $product): array => [
+                'product_id' => $product->id,
+                'sku' => $product->sku,
+                'name' => $product->name,
+                'default_cost_price' => 0.0, // referensi; HPP aktual dari input & stock ledger
+                'moq' => null,
+                'units' => $product->units->map(fn ($u) => [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'qty_to_base' => $u->qty_to_base,
+                ])->values(),
+            ])->values();
 
         return response()->json(['products' => $products]);
     }

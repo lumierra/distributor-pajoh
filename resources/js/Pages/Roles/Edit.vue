@@ -96,7 +96,7 @@ function destroyRole() {
                             <p v-if="form.errors.code" class="text-xs text-destructive">
                                 {{ form.errors.code }}
                             </p>
-                            <p v-else class="text-[11px] text-muted-foreground">
+                            <p v-else class="text-[12px] text-muted-foreground">
                                 Huruf kecil + underscore. Tidak bisa diubah untuk system role.
                             </p>
                         </div>
@@ -124,7 +124,7 @@ function destroyRole() {
                         >
                             <div>
                                 <Label class="block">Aktif</Label>
-                                <p class="text-[11px] text-muted-foreground">
+                                <p class="text-[12px] text-muted-foreground">
                                     Role nonaktif tidak bisa di-assign ke user baru.
                                 </p>
                             </div>
@@ -169,7 +169,7 @@ function destroyRole() {
                     <div class="flex items-start justify-between gap-2">
                         <div>
                             <p class="font-semibold text-foreground">{{ role.name }}</p>
-                            <p class="text-[11px] text-muted-foreground font-mono">
+                            <p class="text-[12px] text-muted-foreground font-mono">
                                 {{ role.code }}
                             </p>
                         </div>
@@ -177,7 +177,7 @@ function destroyRole() {
                             {{ role.is_system ? 'System' : 'Custom' }}
                         </Badge>
                     </div>
-                    <p v-if="role.is_system" class="text-[11px] text-muted-foreground">
+                    <p v-if="role.is_system" class="text-[12px] text-muted-foreground">
                         System role tidak bisa di-rename atau dihapus.
                     </p>
                 </section>
@@ -195,7 +195,7 @@ function destroyRole() {
                                 <ShieldCheck class="size-4 text-muted-foreground" />
                                 <div class="flex-1">
                                     <p class="text-sm font-medium">Edit Permission</p>
-                                    <p class="text-[11px] text-muted-foreground">
+                                    <p class="text-[12px] text-muted-foreground">
                                         Atur izin per menu untuk role ini.
                                     </p>
                                 </div>
@@ -211,7 +211,7 @@ function destroyRole() {
                                         <Trash2 class="size-4" />
                                         <div class="flex-1">
                                             <p class="text-sm font-medium">Hapus Role</p>
-                                            <p class="text-[11px] opacity-70">
+                                            <p class="text-[12px] opacity-70">
                                                 Hanya jika tidak ada user assigned.
                                             </p>
                                         </div>

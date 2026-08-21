@@ -67,7 +67,7 @@ function submit() {
             :icon="ShoppingCart"
         >
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('purchase-orders.show', purchaseOrder.id)">
                         <ArrowLeft class="size-4" />
                         Kembali ke Detail
@@ -78,7 +78,7 @@ function submit() {
 
         <PoForm :form="form" :suppliers="suppliers" submit-label="Simpan Perubahan" @submit="submit">
             <template #actions>
-                <Button as-child type="button" variant="outline" size="default">
+                <Button as-child type="button" variant="outline" size="default" class="rounded-full">
                     <Link :href="route('purchase-orders.show', purchaseOrder.id)">Batal</Link>
                 </Button>
             </template>

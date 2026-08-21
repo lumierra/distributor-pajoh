@@ -81,7 +81,7 @@ const isOpen = computed({
             <Table>
                 <TableHeader>
                     <TableRow
-                        class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground bg-muted/30"
+                        class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground bg-muted/30"
                     >
                         <TableHead class="pl-5 min-w-[16rem]">Menu</TableHead>
                         <TableHead>Route</TableHead>
@@ -109,7 +109,7 @@ const isOpen = computed({
                         >
                             <div class="flex flex-col leading-tight">
                                 <span>{{ m.label }}</span>
-                                <span class="text-[10px] text-muted-foreground font-mono">
+                                <span class="text-[11px] text-muted-foreground font-mono">
                                     {{ m.code }}
                                 </span>
                             </div>
@@ -165,7 +165,7 @@ const isOpen = computed({
                         <div
                             class="flex items-center justify-between rounded-md ring-1 ring-foreground/10 bg-background px-3.5 py-2"
                         >
-                            <Label class="cursor-pointer">Aktif</Label>
+                            <Label class="cursor-pointer mb-0">Aktif</Label>
                             <Switch v-model="form.is_active" />
                         </div>
                     </div>

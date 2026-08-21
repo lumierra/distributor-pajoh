@@ -93,11 +93,28 @@ class CustomerReturnController extends Controller
             ->limit(200)
             ->get(['id', 'invoice_number', 'customer_id', 'total', 'outstanding']);
 
+        // Prefill dari halaman SO ("Sesuaikan"): ?invoice_id / ?customer_id.
+        $prefillInvoiceId = $request->filled('invoice_id') ? (int) $request->input('invoice_id') : null;
+        $prefillCustomerId = $request->filled('customer_id') ? (int) $request->input('customer_id') : null;
+        // Kalau invoice_id valid, turunkan customer-nya (biar konsisten).
+        if ($prefillInvoiceId !== null) {
+            $inv = Invoice::query()->find($prefillInvoiceId);
+            if ($inv !== null) {
+                $prefillCustomerId = (int) $inv->customer_id;
+            } else {
+                $prefillInvoiceId = null;
+            }
+        }
+
         return Inertia::render('CustomerReturns/Create', [
             'customers' => Customer::query()->where('is_active', true)->orderBy('name')->limit(500)->get(['id', 'code', 'name']),
             'products' => Product::query()->where('is_active', true)->orderBy('name')->limit(500)->get(['id', 'name', 'sku']),
             'openInvoices' => $invoices,
             'salesUsers' => User::query()->whereHas('role', fn ($q) => $q->where('code', 'sales'))->orderBy('name')->get(['id', 'name']),
+            'prefill' => [
+                'customer_id' => $prefillCustomerId,
+                'invoice_id' => $prefillInvoiceId,
+            ],
         ]);
     }
 

@@ -9,6 +9,7 @@ import {
 } from "@lucide/vue";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { toast, Toaster } from "vue-sonner";
+import ConfirmDialog from "@/Components/Shared/ConfirmDialog.vue";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -52,11 +53,26 @@ const mobileMenuOpen = ref(false);
  * Tampilkan flash toast setiap response Inertia, BAHKAN ketika pesannya
  * identik dengan sebelumnya (mis. klik Suspend 2× berturut-turut). Vue
  * watcher tidak fire kalau reactive value persis sama, jadi kita pakai
- * `router.on('success')` event Inertia.
+ * `router.on('success')` event Inertia untuk navigasi client-side, DAN
+ * panggilan manual di onMounted untuk initial full-page load (event
+ * `success` Inertia tidak fire untuk initial load, hanya untuk visit
+ * berikutnya).
+ *
+ * Race dobel: karena AppLayout ada di dalam template tiap halaman (bukan
+ * persistent Inertia layout), tiap navigasi bikin AppLayout di-unmount lalu
+ * di-mount ulang. Inertia baru fire event `success` SETELAH komponen halaman
+ * baru selesai di-mount — jadi utk response yang sama, onMounted instance
+ * baru sempat panggil showFlashToast() duluan, lalu listener yang baru saja
+ * ia daftarkan ikut menerima event `success` utk response itu juga →
+ * showFlashToast() kepanggil 2× untuk 1 response. `lastShownFlash` menandai
+ * objek flash yang barusan ditampilkan supaya panggilan kedua itu di-skip,
+ * tanpa menyembunyikan flash message baru yang datang lewat mount berikutnya.
  */
+let lastShownFlash = null;
 function showFlashToast() {
     const flash = page.props.flash;
-    if (!flash) return;
+    if (!flash || flash === lastShownFlash) return;
+    lastShownFlash = flash;
     if (flash.success) toast.success(flash.success);
     if (flash.warning) toast.warning(flash.warning);
     if (flash.error) toast.error(flash.error);
@@ -64,7 +80,7 @@ function showFlashToast() {
 
 let stopInertiaSuccessListener = null;
 onMounted(() => {
-    showFlashToast(); // initial load
+    showFlashToast(); // initial full-page load
     stopInertiaSuccessListener = router.on("success", () => showFlashToast());
 });
 onUnmounted(() => {
@@ -148,9 +164,9 @@ function logout() {
                             v-if="!item.children?.length"
                             :href="routeOrNull(item.route) || '#'"
                             :class="[
-                                'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium whitespace-nowrap transition-all',
+                                'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[14px] font-medium whitespace-nowrap transition-all',
                                 isActive(item.route)
-                                    ? 'bg-white text-[#104837] shadow-sm'
+                                    ? 'bg-brand text-white shadow-sm'
                                     : 'text-white/85 hover:bg-white/10 hover:text-white',
                             ]"
                         >
@@ -165,9 +181,9 @@ function logout() {
                         <DropdownMenu v-else>
                             <DropdownMenuTrigger
                                 :class="[
-                                    'group/trigger inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium whitespace-nowrap transition-all outline-none',
+                                    'group/trigger inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[14px] font-medium whitespace-nowrap transition-all outline-none',
                                     isGroupActive(item)
-                                        ? 'bg-white text-[#104837] shadow-sm'
+                                        ? 'bg-brand text-white shadow-sm'
                                         : 'text-white/85 hover:bg-white/10 hover:text-white',
                                 ]"
                             >
@@ -236,12 +252,12 @@ function logout() {
                             class="group/usrtg inline-flex items-center gap-1.5 pl-1 pr-2 h-8 rounded-md text-white/90 hover:bg-white/10 hover:text-white transition-colors outline-none"
                         >
                             <div
-                                class="size-6 rounded-md bg-warning text-white flex items-center justify-center text-[10px] font-semibold shadow-sm"
+                                class="size-6 rounded-md bg-warning text-white flex items-center justify-center text-[11px] font-semibold shadow-sm"
                             >
                                 {{ userInitials(user?.name) }}
                             </div>
                             <span
-                                class="hidden sm:inline text-[13px] font-medium"
+                                class="hidden sm:inline text-[14px] font-medium"
                             >
                                 {{ user?.name?.split(" ")[0] }}
                             </span>
@@ -356,7 +372,7 @@ function logout() {
                                     </Link>
                                     <div v-else class="pt-3 first:pt-0">
                                         <p
-                                            class="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                                            class="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
                                         >
                                             {{ item.label }}
                                         </p>
@@ -399,7 +415,7 @@ function logout() {
         <footer
             class="mx-auto w-full max-w-screen-2xl px-3 py-4 sm:px-4 lg:px-6 text-center"
         >
-            <p class="text-[11px] text-muted-foreground">
+            <p class="text-[12px] text-muted-foreground">
                 © {{ new Date().getFullYear() }} {{ companyName }} — Sistem
                 Distribusi & Pergudangan
             </p>
@@ -411,5 +427,6 @@ function logout() {
             :close-button="true"
             theme="light"
         />
+        <ConfirmDialog />
     </div>
 </template>

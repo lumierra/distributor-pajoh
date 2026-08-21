@@ -13,6 +13,7 @@ import {
 } from '@lucide/vue';
 import { ref } from 'vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
+import { confirm } from '@/Composables/useConfirm';
 import PaymentRequestStatusBadge from '@/Components/Payments/PaymentRequestStatusBadge.vue';
 import { Button } from '@/Components/ui/button';
 import {
@@ -43,18 +44,24 @@ const verifyForm = useForm({});
 const cancelForm = useForm({});
 const rejectForm = useForm({ rejection_reason: '' });
 
-function doSubmit() {
-    if (!window.confirm('Submit ke kasir untuk verifikasi?')) return;
+async function doSubmit() {
+    if (!(await confirm({ title: 'Submit ke kasir untuk verifikasi?' }))) return;
     submitForm.post(route('payment-requests.submit', props.paymentRequest.id), { preserveScroll: true });
 }
 
-function doVerify() {
-    if (!window.confirm('Verify payment request? Payment akan ter-create & apply ke invoice.')) return;
+async function doVerify() {
+    if (
+        !(await confirm({
+            title: 'Verify payment request?',
+            description: 'Payment akan ter-create & apply ke invoice.',
+        }))
+    )
+        return;
     verifyForm.post(route('payment-requests.verify', props.paymentRequest.id));
 }
 
-function doCancel() {
-    if (!window.confirm('Batalkan request ini?')) return;
+async function doCancel() {
+    if (!(await confirm({ title: 'Batalkan request ini?' }))) return;
     cancelForm.post(route('payment-requests.cancel', props.paymentRequest.id), { preserveScroll: true });
 }
 
@@ -137,7 +144,7 @@ function fmtRp(v) {
                     <Inbox class="size-6" />
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <p class="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
                         {{ paymentRequest.method.toUpperCase() }}
                     </p>
                     <h2 class="text-base font-bold tracking-tight font-mono">{{ fmtRp(paymentRequest.amount) }}</h2>
@@ -174,19 +181,19 @@ function fmtRp(v) {
                 </header>
                 <dl class="px-5 py-3 grid grid-cols-2 gap-3 text-sm">
                     <div>
-                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Metode</dt>
+                        <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Metode</dt>
                         <dd class="mt-0.5">{{ paymentRequest.method }}</dd>
                     </div>
                     <div v-if="paymentRequest.bank_name">
-                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Bank</dt>
+                        <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Bank</dt>
                         <dd class="mt-0.5">{{ paymentRequest.bank_name }}</dd>
                     </div>
                     <div v-if="paymentRequest.reference_no" class="sm:col-span-2">
-                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Referensi</dt>
+                        <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Referensi</dt>
                         <dd class="mt-0.5 font-mono">{{ paymentRequest.reference_no }}</dd>
                     </div>
                     <div v-if="paymentRequest.giro_due_date" class="sm:col-span-2">
-                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Giro Jatuh Tempo</dt>
+                        <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Giro Jatuh Tempo</dt>
                         <dd class="mt-0.5">{{ formatDate(paymentRequest.giro_due_date) }}</dd>
                     </div>
                 </dl>
@@ -205,12 +212,12 @@ function fmtRp(v) {
         </div>
 
         <div v-if="paymentRequest.notes" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5 mb-4">
-            <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Catatan</p>
+            <p class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Catatan</p>
             <p class="text-sm whitespace-pre-line">{{ paymentRequest.notes }}</p>
         </div>
 
         <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5">
-            <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Riwayat</p>
+            <p class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Riwayat</p>
             <ul class="text-xs space-y-1">
                 <li>Dibuat <strong>{{ formatDateTime(paymentRequest.created_at) }}</strong></li>
                 <li v-if="paymentRequest.submitted_at">Disubmit <strong>{{ formatDateTime(paymentRequest.submitted_at) }}</strong></li>

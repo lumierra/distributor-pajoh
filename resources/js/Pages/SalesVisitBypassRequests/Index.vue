@@ -87,7 +87,7 @@ function statusBadge(s) {
             </div>
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">Tgl</TableHead>
                         <TableHead>Sales</TableHead>
                         <TableHead>Customer</TableHead>
@@ -109,7 +109,7 @@ function statusBadge(s) {
                         <TableCell class="text-xs max-w-xs truncate" :title="r.reason">{{ r.reason }}</TableCell>
                         <TableCell class="text-xs">{{ r.distance_meter ? `${r.distance_meter}m` : '—' }}</TableCell>
                         <TableCell>
-                            <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ring-1 capitalize', statusBadge(r.status)]">
+                            <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[12px] font-medium ring-1 capitalize', statusBadge(r.status)]">
                                 {{ r.status }}
                             </span>
                         </TableCell>

@@ -24,7 +24,7 @@ defineProps({
         <div class="flex-1 min-w-0">
             <p
                 :class="[
-                    'text-[11px] font-medium tracking-wide truncate',
+                    'text-[12px] font-medium tracking-wide truncate',
                     tone === 'soft' ? 'text-muted-foreground' : 'text-white/85',
                 ]"
             >
@@ -36,7 +36,7 @@ defineProps({
             <p
                 v-if="hint"
                 :class="[
-                    'text-[10px] mt-0.5 truncate',
+                    'text-[11px] mt-0.5 truncate',
                     tone === 'soft' ? 'text-muted-foreground' : 'text-white/70',
                 ]"
             >

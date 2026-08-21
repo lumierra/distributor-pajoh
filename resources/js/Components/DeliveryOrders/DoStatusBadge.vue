@@ -7,20 +7,21 @@ const props = defineProps({
 
 const config = computed(() => {
     const map = {
-        draft: { label: 'Draft', class: 'bg-muted text-muted-foreground' },
-        picking: { label: 'Picking', class: 'bg-blue-50 text-blue-700 ring-blue-200' },
-        packed: { label: 'Packed', class: 'bg-indigo-50 text-indigo-700 ring-indigo-200' },
-        in_transit: { label: 'In Transit', class: 'bg-amber-50 text-amber-800 ring-amber-200' },
-        delivered: { label: 'Delivered', class: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
-        partial_returned: { label: 'Partial Return', class: 'bg-orange-50 text-orange-700 ring-orange-200' },
-        cancelled: { label: 'Cancelled', class: 'bg-red-50 text-red-700 ring-red-200' },
+        draft: { label: 'Draft', text: 'text-muted-foreground', dot: 'bg-muted-foreground/50' },
+        picking: { label: 'Picking', text: 'text-blue-700', dot: 'bg-blue-500' },
+        packed: { label: 'Packed', text: 'text-indigo-700', dot: 'bg-indigo-500' },
+        in_transit: { label: 'Dalam Perjalanan', text: 'text-amber-700', dot: 'bg-amber-500' },
+        delivered: { label: 'Terkirim', text: 'text-emerald-700', dot: 'bg-emerald-600' },
+        partial_returned: { label: 'Retur Sebagian', text: 'text-orange-700', dot: 'bg-orange-500' },
+        cancelled: { label: 'Dibatalkan', text: 'text-red-700', dot: 'bg-red-400' },
     };
-    return map[props.status] ?? { label: props.status, class: 'bg-muted text-muted-foreground' };
+    return map[props.status] ?? { label: props.status, text: 'text-muted-foreground', dot: 'bg-muted-foreground/50' };
 });
 </script>
 
 <template>
-    <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ring-1', config.class]">
+    <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium', config.text]">
+        <span :class="['size-1.5 rounded-full', config.dot]" />
         {{ config.label }}
     </span>
 </template>

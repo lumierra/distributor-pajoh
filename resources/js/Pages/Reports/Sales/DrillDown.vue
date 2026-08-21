@@ -46,7 +46,7 @@ function fmt(v) {
         <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">Invoice</TableHead>
                         <TableHead>Tgl</TableHead>
                         <TableHead>Customer</TableHead>

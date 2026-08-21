@@ -49,7 +49,7 @@ function typeBadge(t) {
         <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">Tgl</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead>Batch</TableHead>
@@ -66,7 +66,7 @@ function typeBadge(t) {
                     <TableRow v-for="l in ledgers.data" :key="l.id">
                         <TableCell class="pl-4 text-xs">{{ fmt(l.created_at) }}</TableCell>
                         <TableCell>
-                            <span :class="['inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ring-1', typeBadge(l.type)]">
+                            <span :class="['inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase ring-1', typeBadge(l.type)]">
                                 {{ l.type }}
                             </span>
                         </TableCell>

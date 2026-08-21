@@ -134,8 +134,11 @@ class PurchaseOrder extends Model
 
     public function canBeCancelled(): bool
     {
-        // Boleh cancel draft atau approved selama belum ada GRN posted (validated at service).
-        return in_array($this->status, [self::STATUS_DRAFT, self::STATUS_APPROVED, self::STATUS_PARTIAL_RECEIVED], true);
+        // Boleh cancel draft atau approved selama belum ada GRN posted (validated
+        // ulang di service). Status partial_received TIDAK disertakan: status itu
+        // hanya bisa terjadi setelah ada qty_received > 0, yang service selalu
+        // tolak untuk cancel — jadi tombol Cancel di UI tidak boleh muncul lagi.
+        return in_array($this->status, [self::STATUS_DRAFT, self::STATUS_APPROVED], true);
     }
 
     public function canBeClosed(): bool

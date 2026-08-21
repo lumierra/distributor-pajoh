@@ -92,6 +92,11 @@ class Customer extends Model
         return $this->hasMany(CustomerSupplierCreditLimit::class);
     }
 
+    public function productPricePackages(): HasMany
+    {
+        return $this->hasMany(CustomerProductPricePackage::class);
+    }
+
     public function paymentSupplierAllocations(): HasMany
     {
         return $this->hasMany(PaymentSupplierAllocation::class);

@@ -190,7 +190,7 @@ function formatDate(value) {
                             <p v-if="form.errors.username" class="text-xs text-destructive">
                                 {{ form.errors.username }}
                             </p>
-                            <p v-else class="text-[11px] text-muted-foreground">
+                            <p v-else class="text-[12px] text-muted-foreground">
                                 Huruf kecil, angka, underscore, titik.
                             </p>
                         </div>
@@ -250,7 +250,7 @@ function formatDate(value) {
                         >
                             <div>
                                 <Label class="block">Status aktif</Label>
-                                <p class="text-[11px] text-muted-foreground">
+                                <p class="text-[12px] text-muted-foreground">
                                     User nonaktif tidak bisa login.
                                 </p>
                             </div>
@@ -448,7 +448,7 @@ function formatDate(value) {
                                 <ShieldCheck class="size-4 text-muted-foreground" />
                                 <div class="flex-1">
                                     <p class="text-sm font-medium">Menu Override</p>
-                                    <p class="text-[11px] text-muted-foreground">
+                                    <p class="text-[12px] text-muted-foreground">
                                         Atur izin per menu di luar role default.
                                     </p>
                                 </div>
@@ -465,7 +465,7 @@ function formatDate(value) {
                                         <KeyRound class="size-4 text-muted-foreground" />
                                         <div class="flex-1">
                                             <p class="text-sm font-medium">Reset Password</p>
-                                            <p class="text-[11px] text-muted-foreground">
+                                            <p class="text-[12px] text-muted-foreground">
                                                 Set password sementara, user dipaksa ganti.
                                             </p>
                                         </div>
@@ -530,7 +530,7 @@ function formatDate(value) {
                                         <LogOut class="size-4 text-muted-foreground" />
                                         <div class="flex-1">
                                             <p class="text-sm font-medium">Force Logout</p>
-                                            <p class="text-[11px] text-muted-foreground">
+                                            <p class="text-[12px] text-muted-foreground">
                                                 Cabut semua sesi web &amp; token mobile.
                                             </p>
                                         </div>
@@ -573,7 +573,7 @@ function formatDate(value) {
                                                 }}
                                                 user
                                             </p>
-                                            <p class="text-[11px] text-muted-foreground">
+                                            <p class="text-[12px] text-muted-foreground">
                                                 {{
                                                     user.is_active
                                                         ? 'User tidak bisa login lagi.'
@@ -619,7 +619,7 @@ function formatDate(value) {
                                         <Trash2 class="size-4" />
                                         <div class="flex-1">
                                             <p class="text-sm font-medium">Hapus User</p>
-                                            <p class="text-[11px] opacity-70">
+                                            <p class="text-[12px] opacity-70">
                                                 Soft-delete; bisa di-restore lewat Trash.
                                             </p>
                                         </div>

@@ -41,8 +41,8 @@ class ProductUnit extends Model
         return $this->belongsTo(Unit::class);
     }
 
-    public function supplierProductUnits(): HasMany
+    public function pricePackageItems(): HasMany
     {
-        return $this->hasMany(SupplierProductUnit::class);
+        return $this->hasMany(ProductPricePackageItem::class);
     }
 }

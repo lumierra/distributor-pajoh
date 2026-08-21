@@ -97,7 +97,7 @@ function fmt(v) {
 
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">Tgl</TableHead>
                         <TableHead>Category</TableHead>
                         <TableHead>Recipient</TableHead>
@@ -115,7 +115,7 @@ function fmt(v) {
                         <TableCell class="font-mono text-xs">{{ n.category }}</TableCell>
                         <TableCell>
                             <p class="font-medium">{{ n.recipient_name ?? '—' }}</p>
-                            <p class="text-[11px] text-muted-foreground font-mono">{{ n.recipient_phone }}</p>
+                            <p class="text-[12px] text-muted-foreground font-mono">{{ n.recipient_phone }}</p>
                         </TableCell>
                         <TableCell class="text-xs">{{ n.status }}</TableCell>
                         <TableCell class="text-xs text-muted-foreground">{{ n.skip_reason ?? '—' }}</TableCell>

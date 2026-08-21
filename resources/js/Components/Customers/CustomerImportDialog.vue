@@ -62,14 +62,14 @@ function close() {
 
 <template>
     <Dialog :open="open" @update:open="(v) => $emit('update:open', v)">
-        <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden">
-            <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
-                <div class="flex items-start gap-3">
-                    <div class="size-10 rounded-md bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0 ring-1 ring-indigo-200">
+        <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl gap-0">
+            <DialogHeader class="px-6 pt-6 pb-4">
+                <div class="flex items-start gap-3.5">
+                    <div class="size-11 rounded-full bg-brand-light/70 text-brand flex items-center justify-center shrink-0">
                         <FileSpreadsheet class="size-5" />
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <DialogTitle class="text-base font-bold tracking-tight">
+                    <div class="flex-1 min-w-0 pt-0.5">
+                        <DialogTitle class="text-base font-semibold tracking-tight">
                             Import Customer dari Excel
                         </DialogTitle>
                         <DialogDescription class="text-xs text-muted-foreground mt-0.5">
@@ -79,8 +79,8 @@ function close() {
                 </div>
             </DialogHeader>
 
-            <div class="px-5 py-4 space-y-4">
-                <div class="rounded-md bg-muted/40 ring-1 ring-foreground/5 px-3.5 py-2.5 text-xs space-y-2">
+            <div class="px-6 pb-2 space-y-4">
+                <div class="rounded-2xl bg-muted/40 px-4 py-3 text-xs space-y-2">
                     <p class="font-semibold text-foreground">Cara pakai:</p>
                     <ol class="list-decimal pl-4 space-y-0.5 text-muted-foreground">
                         <li>Download template Excel di bawah.</li>
@@ -91,7 +91,7 @@ function close() {
                     </ol>
                 </div>
 
-                <Button as-child variant="outline" size="default" class="w-full">
+                <Button as-child variant="outline" size="default" class="w-full rounded-full">
                     <a :href="route('customers.import.template')">
                         <Download class="size-4" />
                         Download Template
@@ -104,19 +104,21 @@ function close() {
                         ref="fileInput"
                         type="file"
                         accept=".xlsx,.xls,.csv"
-                        class="block w-full text-xs text-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-secondary file:text-secondary-foreground hover:file:bg-secondary/80 file:cursor-pointer"
+                        class="block w-full text-xs text-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-brand file:text-white hover:file:bg-brand-dark file:cursor-pointer"
                         @change="onFileChange"
                     />
                     <p v-if="form.errors.file" class="text-xs text-destructive">{{ form.errors.file }}</p>
                 </div>
             </div>
 
-            <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">
-                <Button type="button" variant="outline" size="default" @click="close">Batal</Button>
+            <DialogFooter class="px-6 py-4 gap-2">
+                <Button type="button" variant="outline" size="default" class="rounded-full" @click="close">
+                    Batal
+                </Button>
                 <Button
                     type="button"
-                    variant="secondary"
                     size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
                     :disabled="form.processing || !form.file"
                     @click="submit"
                 >

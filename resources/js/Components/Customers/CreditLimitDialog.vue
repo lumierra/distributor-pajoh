@@ -2,6 +2,7 @@
 import { useForm } from '@inertiajs/vue3';
 import { Loader2, Save, Search, ShieldAlert } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import CurrencyInput from '@/Components/Shared/CurrencyInput.vue';
 import { Button } from '@/Components/ui/button';
 import {
     Dialog,
@@ -105,14 +106,14 @@ function availableLabel(r) {
 
 <template>
     <Dialog :open="open" @update:open="(v) => $emit('update:open', v)">
-        <DialogContent class="sm:max-w-[760px] p-0 overflow-hidden">
-            <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
-                <div class="flex items-start gap-3">
-                    <div class="size-10 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 ring-1 ring-amber-200">
+        <DialogContent class="sm:max-w-[760px] p-0 overflow-hidden rounded-3xl gap-0">
+            <DialogHeader class="px-6 pt-6 pb-4">
+                <div class="flex items-start gap-3.5">
+                    <div class="size-11 rounded-full bg-brand-light/70 text-brand flex items-center justify-center shrink-0">
                         <ShieldAlert class="size-5" />
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <DialogTitle class="text-base font-bold tracking-tight">
+                    <div class="flex-1 min-w-0 pt-0.5">
+                        <DialogTitle class="text-base font-semibold tracking-tight">
                             Credit Limit per Supplier — {{ customer.name }}
                         </DialogTitle>
                         <DialogDescription class="text-xs text-muted-foreground mt-0.5">
@@ -123,21 +124,21 @@ function availableLabel(r) {
                 </div>
             </DialogHeader>
 
-            <div class="px-5 py-3 border-b border-border/70 bg-muted/30 flex items-center gap-2">
+            <div class="px-6 pb-3 flex items-center gap-2">
                 <div class="relative flex-1">
-                    <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                     <Input
                         v-model="search"
                         placeholder="Cari supplier (kode / nama)…"
-                        class="pl-8 h-9 rounded-md"
+                        class="pl-8 h-9 rounded-full bg-muted/50 border-transparent focus-visible:bg-card"
                     />
                 </div>
             </div>
 
-            <div class="max-h-[55vh] overflow-y-auto">
+            <div class="max-h-[55vh] overflow-y-auto border-t border-foreground/5">
                 <Table>
                     <TableHeader>
-                        <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                        <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5 hover:bg-transparent">
                             <TableHead class="pl-4">Supplier</TableHead>
                             <TableHead class="text-right">Outstanding</TableHead>
                             <TableHead class="text-right">Limit (Rp)</TableHead>
@@ -160,7 +161,7 @@ function availableLabel(r) {
                             v-for="r in filteredRows"
                             :key="r.supplier_id"
                             :class="[
-                                'hover:bg-muted/30 transition-colors',
+                                'hover:bg-foreground/2.5 transition-colors border-foreground/5',
                                 Number(r.credit_limit ?? 0) > 0 ? 'bg-emerald-50/30' : '',
                             ]"
                         >
@@ -173,15 +174,12 @@ function availableLabel(r) {
                             </TableCell>
                             <TableCell class="text-right">
                                 <div class="flex justify-end">
-                                    <Input
+                                    <CurrencyInput
+                                        v-if="canUpdate"
                                         v-model="r.credit_limit"
-                                        type="number"
-                                        min="0"
-                                        step="100000"
-                                        placeholder="tanpa limit"
-                                        :disabled="!canUpdate"
-                                        class="h-8 w-40 text-right font-mono text-xs"
+                                        class="h-8 w-44 rounded-lg font-mono text-xs"
                                     />
+                                    <span v-else class="font-mono text-xs">{{ fmtRp(r.credit_limit) }}</span>
                                 </div>
                             </TableCell>
                             <TableCell class="text-right pr-4 font-mono text-xs">
@@ -192,15 +190,15 @@ function availableLabel(r) {
                 </Table>
             </div>
 
-            <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">
-                <Button type="button" variant="outline" size="default" @click="$emit('update:open', false)">
+            <DialogFooter class="px-6 py-4 gap-2">
+                <Button type="button" variant="outline" size="default" class="rounded-full" @click="$emit('update:open', false)">
                     Tutup
                 </Button>
                 <Button
                     v-if="canUpdate"
                     type="button"
-                    variant="secondary"
                     size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
                     :disabled="form.processing || loading"
                     @click="save"
                 >

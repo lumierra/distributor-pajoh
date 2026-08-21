@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\PurchaseOrder;
 
+use App\Models\Product;
 use App\Models\PurchaseOrder;
-use App\Models\SupplierProduct;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -49,23 +49,22 @@ class StorePurchaseOrderRequest extends FormRequest
             $supplierId = (int) $this->input('supplier_id');
             $items = $this->input('items', []);
 
-            // Verify each product is in supplier_products pivot.
+            // Verify each product belongs to this supplier (1 produk = 1 supplier).
             foreach ($items as $idx => $row) {
                 $productId = (int) ($row['product_id'] ?? 0);
                 if ($productId <= 0) {
                     continue;
                 }
 
-                $exists = SupplierProduct::query()
+                $exists = Product::query()
+                    ->where('id', $productId)
                     ->where('supplier_id', $supplierId)
-                    ->where('product_id', $productId)
-                    ->where('is_active', true)
                     ->exists();
 
                 if (! $exists) {
                     $validator->errors()->add(
                         "items.{$idx}.product_id",
-                        'Produk tidak tertaut ke supplier ini.',
+                        'Produk bukan milik supplier ini.',
                     );
                 }
             }

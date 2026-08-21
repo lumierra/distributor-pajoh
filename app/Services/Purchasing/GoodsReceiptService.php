@@ -27,7 +27,11 @@ class GoodsReceiptService
     ) {}
 
     /**
-     * Buat GRN draft. PO wajib status approved atau partial_received.
+     * Buat GRN draft. Dua mode:
+     *  - Dari PO: kirim purchase_order_id (PO wajib approved/partial_received).
+     *    supplier ikut dari PO.
+     *  - Penerimaan langsung (tanpa PO): purchase_order_id null, kirim
+     *    supplier_id + item produk manual (produk wajib milik supplier itu).
      *
      * @param  array<string, mixed>  $headerData
      * @param  array<int, array<string, mixed>>  $itemsData
@@ -35,22 +39,32 @@ class GoodsReceiptService
     public function createDraft(array $headerData, array $itemsData, User $by): GoodsReceipt
     {
         return DB::transaction(function () use ($headerData, $itemsData, $by): GoodsReceipt {
-            /** @var PurchaseOrder $po */
-            $po = PurchaseOrder::query()->findOrFail($headerData['purchase_order_id']);
+            $po = ! empty($headerData['purchase_order_id'])
+                ? PurchaseOrder::query()->findOrFail($headerData['purchase_order_id'])
+                : null;
 
-            $this->assertPoOpen($po);
+            if ($po !== null) {
+                $this->assertPoOpen($po);
+                $supplierId = (int) $po->supplier_id;
+            } else {
+                // Penerimaan langsung: supplier wajib dari input.
+                $supplierId = (int) ($headerData['supplier_id'] ?? 0);
+                if ($supplierId <= 0) {
+                    throw ValidationException::withMessages([
+                        'supplier_id' => 'Supplier wajib dipilih untuk penerimaan langsung tanpa PO.',
+                    ]);
+                }
+            }
 
             $receivedDate = $headerData['received_date'] instanceof CarbonInterface
                 ? $headerData['received_date']
                 : Carbon::parse($headerData['received_date']);
 
             $grn = new GoodsReceipt([
-                'purchase_order_id' => $po->id,
-                'supplier_id' => $po->supplier_id,
+                'purchase_order_id' => $po?->id,
+                'supplier_id' => $supplierId,
                 'received_date' => $receivedDate,
                 'supplier_delivery_no' => $headerData['supplier_delivery_no'] ?? null,
-                'supplier_vehicle_info' => $headerData['supplier_vehicle_info'] ?? null,
-                'supplier_driver_name' => $headerData['supplier_driver_name'] ?? null,
                 'status' => GoodsReceipt::STATUS_DRAFT,
                 'fiscal_year' => (int) $receivedDate->format('Y'),
                 'received_by' => $by->id,
@@ -81,7 +95,9 @@ class GoodsReceiptService
 
         return DB::transaction(function () use ($grn, $headerData, $itemsData, $by): GoodsReceipt {
             $po = $grn->purchaseOrder;
-            $this->assertPoOpen($po);
+            if ($po !== null) {
+                $this->assertPoOpen($po);
+            }
 
             $receivedDate = $headerData['received_date'] instanceof CarbonInterface
                 ? $headerData['received_date']
@@ -90,8 +106,6 @@ class GoodsReceiptService
             $grn->fill([
                 'received_date' => $receivedDate,
                 'supplier_delivery_no' => $headerData['supplier_delivery_no'] ?? null,
-                'supplier_vehicle_info' => $headerData['supplier_vehicle_info'] ?? null,
-                'supplier_driver_name' => $headerData['supplier_driver_name'] ?? null,
                 'fiscal_year' => (int) $receivedDate->format('Y'),
                 'notes' => $headerData['notes'] ?? null,
                 'discrepancy_notes' => $headerData['discrepancy_notes'] ?? null,
@@ -145,6 +159,46 @@ class GoodsReceiptService
         return $grn->refresh();
     }
 
+    /**
+     * Tandai pending SATU ITEM penerimaan langsung selesai — pending item itu
+     * berhenti dihitung di halaman stok. Angka item tidak diubah, hanya
+     * ditandai. Susulan datang per-produk jadi ditandai per baris.
+     */
+    public function settleItemPending(GrnItem $item, User $by): GrnItem
+    {
+        if (! $item->hasUnsettledPending()) {
+            throw ValidationException::withMessages([
+                'status' => 'Item ini tidak punya pending penerimaan langsung yang bisa ditandai selesai.',
+            ]);
+        }
+
+        $item->update([
+            'pending_settled_at' => now(),
+            'pending_settled_by' => $by->id,
+        ]);
+
+        return $item->refresh();
+    }
+
+    /**
+     * Batalkan penandaan selesai satu item — pending item muncul lagi di stok.
+     */
+    public function unsettleItemPending(GrnItem $item, User $by): GrnItem
+    {
+        if ($item->pending_settled_at === null) {
+            throw ValidationException::withMessages([
+                'status' => 'Item ini belum ditandai pending selesai.',
+            ]);
+        }
+
+        $item->update([
+            'pending_settled_at' => null,
+            'pending_settled_by' => null,
+        ]);
+
+        return $item->refresh();
+    }
+
     public function cancel(GoodsReceipt $grn, string $reason, User $by): GoodsReceipt
     {
         if (! $grn->canBeCancelled()) {
@@ -180,11 +234,13 @@ class GoodsReceiptService
         }
 
         return DB::transaction(function () use ($grn, $by): GoodsReceipt {
-            // Lock PO supaya tidak race dengan GRN concurrent.
-            PurchaseOrder::query()
-                ->where('id', $grn->purchase_order_id)
-                ->lockForUpdate()
-                ->first();
+            // Lock PO supaya tidak race dengan GRN concurrent (skip untuk GRN tanpa PO).
+            if ($grn->purchase_order_id !== null) {
+                PurchaseOrder::query()
+                    ->where('id', $grn->purchase_order_id)
+                    ->lockForUpdate()
+                    ->first();
+            }
 
             foreach ($grn->items as $item) {
                 /** @var ProductUnit $unit */
@@ -249,12 +305,13 @@ class GoodsReceiptService
                     ], $by);
                 }
 
-                // 5. Update po_items cumulative
-                /** @var PoItem $poItem */
+                // 5. Update po_items cumulative (hanya untuk GRN yang tertaut PO)
                 $poItem = $item->poItem;
-                $poItem->qty_received = (int) $poItem->qty_received + (int) $item->qty_reguler;
-                $poItem->bonus_qty_received = (int) $poItem->bonus_qty_received + (int) $item->qty_bonus;
-                $poItem->save();
+                if ($poItem !== null) {
+                    $poItem->qty_received = (int) $poItem->qty_received + (int) $item->qty_reguler;
+                    $poItem->bonus_qty_received = (int) $poItem->bonus_qty_received + (int) $item->qty_bonus;
+                    $poItem->save();
+                }
             }
 
             // 6. Discrepancy detection (cumulative basis)
@@ -267,8 +324,10 @@ class GoodsReceiptService
                 'has_discrepancy' => $hasDiscrepancy,
             ]);
 
-            // 7. Trigger PO status resolution
-            $this->poStatus->resolveAfterGrnChange($grn->purchaseOrder->fresh());
+            // 7. Trigger PO status resolution (hanya untuk GRN yang tertaut PO)
+            if ($grn->purchaseOrder !== null) {
+                $this->poStatus->resolveAfterGrnChange($grn->purchaseOrder->fresh());
+            }
 
             return $grn->refresh();
         });
@@ -288,9 +347,12 @@ class GoodsReceiptService
             if ($item->condition !== GrnItem::CONDITION_GOOD) {
                 return true;
             }
-            // Bonus mismatch: po_item.bonus_qty > 0 tapi belum tercukupi setelah ini
-            if ((int) $item->poItem->bonus_qty > 0
-                && (int) $item->poItem->bonus_qty_received < (int) $item->poItem->bonus_qty) {
+            // Bonus mismatch: po_item.bonus_qty > 0 tapi belum tercukupi setelah ini.
+            // Hanya berlaku untuk GRN tertaut PO (tanpa PO tidak ada baseline bonus).
+            $poItem = $item->poItem;
+            if ($poItem !== null
+                && (int) $poItem->bonus_qty > 0
+                && (int) $poItem->bonus_qty_received < (int) $poItem->bonus_qty) {
                 // Hanya flag kalau ini bukan partial — tapi simple flag dulu.
                 // (Bisa di-refine saat T16 retur supplier.)
                 return true;
@@ -301,59 +363,47 @@ class GoodsReceiptService
     }
 
     /**
+     * Sinkron ulang item GRN. Kalau $po ada → item tertaut po_item dgn strict
+     * match (produk/unit harus sama dengan PO). Kalau $po null (penerimaan
+     * langsung) → produk & unit diambil langsung dari master, wajib milik
+     * supplier GRN, po_item_id null, dan cost_price wajib dari input.
+     *
      * @param  array<int, array<string, mixed>>  $itemsData
      */
-    private function syncItems(GoodsReceipt $grn, PurchaseOrder $po, array $itemsData): void
+    private function syncItems(GoodsReceipt $grn, ?PurchaseOrder $po, array $itemsData): void
     {
         $grn->items()->delete();
 
-        $poItemIds = $po->items->pluck('id')->all();
+        $poItemIds = $po !== null ? $po->items->pluck('id')->all() : [];
 
         foreach ($itemsData as $idx => $row) {
-            $poItemId = (int) $row['po_item_id'];
-
-            if (! in_array($poItemId, $poItemIds, true)) {
-                throw ValidationException::withMessages([
-                    "items.{$idx}.po_item_id" => 'po_item tidak tertaut ke PO ini.',
-                ]);
-            }
-
-            /** @var PoItem $poItem */
-            $poItem = PoItem::query()->findOrFail($poItemId);
-
-            // Strict match product & unit
-            if ((int) $poItem->product_id !== (int) $row['product_id']) {
-                throw ValidationException::withMessages([
-                    "items.{$idx}.product_id" => 'Produk tidak match po_item.',
-                ]);
-            }
-            if ((int) $poItem->product_unit_id !== (int) $row['product_unit_id']) {
-                throw ValidationException::withMessages([
-                    "items.{$idx}.product_unit_id" => 'Unit tidak match po_item.',
-                ]);
-            }
-
             $reg = (int) ($row['qty_reguler'] ?? 0);
             $bon = (int) ($row['qty_bonus'] ?? 0);
             $dmg = (int) ($row['qty_damaged'] ?? 0);
 
             if (($reg + $bon + $dmg) <= 0) {
                 throw ValidationException::withMessages([
-                    "items.{$idx}.qty_reguler" => 'Minimal 1 qty (reguler/bonus/damaged) harus > 0.',
+                    "items.{$idx}.qty_reguler" => 'Minimal 1 qty (reguler/bonus/rusak) harus > 0.',
                 ]);
             }
 
-            $cost = (float) ($row['cost_price'] ?? $poItem->unit_net_cost);
-            $costOverridden = (float) $cost !== (float) $poItem->unit_net_cost;
-
-            $product = $poItem->product;
-            $unit = $poItem->productUnit;
+            if ($po !== null) {
+                [$poItem, $product, $unit, $cost, $costOverridden] = $this->resolvePoBackedItem($poItemIds, $row, $idx);
+                // Dari PO: pending dihitung dari PO, kolom surat jalan tak dipakai.
+                $qtyDeliveryNote = 0;
+            } else {
+                [$poItem, $product, $unit, $cost, $costOverridden] = $this->resolveDirectItem($grn, $row, $idx);
+                // Penerimaan langsung: qty surat jalan = acuan pending. Default
+                // ke qty_reguler (tanpa pending) kalau tidak diisi. Tidak boleh
+                // kurang dari qty diterima.
+                $qtyDeliveryNote = max($reg, (int) ($row['qty_delivery_note'] ?? $reg));
+            }
 
             GrnItem::create([
                 'goods_receipt_id' => $grn->id,
-                'po_item_id' => $poItem->id,
-                'product_id' => $poItem->product_id,
-                'product_unit_id' => $poItem->product_unit_id,
+                'po_item_id' => $poItem?->id,
+                'product_id' => $product->id,
+                'product_unit_id' => $unit->id,
                 'product_name_snapshot' => $product->name,
                 'product_sku_snapshot' => $product->sku,
                 'product_unit_name_snapshot' => $unit->name,
@@ -362,6 +412,7 @@ class GoodsReceiptService
                 'production_date' => $row['production_date'] ?? null,
                 'expired_date' => $row['expired_date'] ?? null,
                 'qty_reguler' => $reg,
+                'qty_delivery_note' => $qtyDeliveryNote,
                 'qty_bonus' => $bon,
                 'qty_damaged' => $dmg,
                 'qty_reguler_base' => 0,
@@ -375,6 +426,72 @@ class GoodsReceiptService
                 'sort_order' => $idx,
             ]);
         }
+    }
+
+    /**
+     * Mode dari-PO: validasi po_item milik PO + strict match produk/unit,
+     * cost fallback ke unit_net_cost PO.
+     *
+     * @param  array<int, int>  $poItemIds
+     * @param  array<string, mixed>  $row
+     * @return array{0: PoItem, 1: Product, 2: ProductUnit, 3: float, 4: bool}
+     */
+    private function resolvePoBackedItem(array $poItemIds, array $row, int $idx): array
+    {
+        $poItemId = (int) ($row['po_item_id'] ?? 0);
+
+        if (! in_array($poItemId, $poItemIds, true)) {
+            throw ValidationException::withMessages([
+                "items.{$idx}.po_item_id" => 'po_item tidak tertaut ke PO ini.',
+            ]);
+        }
+
+        /** @var PoItem $poItem */
+        $poItem = PoItem::query()->findOrFail($poItemId);
+
+        if ((int) $poItem->product_id !== (int) $row['product_id']) {
+            throw ValidationException::withMessages([
+                "items.{$idx}.product_id" => 'Produk tidak match po_item.',
+            ]);
+        }
+        if ((int) $poItem->product_unit_id !== (int) $row['product_unit_id']) {
+            throw ValidationException::withMessages([
+                "items.{$idx}.product_unit_id" => 'Unit tidak match po_item.',
+            ]);
+        }
+
+        $cost = (float) ($row['cost_price'] ?? $poItem->unit_net_cost);
+        $costOverridden = (float) $cost !== (float) $poItem->unit_net_cost;
+
+        return [$poItem, $poItem->product, $poItem->productUnit, $cost, $costOverridden];
+    }
+
+    /**
+     * Mode langsung (tanpa PO): produk & unit dari master, wajib milik supplier
+     * GRN, cost_price wajib dari input (tidak ada baseline PO → override=false).
+     *
+     * @param  array<string, mixed>  $row
+     * @return array{0: null, 1: Product, 2: ProductUnit, 3: float, 4: bool}
+     */
+    private function resolveDirectItem(GoodsReceipt $grn, array $row, int $idx): array
+    {
+        /** @var Product $product */
+        $product = Product::query()->findOrFail($row['product_id']);
+
+        if ((int) $product->supplier_id !== (int) $grn->supplier_id) {
+            throw ValidationException::withMessages([
+                "items.{$idx}.product_id" => 'Produk bukan milik supplier yang dipilih.',
+            ]);
+        }
+
+        /** @var ProductUnit $unit */
+        $unit = ProductUnit::query()
+            ->where('product_id', $product->id)
+            ->findOrFail($row['product_unit_id']);
+
+        $cost = (float) ($row['cost_price'] ?? 0);
+
+        return [null, $product, $unit, $cost, false];
     }
 
     private function assertPoOpen(PurchaseOrder $po): void

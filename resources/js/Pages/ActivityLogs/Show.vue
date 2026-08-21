@@ -33,23 +33,23 @@ function fmt(v) {
             <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-3">
                 <h3 class="text-sm font-semibold">Detail</h3>
                 <dl class="grid grid-cols-2 gap-3 text-sm">
-                    <div><dt class="text-[11px] uppercase text-muted-foreground">Action</dt><dd class="font-mono">{{ log.action }}</dd></div>
-                    <div><dt class="text-[11px] uppercase text-muted-foreground">User</dt><dd>{{ log.user?.name ?? log.user_name_snapshot ?? '—' }}</dd></div>
-                    <div><dt class="text-[11px] uppercase text-muted-foreground">Created</dt><dd>{{ fmt(log.created_at) }}</dd></div>
-                    <div><dt class="text-[11px] uppercase text-muted-foreground">Channel</dt><dd>{{ log.channel ?? '—' }}</dd></div>
-                    <div><dt class="text-[11px] uppercase text-muted-foreground">Model</dt><dd class="text-xs">{{ log.model_type }}</dd></div>
-                    <div><dt class="text-[11px] uppercase text-muted-foreground">Label</dt><dd>{{ log.model_label ?? '—' }}</dd></div>
-                    <div><dt class="text-[11px] uppercase text-muted-foreground">IP</dt><dd class="font-mono text-xs">{{ log.ip ?? '—' }}</dd></div>
+                    <div><dt class="text-[12px] uppercase text-muted-foreground">Action</dt><dd class="font-mono">{{ log.action }}</dd></div>
+                    <div><dt class="text-[12px] uppercase text-muted-foreground">User</dt><dd>{{ log.user?.name ?? log.user_name_snapshot ?? '—' }}</dd></div>
+                    <div><dt class="text-[12px] uppercase text-muted-foreground">Created</dt><dd>{{ fmt(log.created_at) }}</dd></div>
+                    <div><dt class="text-[12px] uppercase text-muted-foreground">Channel</dt><dd>{{ log.channel ?? '—' }}</dd></div>
+                    <div><dt class="text-[12px] uppercase text-muted-foreground">Model</dt><dd class="text-xs">{{ log.model_type }}</dd></div>
+                    <div><dt class="text-[12px] uppercase text-muted-foreground">Label</dt><dd>{{ log.model_label ?? '—' }}</dd></div>
+                    <div><dt class="text-[12px] uppercase text-muted-foreground">IP</dt><dd class="font-mono text-xs">{{ log.ip ?? '—' }}</dd></div>
                 </dl>
             </section>
             <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-2 text-xs">
                 <h3 class="text-sm font-semibold mb-1">Diff</h3>
                 <div>
-                    <p class="text-[10px] uppercase text-muted-foreground mb-1">Before</p>
+                    <p class="text-[11px] uppercase text-muted-foreground mb-1">Before</p>
                     <pre class="bg-muted/30 p-2 rounded overflow-auto">{{ JSON.stringify(log.before, null, 2) }}</pre>
                 </div>
                 <div>
-                    <p class="text-[10px] uppercase text-muted-foreground mb-1">After</p>
+                    <p class="text-[11px] uppercase text-muted-foreground mb-1">After</p>
                     <pre class="bg-muted/30 p-2 rounded overflow-auto">{{ JSON.stringify(log.after, null, 2) }}</pre>
                 </div>
             </section>

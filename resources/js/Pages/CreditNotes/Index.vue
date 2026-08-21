@@ -105,7 +105,7 @@ function fmtRp(v) {
 
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">No. CN</TableHead>
                         <TableHead>Customer</TableHead>
                         <TableHead>CR Source</TableHead>
@@ -134,7 +134,7 @@ function fmtRp(v) {
                         </TableCell>
                         <TableCell>
                             <p class="font-medium">{{ cn.customer?.name ?? '—' }}</p>
-                            <p class="text-[11px] text-muted-foreground font-mono">{{ cn.customer?.code }}</p>
+                            <p class="text-[12px] text-muted-foreground font-mono">{{ cn.customer?.code }}</p>
                         </TableCell>
                         <TableCell class="font-mono text-xs">{{ cn.customer_return?.return_number ?? '—' }}</TableCell>
                         <TableCell class="text-xs">{{ formatDate(cn.cn_date) }}</TableCell>

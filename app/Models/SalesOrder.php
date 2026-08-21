@@ -61,6 +61,7 @@ class SalesOrder extends Model
         'header_discount_type',
         'header_discount_value',
         'header_discount_amount',
+        'cashback',
         'total',
         'notes',
         'submitted_at',
@@ -96,6 +97,7 @@ class SalesOrder extends Model
             'subtotal' => 'decimal:2',
             'header_discount_value' => 'decimal:2',
             'header_discount_amount' => 'decimal:2',
+            'cashback' => 'decimal:2',
             'total' => 'decimal:2',
             'submitted_at' => 'datetime',
             'approved_at' => 'datetime',
@@ -127,6 +129,27 @@ class SalesOrder extends Model
         return $this->hasMany(SoReservation::class);
     }
 
+    public function deliveryOrders(): HasMany
+    {
+        return $this->hasMany(DeliveryOrder::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /**
+     * Ada Surat Jalan (DO) non-cancelled? Kalau ada, barang sudah/akan keluar
+     * fisik → edit item SO tak lagi aman ditimpa (harus lewat retur/CN).
+     */
+    public function hasActiveDeliveryOrders(): bool
+    {
+        return $this->deliveryOrders()
+            ->where('status', '!=', DeliveryOrder::STATUS_CANCELLED)
+            ->exists();
+    }
+
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
@@ -147,9 +170,23 @@ class SalesOrder extends Model
         return $this->belongsTo(User::class, 'credit_override_approved_by');
     }
 
+    /**
+     * Fleksibel: boleh edit item saat draft & submitted bebas, dan saat approved
+     * SELAMA belum ada Surat Jalan (DO) — karena stok sudah dipotong tapi masih
+     * bisa dibalikkan & dipotong ulang dengan aman. Begitu ada DO / sudah
+     * (sebagian) terkirim, penyesuaian harus lewat retur / credit note.
+     */
     public function canBeEdited(): bool
     {
-        return $this->status === self::STATUS_DRAFT;
+        if (in_array($this->status, [self::STATUS_DRAFT, self::STATUS_SUBMITTED, self::STATUS_PENDING_CREDIT_REVIEW], true)) {
+            return true;
+        }
+
+        if ($this->status === self::STATUS_APPROVED) {
+            return ! $this->hasActiveDeliveryOrders();
+        }
+
+        return false;
     }
 
     public function canBeSubmitted(): bool

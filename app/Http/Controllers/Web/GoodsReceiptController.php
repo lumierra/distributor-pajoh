@@ -9,16 +9,19 @@ use App\Http\Requests\Grn\RejectGrnRequest;
 use App\Http\Requests\Grn\StoreGrnRequest;
 use App\Http\Requests\Grn\UpdateGrnRequest;
 use App\Models\GoodsReceipt;
+use App\Models\GrnItem;
+use App\Models\Product;
 use App\Models\PurchaseOrder;
+use App\Models\Supplier;
 use App\Services\Purchasing\GoodsReceiptService;
 use App\Services\Purchasing\GrnPdfRenderer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class GoodsReceiptController extends Controller
 {
@@ -94,8 +97,16 @@ class GoodsReceiptController extends Controller
             ->limit(100)
             ->get(['id', 'po_number', 'po_date', 'supplier_id', 'status']);
 
+        // Daftar supplier aktif untuk mode penerimaan langsung (tanpa PO).
+        $suppliers = Supplier::query()
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->limit(500)
+            ->get(['id', 'code', 'name', 'payment_term_days']);
+
         return Inertia::render('GoodsReceipts/Create', [
             'openPurchaseOrders' => $openPos,
+            'suppliers' => $suppliers,
             'selectedPo' => $request->input('purchase_order_id')
                 ? $this->loadPoForGrn((int) $request->input('purchase_order_id'))
                 : null,
@@ -125,11 +136,16 @@ class GoodsReceiptController extends Controller
             'supplier:id,code,name',
             'items.poItem:id,qty_ordered,qty_received,bonus_qty,bonus_qty_received,unit_net_cost',
             'items.batch:id,batch_code,production_date,expired_date',
+            'items.pendingSettler:id,name',
+            'attachments' => fn ($q) => $q->with('uploader:id,name'),
             'receiver:id,name',
             'submitter:id,name',
             'poster:id,name',
             'rejecter:id,name',
         ]);
+
+        // Settle pending per ITEM (bukan per GRN) — susulan datang per produk.
+        $canManagePending = request()->user()?->can('settleDirectPending', $goodsReceipt) ?? false;
 
         return Inertia::render('GoodsReceipts/Show', [
             'grn' => $goodsReceipt,
@@ -138,7 +154,10 @@ class GoodsReceiptController extends Controller
             'canCancel' => $goodsReceipt->canBeCancelled() && (request()->user()?->can('cancel', $goodsReceipt) ?? false),
             'canPost' => $goodsReceipt->canBePosted() && (request()->user()?->can('post', $goodsReceipt) ?? false),
             'canReject' => $goodsReceipt->canBeRejected() && (request()->user()?->can('reject', $goodsReceipt) ?? false),
+            'canManageAttachments' => request()->user()?->can('manageAttachments', $goodsReceipt) ?? false,
             'hasOverReceive' => $goodsReceipt->hasOverReceive(),
+            // Boleh kelola pending per item (tombol muncul per baris di frontend).
+            'canManagePending' => $canManagePending,
         ]);
     }
 
@@ -147,11 +166,13 @@ class GoodsReceiptController extends Controller
         $this->authorize('update', $goodsReceipt);
         abort_unless($goodsReceipt->canBeEdited(), 422, 'GRN tidak bisa diedit.');
 
-        $goodsReceipt->load(['purchaseOrder', 'items.poItem']);
+        $goodsReceipt->load(['purchaseOrder', 'supplier:id,code,name', 'items.poItem']);
 
         return Inertia::render('GoodsReceipts/Edit', [
             'grn' => $goodsReceipt,
-            'po' => $this->loadPoForGrn($goodsReceipt->purchase_order_id),
+            'po' => $goodsReceipt->purchase_order_id
+                ? $this->loadPoForGrn($goodsReceipt->purchase_order_id)
+                : null,
         ]);
     }
 
@@ -202,6 +223,24 @@ class GoodsReceiptController extends Controller
         return back()->with('flash.success', "GRN {$goodsReceipt->grn_number} ditolak. Operator akan diberitahu.");
     }
 
+    public function settleItemPending(Request $request, GrnItem $grnItem): RedirectResponse
+    {
+        $this->authorize('settleDirectPending', $grnItem->goodsReceipt);
+
+        $this->service->settleItemPending($grnItem, $request->user());
+
+        return back()->with('flash.success', 'Pending item ditandai selesai.');
+    }
+
+    public function unsettleItemPending(Request $request, GrnItem $grnItem): RedirectResponse
+    {
+        $this->authorize('settleDirectPending', $grnItem->goodsReceipt);
+
+        $this->service->unsettleItemPending($grnItem, $request->user());
+
+        return back()->with('flash.success', 'Penandaan pending item dibatalkan.');
+    }
+
     public function post(PostGrnRequest $request, GoodsReceipt $goodsReceipt): RedirectResponse
     {
         $approveOverReceive = (bool) $request->validated('approve_over_receive', false);
@@ -212,7 +251,7 @@ class GoodsReceiptController extends Controller
         return back()->with('flash.success', "GRN {$goodsReceipt->grn_number} di-posting. Stok ter-update.");
     }
 
-    public function downloadPdf(GoodsReceipt $goodsReceipt): Response
+    public function downloadPdf(GoodsReceipt $goodsReceipt): BinaryFileResponse
     {
         $this->authorize('downloadPdf', $goodsReceipt);
 
@@ -238,6 +277,50 @@ class GoodsReceiptController extends Controller
         return response()->json([
             'po' => $this->loadPoForGrn($purchaseOrder->id),
         ]);
+    }
+
+    /**
+     * AJAX: produk milik supplier untuk mode penerimaan langsung (tanpa PO).
+     * cost_price per satuan = harga modal dari paket harga pertama produk
+     * (sekadar acuan; HPP aktual dari input operator).
+     */
+    public function supplierProducts(Supplier $supplier): JsonResponse
+    {
+        $this->authorize('create', GoodsReceipt::class);
+
+        $products = Product::query()
+            ->where('supplier_id', $supplier->id)
+            ->where('is_active', true)
+            ->with([
+                'units:id,product_id,name,qty_to_base',
+                'pricePackages' => fn ($q) => $q->orderBy('sort_order')
+                    ->with('items:id,price_package_id,product_unit_id,cost_price'),
+            ])
+            ->orderBy('name')
+            ->get(['id', 'sku', 'name'])
+            ->map(function (Product $product): array {
+                $defaultPackage = $product->pricePackages->first();
+                $costByUnit = [];
+                if ($defaultPackage) {
+                    foreach ($defaultPackage->items as $item) {
+                        $costByUnit[$item->product_unit_id] = (float) $item->cost_price;
+                    }
+                }
+
+                return [
+                    'product_id' => $product->id,
+                    'sku' => $product->sku,
+                    'name' => $product->name,
+                    'units' => $product->units->map(fn ($u) => [
+                        'id' => $u->id,
+                        'name' => $u->name,
+                        'qty_to_base' => (int) $u->qty_to_base,
+                        'cost_price' => $costByUnit[$u->id] ?? 0.0,
+                    ])->values(),
+                ];
+            })->values();
+
+        return response()->json(['products' => $products]);
     }
 
     private function loadPoForGrn(int $poId): ?array

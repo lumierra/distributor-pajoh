@@ -90,15 +90,15 @@ function formatDateTime(v) {
                 </div>
                 <dl class="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Customer</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Customer</dt>
                         <dd class="font-medium">{{ creditNote.customer?.name }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Tgl CN</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Tgl CN</dt>
                         <dd>{{ formatDate(creditNote.cn_date) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">CR Source</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">CR Source</dt>
                         <dd class="font-mono text-xs">
                             <Link v-if="creditNote.customer_return" :href="route('customer-returns.show', creditNote.customer_return.id)" class="hover:text-primary">
                                 {{ creditNote.customer_return.return_number }}
@@ -107,19 +107,19 @@ function formatDateTime(v) {
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Created By</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Created By</dt>
                         <dd>{{ creditNote.creator?.name ?? '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Amount</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Amount</dt>
                         <dd class="font-mono font-semibold">{{ fmtRp(creditNote.amount) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Applied</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Applied</dt>
                         <dd class="font-mono">{{ fmtRp(creditNote.applied_amount) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Remaining</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Remaining</dt>
                         <dd class="font-mono font-semibold text-amber-700">{{ fmtRp(creditNote.remaining_amount) }}</dd>
                     </div>
                 </dl>
@@ -142,7 +142,7 @@ function formatDateTime(v) {
                 <h3 class="text-sm font-semibold mb-2">Riwayat Aplikasi</h3>
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="text-[10px] uppercase text-muted-foreground border-b">
+                        <tr class="text-[11px] uppercase text-muted-foreground border-b">
                             <th class="text-left py-2">Tanggal</th>
                             <th class="text-left">Invoice</th>
                             <th class="text-right">Amount</th>

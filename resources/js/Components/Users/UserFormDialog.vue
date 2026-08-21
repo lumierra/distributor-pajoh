@@ -13,13 +13,6 @@ import {
 } from '@/Components/ui/dialog';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/Components/ui/select';
 import { Switch } from '@/Components/ui/switch';
 
 const props = defineProps({
@@ -108,17 +101,17 @@ function submit() {
 
 <template>
     <Dialog :open="open" @update:open="(v) => $emit('update:open', v)">
-        <DialogContent class="sm:max-w-[520px] p-0 overflow-hidden">
-            <!-- Header dengan icon kotak hijau (mirror screenshot pos-pajoh) -->
-            <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
-                <div class="flex items-start gap-3">
+        <DialogContent class="sm:max-w-[520px] p-0 overflow-hidden rounded-3xl gap-0">
+            <!-- Header minimal — ikon bulat soft, tanpa kotak tegas -->
+            <DialogHeader class="px-6 pt-6 pb-4">
+                <div class="flex items-start gap-3.5">
                     <div
-                        class="size-10 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 ring-1 ring-emerald-200"
+                        class="size-11 rounded-full bg-brand-light/70 text-brand flex items-center justify-center shrink-0"
                     >
                         <component :is="isEdit ? ShieldCheck : UserPlus" class="size-5" />
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <DialogTitle class="text-base font-bold tracking-tight">
+                    <div class="flex-1 min-w-0 pt-0.5">
+                        <DialogTitle class="text-base font-semibold tracking-tight">
                             {{ isEdit ? `Edit User — ${user.name}` : 'Tambah User' }}
                         </DialogTitle>
                         <DialogDescription class="text-xs text-muted-foreground mt-0.5">
@@ -134,29 +127,36 @@ function submit() {
 
             <!-- Form (scrollable kalau panjang) -->
             <form
-                class="px-5 py-4 space-y-3.5 max-h-[65vh] overflow-y-auto"
+                class="px-6 pb-2 space-y-4 max-h-[65vh] overflow-y-auto"
                 @submit.prevent="submit"
             >
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div class="space-y-1 sm:col-span-2">
                         <Label for="name" class="text-xs font-medium">Nama lengkap *</Label>
-                        <Input id="name" v-model="form.name" required class="h-9" />
+                        <Input id="name" v-model="form.name" required class="h-10 rounded-xl" />
                         <p v-if="form.errors.name" class="text-xs text-destructive">
                             {{ form.errors.name }}
                         </p>
                     </div>
                     <div class="space-y-1 sm:col-span-2">
                         <Label class="text-xs font-medium">Role *</Label>
-                        <Select v-model="form.role_id">
-                            <SelectTrigger class="h-9 w-full">
-                                <SelectValue placeholder="Pilih role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem v-for="r in assignableRoles" :key="r.id" :value="r.id">
-                                    {{ r.name }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button
+                                v-for="r in assignableRoles"
+                                :key="r.id"
+                                type="button"
+                                :class="[
+                                    'rounded-full px-2 py-1.5 text-xs font-medium text-center transition-all ring-1 truncate',
+                                    form.role_id === r.id
+                                        ? 'bg-brand text-white ring-brand shadow-sm'
+                                        : 'bg-muted/50 text-foreground ring-transparent hover:bg-muted',
+                                ]"
+                                :title="r.name"
+                                @click="form.role_id = r.id"
+                            >
+                                {{ r.name }}
+                            </button>
+                        </div>
                         <p v-if="form.errors.role_id" class="text-xs text-destructive">
                             {{ form.errors.role_id }}
                         </p>
@@ -167,7 +167,7 @@ function submit() {
                             id="username"
                             v-model="form.username"
                             required
-                            class="h-9 font-mono"
+                            class="h-10 rounded-xl font-mono"
                         />
                         <p v-if="form.errors.username" class="text-xs text-destructive">
                             {{ form.errors.username }}
@@ -175,14 +175,14 @@ function submit() {
                     </div>
                     <div class="space-y-1">
                         <Label for="email" class="text-xs font-medium">Email</Label>
-                        <Input id="email" type="email" v-model="form.email" class="h-9" />
+                        <Input id="email" type="email" v-model="form.email" class="h-10 rounded-xl" />
                         <p v-if="form.errors.email" class="text-xs text-destructive">
                             {{ form.errors.email }}
                         </p>
                     </div>
                     <div class="space-y-1 sm:col-span-2">
                         <Label for="phone" class="text-xs font-medium">No. HP / WhatsApp</Label>
-                        <Input id="phone" v-model="form.phone" class="h-9" />
+                        <Input id="phone" v-model="form.phone" class="h-10 rounded-xl" />
                         <p v-if="form.errors.phone" class="text-xs text-destructive">
                             {{ form.errors.phone }}
                         </p>
@@ -190,18 +190,18 @@ function submit() {
                 </div>
 
                 <!-- Password section (create only) -->
-                <div v-if="!isEdit" class="space-y-2 pt-2 border-t border-border/70">
-                    <p class="text-[11px] text-muted-foreground">
+                <div v-if="!isEdit" class="space-y-2.5 pt-3 border-t border-foreground/5">
+                    <p class="text-[12px] text-muted-foreground">
                         Kosongkan untuk pakai password default
-                        <code class="font-mono px-1 rounded bg-muted">12345678</code>.
+                        <code class="font-mono px-1.5 py-0.5 rounded-md bg-muted">12345678</code>.
                     </p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div class="space-y-1">
                             <Label class="text-xs font-medium">Password</Label>
                             <Input
                                 v-model="form.password"
                                 type="password"
-                                class="h-9"
+                                class="h-10 rounded-xl"
                                 placeholder="default: 12345678"
                             />
                             <ul
@@ -219,7 +219,7 @@ function submit() {
                             <Input
                                 v-model="form.password_confirmation"
                                 type="password"
-                                class="h-9"
+                                class="h-10 rounded-xl"
                                 placeholder="ulangi bila diisi"
                             />
                         </div>
@@ -228,40 +228,29 @@ function submit() {
 
                 <!-- Active toggle -->
                 <div
-                    class="flex items-center justify-between rounded-md bg-muted/40 ring-1 ring-foreground/5 px-3.5 py-2.5"
+                    class="flex items-center justify-between rounded-2xl bg-muted/40 px-4 py-3"
                 >
                     <div>
-                        <Label class="text-xs font-medium block cursor-pointer"
+                        <Label class="text-xs font-medium block cursor-pointer mb-0"
                             >Status aktif</Label
                         >
-                        <p class="text-[11px] text-muted-foreground mt-0.5">
+                        <p class="text-[12px] text-muted-foreground mt-0.5">
                             User nonaktif tidak bisa login.
                         </p>
                     </div>
                     <Switch v-model="form.is_active" />
                 </div>
-
-                <!-- Info hint (yellow) -->
-                <div
-                    v-if="!isEdit"
-                    class="rounded-md bg-warning-soft ring-1 ring-warning/20 px-3 py-2 text-xs flex items-start gap-2"
-                >
-                    <span class="text-base">💡</span>
-                    <p class="text-foreground/80 leading-relaxed">
-                        User akan dipaksa <strong>ganti password</strong> saat login pertama. Pastikan No. HP
-                        terisi agar notifikasi WhatsApp dapat dikirim otomatis (saat T18 aktif).
-                    </p>
-                </div>
             </form>
 
-            <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">
-                <Button type="button" variant="outline" size="default" @click="close">
+            <DialogFooter class="px-6 py-4 gap-2">
+                <Button type="button" variant="outline" size="default" class="rounded-full" @click="close">
                     Batal
                 </Button>
                 <Button
                     type="button"
                     variant="secondary"
                     size="default"
+                    class="rounded-full"
                     :disabled="form.processing"
                     @click="submit"
                 >

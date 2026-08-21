@@ -12,11 +12,12 @@ const props = defineProps({
 });
 
 const form = useForm({
+    __mode: props.grn.purchase_order_id ? 'po' : 'direct',
+    __supplierName: props.grn.supplier?.name ?? '—',
     purchase_order_id: props.grn.purchase_order_id,
+    supplier_id: props.grn.supplier_id,
     received_date: props.grn.received_date ? String(props.grn.received_date).slice(0, 10) : '',
     supplier_delivery_no: props.grn.supplier_delivery_no ?? '',
-    supplier_vehicle_info: props.grn.supplier_vehicle_info ?? '',
-    supplier_driver_name: props.grn.supplier_driver_name ?? '',
     notes: props.grn.notes ?? '',
     discrepancy_notes: props.grn.discrepancy_notes ?? '',
     items: (props.grn.items ?? []).map((i) => {
@@ -38,6 +39,7 @@ const form = useForm({
             production_date: i.production_date ? String(i.production_date).slice(0, 10) : '',
             expired_date: i.expired_date ? String(i.expired_date).slice(0, 10) : '',
             qty_reguler: i.qty_reguler,
+            qty_delivery_note: i.qty_delivery_note ?? i.qty_reguler,
             qty_bonus: i.qty_bonus,
             qty_damaged: i.qty_damaged,
             cost_price: Number(i.cost_price),
@@ -46,6 +48,7 @@ const form = useForm({
         };
     }),
     __po: props.po,
+    __supplierProducts: [],
 });
 
 function submit() {
@@ -53,18 +56,17 @@ function submit() {
         .transform((data) => ({
             received_date: data.received_date,
             supplier_delivery_no: data.supplier_delivery_no,
-            supplier_vehicle_info: data.supplier_vehicle_info,
-            supplier_driver_name: data.supplier_driver_name,
             notes: data.notes,
             discrepancy_notes: data.discrepancy_notes,
             items: data.items.map((r) => ({
-                po_item_id: r.po_item_id,
+                po_item_id: r.po_item_id ?? null,
                 product_id: r.product_id,
                 product_unit_id: r.product_unit_id,
                 batch_code: r.batch_code,
                 production_date: r.production_date || null,
                 expired_date: r.expired_date || null,
                 qty_reguler: Number(r.qty_reguler) || 0,
+                qty_delivery_note: Number(r.qty_delivery_note) || 0,
                 qty_bonus: Number(r.qty_bonus) || 0,
                 qty_damaged: Number(r.qty_damaged) || 0,
                 cost_price: Number(r.cost_price) || 0,
@@ -82,7 +84,7 @@ function submit() {
     <AppLayout>
         <PageHeader :title="`Edit GRN ${grn.grn_number}`" description="Hanya bisa edit selama status Draft atau Rejected." :icon="PackageOpen">
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('grns.show', grn.id)">
                         <ArrowLeft class="size-4" />
                         Kembali ke Detail
@@ -93,7 +95,7 @@ function submit() {
 
         <GrnForm :form="form" mode="edit" submit-label="Simpan Perubahan" @submit="submit">
             <template #actions>
-                <Button as-child type="button" variant="outline" size="default">
+                <Button as-child type="button" variant="outline" size="default" class="rounded-full">
                     <Link :href="route('grns.show', grn.id)">Batal</Link>
                 </Button>
             </template>

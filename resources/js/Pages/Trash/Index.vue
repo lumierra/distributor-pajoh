@@ -48,14 +48,14 @@ function fmt(v) {
                 :class="['inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs ring-1', m.slug === type ? 'bg-primary text-primary-foreground ring-primary' : 'bg-card ring-border hover:bg-muted/30']"
                 @click="switchType(m.slug)">
                 {{ m.label }}
-                <span class="ml-1 px-1.5 py-0.5 rounded text-[10px] bg-background/30">{{ counts[m.slug] ?? 0 }}</span>
+                <span class="ml-1 px-1.5 py-0.5 rounded text-[11px] bg-background/30">{{ counts[m.slug] ?? 0 }}</span>
             </button>
         </div>
 
         <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">ID</TableHead>
                         <TableHead>Label</TableHead>
                         <TableHead>Deleted At</TableHead>

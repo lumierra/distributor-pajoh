@@ -24,6 +24,16 @@ import TabsPill from '@/Components/Shared/TabsPill.vue';
 import BankAccountFormDialog from '@/Components/Suppliers/BankAccountFormDialog.vue';
 import DocumentUploadDialog from '@/Components/Suppliers/DocumentUploadDialog.vue';
 import SupplierFormDialog from '@/Components/Suppliers/SupplierFormDialog.vue';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/Components/ui/alert-dialog';
 import { Button } from '@/Components/ui/button';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
@@ -73,12 +83,6 @@ function openEditBank(b) {
 function onBankSaved() {
     router.reload({ only: ['supplier'] });
 }
-function destroyBank(b) {
-    if (!window.confirm(`Hapus rekening ${b.bank_name} ${b.account_number}?`)) return;
-    useForm({}).delete(route('supplier-bank-accounts.destroy', b.id), {
-        preserveScroll: true,
-    });
-}
 function setDefaultBank(b) {
     useForm({}).post(route('supplier-bank-accounts.set-default', b.id), {
         preserveScroll: true,
@@ -93,11 +97,45 @@ function openUploadDoc() {
 function onDocSaved() {
     router.reload({ only: ['supplier'] });
 }
-function destroyDoc(d) {
-    if (!window.confirm(`Hapus dokumen "${d.title}"?`)) return;
-    useForm({}).delete(route('supplier-documents.destroy', d.id), {
-        preserveScroll: true,
-    });
+
+// Konfirmasi hapus (bank / dokumen) — pakai AlertDialog terkontrol, bukan window.confirm.
+const deleteOpen = ref(false);
+const deleteKind = ref(null); // 'bank' | 'document'
+const deleteTarget = ref(null);
+
+function askDestroyBank(b) {
+    deleteKind.value = 'bank';
+    deleteTarget.value = b;
+    deleteOpen.value = true;
+}
+
+function askDestroyDoc(d) {
+    deleteKind.value = 'document';
+    deleteTarget.value = d;
+    deleteOpen.value = true;
+}
+
+const deleteTitle = computed(() => {
+    if (deleteKind.value === 'bank') {
+        return `Hapus rekening ${deleteTarget.value?.bank_name} ${deleteTarget.value?.account_number}?`;
+    }
+    if (deleteKind.value === 'document') {
+        return `Hapus dokumen "${deleteTarget.value?.title}"?`;
+    }
+    return '';
+});
+
+function confirmDestroy() {
+    if (!deleteTarget.value) return;
+    if (deleteKind.value === 'bank') {
+        useForm({}).delete(route('supplier-bank-accounts.destroy', deleteTarget.value.id), {
+            preserveScroll: true,
+        });
+    } else if (deleteKind.value === 'document') {
+        useForm({}).delete(route('supplier-documents.destroy', deleteTarget.value.id), {
+            preserveScroll: true,
+        });
+    }
 }
 
 // Helpers
@@ -131,12 +169,12 @@ function docExpiryBadge(d) {
     if (days < 0)
         return {
             label: `Expired ${Math.abs(days)} hari lalu`,
-            class: 'bg-red-50 text-red-700 ring-red-200',
+            class: 'bg-red-50 text-red-700',
         };
     if (days <= 30)
         return {
             label: `Expired dalam ${days} hari`,
-            class: 'bg-warning-soft text-amber-700 ring-warning/30',
+            class: 'bg-warning-soft text-amber-700',
         };
     return null;
 }
@@ -152,13 +190,18 @@ function docExpiryBadge(d) {
             :icon="Factory"
         >
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('suppliers.index')">
                         <ArrowLeft class="size-4" />
                         Daftar Supplier
                     </Link>
                 </Button>
-                <Button v-if="canUpdate" size="default" variant="secondary" @click="openEditSupplier">
+                <Button
+                    v-if="canUpdate"
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                    @click="openEditSupplier"
+                >
                     <Edit class="size-4" />
                     Edit Supplier
                 </Button>
@@ -166,13 +209,13 @@ function docExpiryBadge(d) {
         </PageHeader>
 
         <!-- Compact summary bar + tabs -->
-        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm mb-4 overflow-hidden">
-            <div class="px-4 py-2.5 flex items-center gap-3 border-b border-border/70">
-                <div class="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+        <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm mb-4 overflow-hidden">
+            <div class="px-4 py-3 flex items-center gap-3 border-b border-foreground/5">
+                <div class="size-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                     <Factory class="size-4" />
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         {{ supplier.legal_form ? `${supplier.legal_form} · ` : '' }}{{ supplier.code }}
                     </p>
                     <h2 class="text-sm font-bold tracking-tight text-foreground truncate leading-tight">
@@ -180,43 +223,45 @@ function docExpiryBadge(d) {
                     </h2>
                 </div>
                 <span
-                    v-if="supplier.is_active"
-                    class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                    :class="[
+                        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium',
+                        supplier.is_active ? 'text-emerald-700' : 'text-muted-foreground',
+                    ]"
                 >
-                    Aktif
+                    <span
+                        :class="[
+                            'size-1.5 rounded-full',
+                            supplier.is_active ? 'bg-emerald-500' : 'bg-muted-foreground/50',
+                        ]"
+                    />
+                    {{ supplier.is_active ? 'Aktif' : 'Nonaktif' }}
                 </span>
-                <span
-                    v-else
-                    class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground"
-                >
-                    Nonaktif
-                </span>
-                <Button v-if="canUpdate" variant="outline" size="sm" @click="toggleActive">
+                <Button v-if="canUpdate" variant="outline" size="sm" class="rounded-full" @click="toggleActive">
                     <component :is="supplier.is_active ? Ban : UserCheck" class="size-3.5" />
                     {{ supplier.is_active ? 'Nonaktifkan' : 'Aktifkan' }}
                 </Button>
             </div>
-            <div class="px-4 py-2">
-                <TabsPill v-model="tab" :tabs="tabs" />
+            <div class="px-4 py-2.5">
+                <TabsPill v-model="tab" :tabs="tabs" tone="brand" />
             </div>
         </section>
 
         <!-- Tab: Info -->
         <section v-show="tab === 'info'" class="space-y-4">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-                    <header class="border-b border-border/70 px-5 py-3">
+                <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+                    <header class="border-b border-foreground/5 px-5 py-3">
                         <h3 class="text-sm font-semibold">Identitas</h3>
                     </header>
                     <dl class="px-5 py-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                         <div>
-                            <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                            <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                                 Kode
                             </dt>
                             <dd class="font-mono mt-0.5">{{ supplier.code }}</dd>
                         </div>
                         <div>
-                            <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                            <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                                 Bentuk Badan
                             </dt>
                             <dd class="mt-0.5">{{ supplier.legal_form || '—' }}</dd>
@@ -224,20 +269,20 @@ function docExpiryBadge(d) {
                         <!-- NPWP & NIB di-hide sementara -->
                         <template v-if="false">
                             <div>
-                                <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                                <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                                     NPWP
                                 </dt>
                                 <dd class="font-mono mt-0.5">{{ supplier.npwp || '—' }}</dd>
                             </div>
                             <div>
-                                <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                                <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                                     NIB
                                 </dt>
                                 <dd class="font-mono mt-0.5">{{ supplier.nib || '—' }}</dd>
                             </div>
                         </template>
                         <div>
-                            <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                            <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                                 Kategori
                             </dt>
                             <dd class="mt-0.5">{{ supplier.category?.name || '—' }}</dd>
@@ -245,13 +290,13 @@ function docExpiryBadge(d) {
                     </dl>
                 </div>
 
-                <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-                    <header class="border-b border-border/70 px-5 py-3">
+                <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+                    <header class="border-b border-foreground/5 px-5 py-3">
                         <h3 class="text-sm font-semibold">Kontak</h3>
                     </header>
                     <dl class="px-5 py-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                         <div class="sm:col-span-2">
-                            <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                            <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                                 No. HP / Phone
                             </dt>
                             <dd class="font-mono mt-0.5">{{ supplier.phone || '—' }}</dd>
@@ -259,13 +304,13 @@ function docExpiryBadge(d) {
                         <!-- WhatsApp & Email di-hide sementara -->
                         <template v-if="false">
                             <div>
-                                <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                                <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                                     WhatsApp
                                 </dt>
                                 <dd class="font-mono mt-0.5">{{ supplier.whatsapp || '—' }}</dd>
                             </div>
                             <div class="sm:col-span-2">
-                                <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                                <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                                     Email
                                 </dt>
                                 <dd class="mt-0.5">{{ supplier.email || '—' }}</dd>
@@ -275,8 +320,8 @@ function docExpiryBadge(d) {
                 </div>
 
                 <!-- Alamat (hidden sementara) -->
-                <div v-if="false" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-                    <header class="border-b border-border/70 px-5 py-3">
+                <div v-if="false" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+                    <header class="border-b border-foreground/5 px-5 py-3">
                         <h3 class="text-sm font-semibold">Alamat</h3>
                     </header>
                     <div class="px-5 py-3 text-sm">
@@ -291,31 +336,31 @@ function docExpiryBadge(d) {
                 </div>
 
                 <!-- PIC (hidden sementara) -->
-                <div v-if="false" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-                    <header class="border-b border-border/70 px-5 py-3">
+                <div v-if="false" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+                    <header class="border-b border-foreground/5 px-5 py-3">
                         <h3 class="text-sm font-semibold">PIC / Contact Person</h3>
                     </header>
                     <dl class="px-5 py-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                         <div>
-                            <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                            <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                                 Nama
                             </dt>
                             <dd class="mt-0.5">{{ supplier.contact_person_name || '—' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                            <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                                 Jabatan
                             </dt>
                             <dd class="mt-0.5">{{ supplier.contact_person_role || '—' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                            <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                                 Phone PIC
                             </dt>
                             <dd class="font-mono mt-0.5">{{ supplier.contact_person_phone || '—' }}</dd>
                         </div>
                         <div>
-                            <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                            <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                                 Email PIC
                             </dt>
                             <dd class="mt-0.5">{{ supplier.contact_person_email || '—' }}</dd>
@@ -324,14 +369,14 @@ function docExpiryBadge(d) {
                 </div>
             </div>
 
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-                <header class="border-b border-border/70 px-5 py-3 flex items-center gap-2">
+            <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+                <header class="border-b border-foreground/5 px-5 py-3 flex items-center gap-2">
                     <CreditCard class="size-4 text-muted-foreground" />
                     <h3 class="text-sm font-semibold">Operasional</h3>
                 </header>
                 <dl class="px-5 py-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                     <div>
-                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                             Payment Term
                         </dt>
                         <dd class="mt-0.5">
@@ -340,7 +385,7 @@ function docExpiryBadge(d) {
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                             Lead Time
                         </dt>
                         <dd class="mt-0.5">
@@ -351,35 +396,40 @@ function docExpiryBadge(d) {
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">
                             Dibuat
                         </dt>
                         <dd class="mt-0.5">{{ formatDate(supplier.created_at) }}</dd>
                     </div>
                 </dl>
                 <div v-if="supplier.notes" class="px-5 pb-3 text-sm text-muted-foreground whitespace-pre-line">
-                    <p class="text-[11px] uppercase tracking-wider font-semibold mb-1">Catatan</p>
+                    <p class="text-[12px] uppercase tracking-wider font-semibold mb-1">Catatan</p>
                     {{ supplier.notes }}
                 </div>
             </div>
         </section>
 
         <!-- Tab: Bank Account -->
-        <section v-show="tab === 'bank'" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <header class="border-b border-border/70 px-5 py-3 flex items-center justify-between">
+        <section v-show="tab === 'bank'" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <header class="border-b border-foreground/5 px-5 py-3 flex items-center justify-between">
                 <h3 class="text-sm font-semibold">Rekening Bank</h3>
-                <Button v-if="canUpdate" size="default" variant="secondary" @click="openCreateBank">
+                <Button
+                    v-if="canUpdate"
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                    @click="openCreateBank"
+                >
                     <Plus class="size-4" />
                     Tambah Rekening
                 </Button>
             </header>
-            <ul v-if="supplier.bank_accounts?.length" class="divide-y divide-border/60">
+            <ul v-if="supplier.bank_accounts?.length" class="divide-y divide-foreground/5">
                 <li
                     v-for="b in supplier.bank_accounts"
                     :key="b.id"
-                    class="px-5 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors"
+                    class="px-5 py-3 flex items-center gap-3 hover:bg-foreground/2.5 transition-colors"
                 >
-                    <div class="size-9 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <div class="size-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                         <Landmark class="size-4" />
                     </div>
                     <div class="flex-1 min-w-0">
@@ -390,7 +440,7 @@ function docExpiryBadge(d) {
                             </p>
                             <span
                                 v-if="b.is_default"
-                                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-warning-soft text-amber-700"
+                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-light/70 text-brand-dark"
                             >
                                 <Star class="size-3" /> Default
                             </span>
@@ -399,7 +449,7 @@ function docExpiryBadge(d) {
                             {{ b.account_number }} · a/n {{ b.account_holder }}
                         </p>
                     </div>
-                    <ActionGroup v-if="canUpdate">
+                    <ActionGroup v-if="canUpdate" class="rounded-full">
                         <ActionButton
                             v-if="! b.is_default"
                             :icon="Star"
@@ -417,7 +467,7 @@ function docExpiryBadge(d) {
                             :icon="Trash2"
                             label="Hapus"
                             tone="red"
-                            @click="destroyBank(b)"
+                            @click="askDestroyBank(b)"
                         />
                     </ActionGroup>
                 </li>
@@ -429,32 +479,37 @@ function docExpiryBadge(d) {
         </section>
 
         <!-- Tab: Dokumen -->
-        <section v-show="tab === 'document'" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <header class="border-b border-border/70 px-5 py-3 flex items-center justify-between">
+        <section v-show="tab === 'document'" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <header class="border-b border-foreground/5 px-5 py-3 flex items-center justify-between">
                 <h3 class="text-sm font-semibold">Dokumen</h3>
-                <Button v-if="canUpdate" size="default" variant="secondary" @click="openUploadDoc">
+                <Button
+                    v-if="canUpdate"
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                    @click="openUploadDoc"
+                >
                     <Upload class="size-4" />
                     Upload
                 </Button>
             </header>
-            <ul v-if="supplier.documents?.length" class="divide-y divide-border/60">
+            <ul v-if="supplier.documents?.length" class="divide-y divide-foreground/5">
                 <li
                     v-for="d in supplier.documents"
                     :key="d.id"
-                    class="px-5 py-3 flex items-center gap-3 hover:bg-muted/30 transition-colors"
+                    class="px-5 py-3 flex items-center gap-3 hover:bg-foreground/2.5 transition-colors"
                 >
-                    <div class="size-9 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <div class="size-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                         <FileText class="size-4" />
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 flex-wrap">
                             <p class="font-medium text-foreground truncate">{{ d.title }}</p>
-                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-muted text-muted-foreground">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-muted/70 text-muted-foreground">
                                 {{ d.type.replace('_', ' ') }}
                             </span>
                             <span
                                 v-if="docExpiryBadge(d)"
-                                :class="['inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ring-1', docExpiryBadge(d).class]"
+                                :class="['inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium', docExpiryBadge(d).class]"
                             >
                                 {{ docExpiryBadge(d).label }}
                             </span>
@@ -466,7 +521,7 @@ function docExpiryBadge(d) {
                             <span v-if="d.uploader" class="ml-1">· oleh {{ d.uploader.name }}</span>
                         </p>
                     </div>
-                    <ActionGroup>
+                    <ActionGroup class="rounded-full">
                         <ActionButton
                             :icon="FileText"
                             label="Lihat"
@@ -486,7 +541,7 @@ function docExpiryBadge(d) {
                             :icon="Trash2"
                             label="Hapus"
                             tone="red"
-                            @click="destroyDoc(d)"
+                            @click="askDestroyDoc(d)"
                         />
                     </ActionGroup>
                 </li>
@@ -515,5 +570,26 @@ function docExpiryBadge(d) {
             :supplier-id="supplier.id"
             @saved="onDocSaved"
         />
+
+        <!-- Konfirmasi hapus (bank / dokumen) -->
+        <AlertDialog v-model:open="deleteOpen">
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>{{ deleteTitle }}</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Tindakan ini tidak bisa dibatalkan.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogAction
+                        class="bg-destructive/15 text-destructive hover:bg-destructive/25"
+                        @click="confirmDestroy"
+                    >
+                        Hapus
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </AppLayout>
 </template>

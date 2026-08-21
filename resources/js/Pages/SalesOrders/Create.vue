@@ -6,19 +6,21 @@ import SoForm from '@/Components/SalesOrders/SoForm.vue';
 import { Button } from '@/Components/ui/button';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
-defineProps({
+const props = defineProps({
     customers: { type: Array, required: true },
     salesUsers: { type: Array, default: () => [] },
+    prefillCustomerId: { type: Number, default: null },
 });
 
 const form = useForm({
-    customer_id: null,
+    customer_id: props.prefillCustomerId ?? null,
     sales_id: null,
     so_date: new Date().toISOString().slice(0, 10),
     eta_date: '',
-    payment_term_days: null,
+    payment_term_days: 7,
     header_discount_type: null,
     header_discount_value: 0,
+    cashback: 0,
     notes: '',
     items: [],
 });
@@ -33,13 +35,14 @@ function submit() {
             payment_term_days: data.payment_term_days,
             header_discount_type: data.header_discount_type,
             header_discount_value: data.header_discount_value || 0,
+            cashback: Number(data.cashback) || 0,
             notes: data.notes,
             items: data.items.map((r) => ({
                 product_id: r.product_id,
                 product_unit_id: r.product_unit_id,
                 qty: Number(r.qty) || 0,
-                discount_z1_pct: Number(r.discount_z1_pct) || 0,
-                discount_z2_pct: Number(r.discount_z2_pct) || 0,
+                discount_type: r.discount_type || null,
+                discount_value: Number(r.discount_value) || 0,
                 is_bonus: !!r.is_bonus,
                 notes: r.notes,
             })),
@@ -54,7 +57,7 @@ function submit() {
     <AppLayout>
         <PageHeader title="Buat Sales Order" description="Draft SO baru. Submit untuk approval admin (atau review credit kalau over limit)." :icon="ShoppingBag">
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('sales-orders.index')">
                         <ArrowLeft class="size-4" /> Daftar SO
                     </Link>
@@ -64,7 +67,7 @@ function submit() {
 
         <SoForm :form="form" :customers="customers" :sales-users="salesUsers" submit-label="Simpan Draft" @submit="submit">
             <template #actions>
-                <Button as-child type="button" variant="outline" size="default">
+                <Button as-child type="button" variant="outline" size="default" class="rounded-full">
                     <Link :href="route('sales-orders.index')">Batal</Link>
                 </Button>
             </template>

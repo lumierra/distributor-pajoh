@@ -76,7 +76,7 @@ function fmtRp(v) {
 
         <form @submit.prevent="submit">
             <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5 mb-4 space-y-3">
-                <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Invoice</p>
+                <p class="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Invoice</p>
                 <div class="space-y-1">
                     <Label class="text-xs font-medium">Pilih Invoice *</Label>
                     <Select
@@ -87,7 +87,7 @@ function fmtRp(v) {
                         <SelectContent>
                             <SelectItem v-for="inv in openInvoices" :key="inv.id" :value="String(inv.id)">
                                 {{ inv.invoice_number }} · {{ inv.customer?.name }}
-                                <span class="text-[10px] text-muted-foreground ml-1">
+                                <span class="text-[11px] text-muted-foreground ml-1">
                                     Sisa: {{ fmtRp(inv.outstanding) }}
                                 </span>
                             </SelectItem>
@@ -103,7 +103,7 @@ function fmtRp(v) {
             </section>
 
             <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5 mb-4">
-                <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Detail Pembayaran</p>
+                <p class="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Detail Pembayaran</p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div v-if="salesUsers.length > 0" class="space-y-1">
                         <Label class="text-xs font-medium">Sales (atas nama)</Label>

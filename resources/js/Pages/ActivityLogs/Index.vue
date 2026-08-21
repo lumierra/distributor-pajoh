@@ -91,7 +91,7 @@ function fmt(v) {
 
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">Tgl</TableHead>
                         <TableHead>User</TableHead>
                         <TableHead>Action</TableHead>
@@ -108,7 +108,7 @@ function fmt(v) {
                         <TableCell class="pl-4 text-xs">{{ fmt(log.created_at) }}</TableCell>
                         <TableCell class="text-xs">{{ log.user?.name ?? log.user_name_snapshot ?? '—' }}</TableCell>
                         <TableCell class="text-xs font-mono">{{ log.action }}</TableCell>
-                        <TableCell class="text-[11px] text-muted-foreground">{{ log.model_type?.split('\\').pop() ?? '—' }}</TableCell>
+                        <TableCell class="text-[12px] text-muted-foreground">{{ log.model_type?.split('\\').pop() ?? '—' }}</TableCell>
                         <TableCell class="text-xs">{{ log.model_label ?? '—' }}</TableCell>
                         <TableCell class="text-right pr-4">
                             <Button as-child size="sm" variant="ghost" class="h-7 px-2">

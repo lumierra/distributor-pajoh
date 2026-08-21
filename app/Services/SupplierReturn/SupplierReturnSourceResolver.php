@@ -6,9 +6,9 @@ use App\Models\CustomerReturn;
 use App\Models\CustomerReturnItem;
 use App\Models\GoodsReceipt;
 use App\Models\GrnItem;
+use App\Models\Product;
 use App\Models\StockBalance;
 use App\Models\Supplier;
-use App\Models\SupplierProduct;
 use Illuminate\Support\Collection;
 
 /**
@@ -57,9 +57,9 @@ class SupplierReturnSourceResolver
      */
     public function fromCustomerReturnBs(Supplier $supplier): Collection
     {
-        $supplierProductIds = SupplierProduct::query()
+        $supplierProductIds = Product::query()
             ->where('supplier_id', $supplier->id)
-            ->pluck('product_id')
+            ->pluck('id')
             ->all();
         if (empty($supplierProductIds)) {
             return collect();

@@ -18,7 +18,7 @@ import ActionButton from '@/Components/Shared/ActionButton.vue';
 import ActionGroup from '@/Components/Shared/ActionGroup.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
-import StatCard from '@/Components/Shared/StatCard.vue';
+import { confirm } from '@/Composables/useConfirm';
 import VehicleFormDialog from '@/Components/Vehicles/VehicleFormDialog.vue';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
@@ -117,17 +117,17 @@ function toggleActive(v) {
     useForm({}).post(route('vehicles.toggle-active', v.id), { preserveScroll: true });
 }
 
-function destroy(v) {
-    if (!window.confirm(`Hapus vehicle ${v.plate_number}?`)) return;
+async function destroy(v) {
+    if (!(await confirm({ title: `Hapus vehicle ${v.plate_number}?`, destructive: true }))) return;
     useForm({}).delete(route('vehicles.destroy', v.id), { preserveScroll: true });
 }
 
 function statusBadgeClass(s) {
     return {
-        idle: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-        on_delivery: 'bg-blue-50 text-blue-700 ring-blue-200',
-        maintenance: 'bg-amber-50 text-amber-800 ring-amber-200',
-    }[s] ?? 'bg-muted text-muted-foreground';
+        idle: 'bg-emerald-50 text-emerald-700',
+        on_delivery: 'bg-blue-50 text-blue-700',
+        maintenance: 'bg-amber-50 text-amber-800',
+    }[s] ?? 'bg-muted/70 text-muted-foreground';
 }
 
 function statusLabel(s) {
@@ -137,6 +137,16 @@ function statusLabel(s) {
         maintenance: 'Maintenance',
     }[s] ?? s;
 }
+
+const statTiles = computed(() => {
+    if (!props.stats) return [];
+    return [
+        { label: 'Total', value: props.stats.total ?? 0, icon: Truck },
+        { label: 'Aktif', value: props.stats.active ?? 0, icon: CheckCircle2 },
+        { label: 'Idle', value: props.stats.idle ?? 0, icon: Pause },
+        { label: 'Maintenance', value: props.stats.maintenance ?? 0, icon: Wrench },
+    ];
+});
 </script>
 
 <template>
@@ -149,41 +159,54 @@ function statusLabel(s) {
             :icon="Truck"
         >
             <template #actions>
-                <Button v-if="canCreate" size="default" variant="secondary" @click="openCreate">
+                <Button
+                    v-if="canCreate"
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                    @click="openCreate"
+                >
                     <Plus class="size-4" />
                     Tambah Vehicle
                 </Button>
             </template>
         </PageHeader>
 
+        <!-- ── Stat tiles — soft red tint, angka+label kiri, ikon kanan ── -->
         <section v-if="stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <StatCard label="Total" :value="stats.total ?? 0" tone="brand">
-                <template #icon><Truck class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Aktif" :value="stats.active ?? 0" tone="brand">
-                <template #icon><CheckCircle2 class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Idle" :value="stats.idle ?? 0" tone="brand">
-                <template #icon><Pause class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Maintenance" :value="stats.maintenance ?? 0" tone="brand-orange">
-                <template #icon><Wrench class="size-5" /></template>
-            </StatCard>
+            <div
+                v-for="tile in statTiles"
+                :key="tile.label"
+                class="rounded-2xl bg-brand-light/60 ring-1 ring-brand/10 shadow-sm px-4 py-3.5 flex items-center justify-between gap-3 transition-all duration-200 hover:ring-brand/25 hover:shadow-md hover:-translate-y-0.5"
+            >
+                <div class="min-w-0">
+                    <p class="text-lg font-semibold tracking-tight leading-tight text-brand-dark">
+                        {{ tile.value }}
+                    </p>
+                    <p class="text-[12px] text-brand-dark/70 truncate leading-tight mt-0.5">
+                        {{ tile.label }}
+                    </p>
+                </div>
+                <div
+                    class="size-9 rounded-full bg-brand/10 text-brand flex items-center justify-center shrink-0"
+                >
+                    <component :is="tile.icon" class="size-4.5" />
+                </div>
+            </div>
         </section>
 
-        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <div class="border-b border-border/70 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+        <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
                 <div class="relative flex-1">
-                    <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                     <Input
                         v-model="filters.q"
                         placeholder="Cari plat atau kode…"
-                        class="pl-8 h-9 rounded-md"
+                        class="pl-8 h-9 rounded-full bg-muted/50 border-transparent focus-visible:bg-card"
                     />
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <Select v-model="filters.type">
-                        <SelectTrigger class="w-[140px] h-9 rounded-md">
+                        <SelectTrigger class="w-[140px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Tipe" />
                         </SelectTrigger>
                         <SelectContent>
@@ -192,7 +215,7 @@ function statusLabel(s) {
                         </SelectContent>
                     </Select>
                     <Select v-model="filters.status">
-                        <SelectTrigger class="w-[150px] h-9 rounded-md">
+                        <SelectTrigger class="w-[150px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -203,7 +226,7 @@ function statusLabel(s) {
                         </SelectContent>
                     </Select>
                     <Select v-model="filters.active">
-                        <SelectTrigger class="w-[130px] h-9 rounded-md">
+                        <SelectTrigger class="w-[130px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Aktif" />
                         </SelectTrigger>
                         <SelectContent>
@@ -212,15 +235,15 @@ function statusLabel(s) {
                             <SelectItem value="0">Nonaktif</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button type="button" variant="outline" size="default" @click="reset">
+                    <Button type="button" variant="ghost" size="default" class="rounded-full" @click="reset">
                         <RotateCcw class="size-3.5" /> Reset
                     </Button>
                 </div>
             </div>
 
-            <Table>
+            <Table class="border-t border-foreground/5">
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5 hover:bg-transparent">
                         <TableHead class="pl-4">No. Plat</TableHead>
                         <TableHead>Tipe</TableHead>
                         <TableHead>Status</TableHead>
@@ -237,70 +260,81 @@ function statusLabel(s) {
                             </div>
                         </TableCell>
                     </TableRow>
-                    <TableRow v-for="v in vehicles.data" :key="v.id" class="hover:bg-muted/30 transition-colors">
+                    <TableRow v-for="v in vehicles.data" :key="v.id" class="hover:bg-foreground/2.5 transition-colors border-foreground/5">
                         <TableCell class="pl-4 py-2.5">
-                            <div class="flex items-center gap-2.5">
-                                <div class="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                            <div class="flex items-center gap-3">
+                                <div class="size-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                                     <Truck class="size-4" />
                                 </div>
                                 <div class="min-w-0">
                                     <p class="font-medium text-foreground truncate leading-tight font-mono">
                                         {{ v.plate_number }}
                                     </p>
-                                    <p class="text-[11px] text-muted-foreground font-mono leading-tight">{{ v.code }}</p>
+                                    <p class="text-[12px] text-muted-foreground font-mono leading-tight">{{ v.code }}</p>
                                 </div>
                             </div>
                         </TableCell>
                         <TableCell>
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground capitalize">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-medium bg-muted/70 text-muted-foreground capitalize">
                                 {{ v.type }}
                             </span>
                         </TableCell>
                         <TableCell>
                             <span
-                                :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ring-1', statusBadgeClass(v.status)]"
+                                :class="['inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-medium', statusBadgeClass(v.status)]"
                             >
                                 {{ statusLabel(v.status) }}
                             </span>
                         </TableCell>
                         <TableCell>
                             <span
-                                v-if="v.is_active"
-                                class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
-                            >Aktif</span>
-                            <span v-else class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground">Nonaktif</span>
+                                :class="[
+                                    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium',
+                                    v.is_active ? 'text-emerald-700' : 'text-muted-foreground',
+                                ]"
+                            >
+                                <span
+                                    :class="[
+                                        'size-1.5 rounded-full',
+                                        v.is_active ? 'bg-emerald-500' : 'bg-muted-foreground/50',
+                                    ]"
+                                />
+                                {{ v.is_active ? 'Aktif' : 'Nonaktif' }}
+                            </span>
                         </TableCell>
                         <TableCell class="py-3 px-4 text-center whitespace-nowrap">
-                            <ActionGroup>
-                                <ActionButton :icon="Pencil" label="Edit" tone="blue" @click="openEdit(v)" />
-                                <ActionButton
-                                    v-if="v.is_active"
-                                    :icon="Ban"
-                                    label="Nonaktifkan"
-                                    tone="amber"
-                                    @click="toggleActive(v)"
-                                />
-                                <ActionButton
-                                    v-else
-                                    :icon="LogIn"
-                                    label="Aktifkan"
-                                    tone="emerald"
-                                    @click="toggleActive(v)"
-                                />
-                                <ActionButton
-                                    v-if="canDelete"
-                                    :icon="Trash2"
-                                    label="Hapus"
-                                    tone="red"
-                                    @click="destroy(v)"
-                                />
-                            </ActionGroup>
+                            <div class="flex justify-center">
+                                <ActionGroup class="rounded-full">
+                                    <ActionButton :icon="Pencil" label="Edit" tone="blue" @click="openEdit(v)" />
+                                    <ActionButton
+                                        v-if="v.is_active"
+                                        :icon="Ban"
+                                        label="Nonaktifkan"
+                                        tone="amber"
+                                        @click="toggleActive(v)"
+                                    />
+                                    <ActionButton
+                                        v-else
+                                        :icon="LogIn"
+                                        label="Aktifkan"
+                                        tone="emerald"
+                                        @click="toggleActive(v)"
+                                    />
+                                    <ActionButton
+                                        v-if="canDelete"
+                                        :icon="Trash2"
+                                        label="Hapus"
+                                        tone="red"
+                                        @click="destroy(v)"
+                                    />
+                                </ActionGroup>
+                            </div>
                         </TableCell>
                     </TableRow>
                 </TableBody>
             </Table>
 
-            <div v-if="vehicles.data.length > 0" class="border-t border-border/70 px-4 py-2.5">
+            <div v-if="vehicles.data.length > 0" class="border-t border-foreground/5 px-4 py-3">
                 <Pagination :meta="vehicles" />
             </div>
         </section>

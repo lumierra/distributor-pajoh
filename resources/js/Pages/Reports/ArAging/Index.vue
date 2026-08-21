@@ -129,7 +129,7 @@ function fmtRp(v) {
 
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">Customer</TableHead>
                         <TableHead class="text-right">0-30</TableHead>
                         <TableHead class="text-right">31-60</TableHead>
@@ -146,7 +146,7 @@ function fmtRp(v) {
                         <TableCell class="pl-4 py-2.5">
                             <Link :href="route('reports.ar-aging.drill-down', row.customer_id)" class="hover:text-primary">
                                 <p class="font-medium">{{ row.customer?.name ?? '—' }}</p>
-                                <p class="text-[11px] text-muted-foreground font-mono">{{ row.customer?.code }}</p>
+                                <p class="text-[12px] text-muted-foreground font-mono">{{ row.customer?.code }}</p>
                             </Link>
                         </TableCell>
                         <TableCell class="text-right font-mono">{{ fmtRp(row.bucket_0_30) }}</TableCell>

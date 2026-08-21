@@ -132,16 +132,16 @@ function submit() {
 
 <template>
     <Dialog :open="open" @update:open="(v) => $emit('update:open', v)">
-        <DialogContent class="sm:max-w-[560px] p-0 overflow-hidden">
-            <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
-                <div class="flex items-start gap-3">
+        <DialogContent class="sm:max-w-[560px] p-0 overflow-hidden rounded-3xl gap-0">
+            <DialogHeader class="px-6 pt-6 pb-4">
+                <div class="flex items-start gap-3.5">
                     <div
-                        class="size-10 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 ring-1 ring-emerald-200"
+                        class="size-11 rounded-full bg-brand-light/70 text-brand flex items-center justify-center shrink-0"
                     >
                         <component :is="isEdit ? Building2 : Factory" class="size-5" />
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <DialogTitle class="text-base font-bold tracking-tight">
+                    <div class="flex-1 min-w-0 pt-0.5">
+                        <DialogTitle class="text-base font-semibold tracking-tight">
                             {{ isEdit ? `Edit Supplier — ${supplier.name}` : 'Tambah Supplier' }}
                         </DialogTitle>
                         <DialogDescription class="text-xs text-muted-foreground mt-0.5">
@@ -156,18 +156,18 @@ function submit() {
             </DialogHeader>
 
             <form
-                class="px-5 py-4 space-y-4 max-h-[65vh] overflow-y-auto"
+                class="px-6 pb-2 space-y-4 max-h-[65vh] overflow-y-auto"
                 @submit.prevent="submit"
             >
                 <!-- Identitas -->
                 <div class="space-y-3">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <p class="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Identitas
                     </p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div class="space-y-1 sm:col-span-2">
                             <Label class="text-xs font-medium">Nama Supplier *</Label>
-                            <Input v-model="form.name" required class="h-9" />
+                            <Input v-model="form.name" required class="h-10 rounded-xl" />
                             <p v-if="form.errors.name" class="text-xs text-destructive">
                                 {{ form.errors.name }}
                             </p>
@@ -175,7 +175,7 @@ function submit() {
                         <div class="space-y-1">
                             <Label class="text-xs font-medium">Bentuk Badan</Label>
                             <Select v-model="form.legal_form">
-                                <SelectTrigger class="h-9">
+                                <SelectTrigger class="h-10 w-full rounded-xl">
                                     <SelectValue placeholder="—" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -188,7 +188,7 @@ function submit() {
                         <div class="space-y-1">
                             <Label class="text-xs font-medium">Kategori</Label>
                             <Select v-model="form.supplier_category_id">
-                                <SelectTrigger class="h-9">
+                                <SelectTrigger class="h-10 w-full rounded-xl">
                                     <SelectValue placeholder="Pilih kategori" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -202,38 +202,38 @@ function submit() {
                         <template v-if="false">
                             <div class="space-y-1">
                                 <Label class="text-xs font-medium">NPWP</Label>
-                                <Input v-model="form.npwp" class="h-9 font-mono" />
+                                <Input v-model="form.npwp" class="h-10 rounded-xl font-mono" />
                                 <p v-if="form.errors.npwp" class="text-xs text-destructive">
                                     {{ form.errors.npwp }}
                                 </p>
                             </div>
                             <div class="space-y-1">
                                 <Label class="text-xs font-medium">NIB</Label>
-                                <Input v-model="form.nib" class="h-9 font-mono" />
+                                <Input v-model="form.nib" class="h-10 rounded-xl font-mono" />
                             </div>
                         </template>
                     </div>
                 </div>
 
                 <!-- Kontak -->
-                <div class="space-y-3 pt-2 border-t border-border/70">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div class="space-y-3 pt-2 border-t border-foreground/5">
+                    <p class="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Kontak
                     </p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div class="space-y-1 sm:col-span-2">
                             <Label class="text-xs font-medium">No. HP / Phone</Label>
-                            <Input v-model="form.phone" class="h-9" />
+                            <Input v-model="form.phone" class="h-10 rounded-xl" />
                         </div>
                         <!-- WhatsApp & Email di-hide sementara -->
                         <template v-if="false">
                             <div class="space-y-1">
                                 <Label class="text-xs font-medium">WhatsApp</Label>
-                                <Input v-model="form.whatsapp" class="h-9" />
+                                <Input v-model="form.whatsapp" class="h-10 rounded-xl" />
                             </div>
                             <div class="space-y-1 sm:col-span-2">
                                 <Label class="text-xs font-medium">Email</Label>
-                                <Input v-model="form.email" type="email" class="h-9" />
+                                <Input v-model="form.email" type="email" class="h-10 rounded-xl" />
                                 <p v-if="form.errors.email" class="text-xs text-destructive">
                                     {{ form.errors.email }}
                                 </p>
@@ -243,8 +243,8 @@ function submit() {
                 </div>
 
                 <!-- Alamat (hidden sementara) -->
-                <div v-if="false" class="space-y-3 pt-2 border-t border-border/70">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div v-if="false" class="space-y-3 pt-2 border-t border-foreground/5">
+                    <p class="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Alamat
                     </p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -254,39 +254,39 @@ function submit() {
                         </div>
                         <div class="space-y-1">
                             <Label class="text-xs font-medium">Kota</Label>
-                            <Input v-model="form.city" class="h-9" />
+                            <Input v-model="form.city" class="h-10 rounded-xl" />
                         </div>
                         <div class="space-y-1">
                             <Label class="text-xs font-medium">Provinsi</Label>
-                            <Input v-model="form.province" class="h-9" />
+                            <Input v-model="form.province" class="h-10 rounded-xl" />
                         </div>
                     </div>
                 </div>
 
                 <!-- PIC (hidden sementara) -->
-                <div v-if="false" class="space-y-3 pt-2 border-t border-border/70">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div v-if="false" class="space-y-3 pt-2 border-t border-foreground/5">
+                    <p class="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
                         PIC / Contact Person
                     </p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div class="space-y-1">
                             <Label class="text-xs font-medium">Nama</Label>
-                            <Input v-model="form.contact_person_name" class="h-9" />
+                            <Input v-model="form.contact_person_name" class="h-10 rounded-xl" />
                         </div>
                         <div class="space-y-1">
                             <Label class="text-xs font-medium">Jabatan</Label>
-                            <Input v-model="form.contact_person_role" class="h-9" />
+                            <Input v-model="form.contact_person_role" class="h-10 rounded-xl" />
                         </div>
                         <div class="space-y-1 sm:col-span-2">
                             <Label class="text-xs font-medium">Phone PIC</Label>
-                            <Input v-model="form.contact_person_phone" class="h-9" />
+                            <Input v-model="form.contact_person_phone" class="h-10 rounded-xl" />
                         </div>
                     </div>
                 </div>
 
                 <!-- Operasional -->
-                <div class="space-y-3 pt-2 border-t border-border/70">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div class="space-y-3 pt-2 border-t border-foreground/5">
+                    <p class="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Operasional
                     </p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -297,7 +297,7 @@ function submit() {
                                 type="number"
                                 min="0"
                                 max="365"
-                                class="h-9"
+                                class="h-10 rounded-xl"
                                 placeholder="mis. 30"
                             />
                         </div>
@@ -308,7 +308,7 @@ function submit() {
                                 type="number"
                                 min="0"
                                 max="180"
-                                class="h-9"
+                                class="h-10 rounded-xl"
                                 placeholder="mis. 7"
                             />
                         </div>
@@ -316,11 +316,11 @@ function submit() {
                 </div>
 
                 <!-- Status & Notes -->
-                <div class="space-y-3 pt-2 border-t border-border/70">
-                    <div class="flex items-center justify-between rounded-md bg-muted/40 ring-1 ring-foreground/5 px-3.5 py-2.5">
+                <div class="space-y-3 pt-2 border-t border-foreground/5">
+                    <div class="flex items-center justify-between rounded-2xl bg-muted/40 px-4 py-3">
                         <div>
-                            <Label class="text-xs font-medium block cursor-pointer">Status aktif</Label>
-                            <p class="text-[11px] text-muted-foreground mt-0.5">
+                            <Label class="text-xs font-medium block cursor-pointer mb-0">Status aktif</Label>
+                            <p class="text-[12px] text-muted-foreground mt-0.5">
                                 Supplier nonaktif tidak muncul di dropdown PO.
                             </p>
                         </div>
@@ -328,19 +328,19 @@ function submit() {
                     </div>
                     <div class="space-y-1">
                         <Label class="text-xs font-medium">Catatan</Label>
-                        <Textarea v-model="form.notes" rows="2" placeholder="Catatan internal" />
+                        <Textarea v-model="form.notes" rows="2" class="rounded-xl" placeholder="Catatan internal" />
                     </div>
                 </div>
             </form>
 
-            <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">
-                <Button type="button" variant="outline" size="default" @click="close">
+            <DialogFooter class="px-6 py-4 gap-2">
+                <Button type="button" variant="outline" size="default" class="rounded-full" @click="close">
                     Batal
                 </Button>
                 <Button
                     type="button"
-                    variant="secondary"
                     size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
                     :disabled="form.processing"
                     @click="submit"
                 >

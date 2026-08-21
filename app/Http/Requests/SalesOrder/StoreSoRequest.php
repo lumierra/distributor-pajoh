@@ -4,6 +4,7 @@ namespace App\Http\Requests\SalesOrder;
 
 use App\Models\ProductUnit;
 use App\Models\SalesOrder;
+use App\Models\SoItem;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -30,14 +31,15 @@ class StoreSoRequest extends FormRequest
 
             'header_discount_type' => ['nullable', Rule::in(SalesOrder::DISCOUNT_TYPES)],
             'header_discount_value' => ['nullable', 'numeric', 'min:0'],
+            'cashback' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string'],
 
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.product_unit_id' => ['required', 'integer', 'exists:product_units,id'],
             'items.*.qty' => ['required', 'integer', 'min:1'],
-            'items.*.discount_z1_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'items.*.discount_z2_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'items.*.discount_type' => ['nullable', Rule::in(SoItem::DISCOUNT_TYPES)],
+            'items.*.discount_value' => ['nullable', 'numeric', 'min:0'],
             'items.*.is_bonus' => ['sometimes', 'boolean'],
             'items.*.notes' => ['nullable', 'string'],
         ];

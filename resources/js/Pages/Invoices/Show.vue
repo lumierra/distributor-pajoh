@@ -12,6 +12,7 @@ import {
 } from '@lucide/vue';
 import InvoiceStatusBadge from '@/Components/Invoices/InvoiceStatusBadge.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
+import { confirm } from '@/Composables/useConfirm';
 import { Button } from '@/Components/ui/button';
 import AppLayout from '@/Layouts/AppLayout.vue';
 
@@ -22,8 +23,8 @@ const props = defineProps({
 
 const regenForm = useForm({});
 
-function doRegenerate() {
-    if (!window.confirm('Re-generate PDF faktur?')) return;
+async function doRegenerate() {
+    if (!(await confirm({ title: 'Re-generate PDF faktur?' }))) return;
     regenForm.post(route('invoices.regenerate-pdf', props.invoice.id), { preserveScroll: true });
 }
 
@@ -52,24 +53,24 @@ function daysUntilDue(dueDate) {
             :icon="Receipt"
         >
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('invoices.index')">
                         <ArrowLeft class="size-4" /> Daftar Faktur
                     </Link>
                 </Button>
-                <Button as-child size="default" variant="outline">
+                <Button as-child size="default" variant="outline" class="rounded-full">
                     <a :href="route('invoices.pdf', invoice.id)" target="_blank" rel="noopener">
                         <FileText class="size-4" /> Download PDF
                     </a>
                 </Button>
-                <Button v-if="canRegeneratePdf" size="default" variant="outline" @click="doRegenerate">
+                <Button v-if="canRegeneratePdf" size="default" variant="outline" class="rounded-full" @click="doRegenerate">
                     <RefreshCw class="size-4" /> Re-generate PDF
                 </Button>
             </template>
         </PageHeader>
 
         <!-- Overdue banner -->
-        <section v-if="invoice.status === 'overdue'" class="rounded-lg bg-red-50 ring-1 ring-red-200 p-4 mb-4 flex items-start gap-3">
+        <section v-if="invoice.status === 'overdue'" class="rounded-2xl bg-red-50 ring-1 ring-red-200 p-4 mb-4 flex items-start gap-3">
             <AlertTriangle class="size-5 text-red-700 mt-0.5 shrink-0" />
             <div class="text-sm text-red-900">
                 <p class="font-medium">Faktur Overdue</p>
@@ -83,12 +84,12 @@ function daysUntilDue(dueDate) {
 
         <!-- Summary -->
         <section class="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-4 mb-5">
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 flex items-start gap-4">
-                <div class="size-12 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 flex items-start gap-4">
+                <div class="size-12 rounded-full bg-brand/10 text-brand flex items-center justify-center shrink-0">
                     <Receipt class="size-6" />
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <p class="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
                         FY {{ invoice.fiscal_year }} · {{ invoice.is_cash ? 'TUNAI' : 'KREDIT' }}
                     </p>
                     <h2 class="text-base font-bold tracking-tight text-foreground truncate font-mono">{{ invoice.invoice_number }}</h2>
@@ -106,32 +107,32 @@ function daysUntilDue(dueDate) {
 
         <!-- Detail header -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-                <header class="border-b border-border/70 px-5 py-3">
+            <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+                <header class="border-b border-foreground/5 px-5 py-3">
                     <h3 class="text-sm font-semibold">Tagihan</h3>
                 </header>
                 <dl class="px-5 py-3 grid grid-cols-2 gap-3 text-sm">
                     <div>
-                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Tgl Faktur</dt>
+                        <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Tgl Faktur</dt>
                         <dd class="mt-0.5">{{ formatDate(invoice.invoice_date) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Jatuh Tempo</dt>
+                        <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Jatuh Tempo</dt>
                         <dd class="mt-0.5">{{ formatDate(invoice.due_date) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Payment Term</dt>
+                        <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Payment Term</dt>
                         <dd class="mt-0.5">{{ invoice.payment_term_days }} hari</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Jenis</dt>
+                        <dt class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold">Jenis</dt>
                         <dd class="mt-0.5">{{ invoice.is_cash ? 'Tunai' : 'Kredit' }}</dd>
                     </div>
                 </dl>
             </div>
 
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-                <header class="border-b border-border/70 px-5 py-3">
+            <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+                <header class="border-b border-foreground/5 px-5 py-3">
                     <h3 class="text-sm font-semibold">Referensi</h3>
                 </header>
                 <dl class="px-5 py-3 text-sm space-y-1">
@@ -153,8 +154,8 @@ function daysUntilDue(dueDate) {
                 </dl>
             </div>
 
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-                <header class="border-b border-border/70 px-5 py-3 flex items-center gap-2">
+            <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+                <header class="border-b border-foreground/5 px-5 py-3 flex items-center gap-2">
                     <Wallet class="size-4 text-muted-foreground" />
                     <h3 class="text-sm font-semibold">Pembayaran</h3>
                 </header>
@@ -167,13 +168,13 @@ function daysUntilDue(dueDate) {
                         <span class="text-muted-foreground">Dibayar</span>
                         <span class="font-mono">{{ fmtRp(invoice.paid_amount) }}</span>
                     </div>
-                    <div class="flex justify-between pt-1.5 border-t border-border/70 font-bold">
+                    <div class="flex justify-between pt-1.5 border-t border-foreground/5 font-bold">
                         <span>Sisa</span>
                         <span :class="['font-mono', Number(invoice.outstanding) > 0 ? 'text-red-700' : 'text-emerald-700']">
                             {{ fmtRp(invoice.outstanding) }}
                         </span>
                     </div>
-                    <p v-if="invoice.paid_at" class="text-[11px] text-emerald-700 text-right">
+                    <p v-if="invoice.paid_at" class="text-[12px] text-emerald-700 text-right">
                         Lunas: {{ formatDate(invoice.paid_at) }}
                     </p>
                 </dl>
@@ -181,8 +182,8 @@ function daysUntilDue(dueDate) {
         </div>
 
         <!-- Customer info -->
-        <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5 mb-4">
-            <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Customer</p>
+        <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-5 mb-4">
+            <p class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Customer</p>
             <p class="font-medium">{{ invoice.customer?.name }}</p>
             <p class="text-xs text-muted-foreground font-mono">{{ invoice.customer?.code }}</p>
             <p v-if="invoice.customer?.phone" class="text-xs">Phone: {{ invoice.customer.phone }}</p>
@@ -191,30 +192,30 @@ function daysUntilDue(dueDate) {
         </div>
 
         <!-- Items -->
-        <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden mb-4">
-            <header class="border-b border-border/70 px-5 py-3">
+        <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden mb-4">
+            <header class="border-b border-foreground/5 px-5 py-3">
                 <h3 class="text-sm font-semibold">Items ({{ invoice.items?.length ?? 0 }})</h3>
             </header>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/70">
+                        <tr class="text-[11px] uppercase tracking-wider text-muted-foreground border-b border-foreground/5">
                             <th class="text-left py-2.5 px-5">Produk</th>
                             <th class="text-left py-2.5 px-3">Unit</th>
                             <th class="text-right py-2.5 px-3">Qty</th>
                             <th class="text-right py-2.5 px-3">Harga</th>
-                            <th class="text-right py-2.5 px-3">Z1/Z2</th>
+                            <th class="text-right py-2.5 px-3">Diskon</th>
                             <th class="text-right py-2.5 px-5">Subtotal</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-border/40">
-                        <tr v-for="i in invoice.items" :key="i.id" class="hover:bg-muted/20">
+                    <tbody class="divide-y divide-foreground/5">
+                        <tr v-for="i in invoice.items" :key="i.id" class="hover:bg-foreground/2.5 transition-colors">
                             <td class="py-2.5 px-5">
                                 <p class="font-medium">
                                     {{ i.product_name_snapshot }}
-                                    <span v-if="i.is_bonus" class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800">BONUS</span>
+                                    <span v-if="i.is_bonus" class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">BONUS</span>
                                 </p>
-                                <p class="text-[11px] text-muted-foreground font-mono">
+                                <p class="text-[12px] text-muted-foreground font-mono">
                                     {{ i.product_sku_snapshot }}<span v-if="i.batch_code_snapshot"> · batch {{ i.batch_code_snapshot }}</span>
                                 </p>
                             </td>
@@ -222,8 +223,8 @@ function daysUntilDue(dueDate) {
                             <td class="py-2.5 px-3 text-right font-mono">{{ i.qty }}</td>
                             <td class="py-2.5 px-3 text-right font-mono">{{ i.is_bonus ? '—' : fmtRp(i.unit_price) }}</td>
                             <td class="py-2.5 px-3 text-right text-xs font-mono">
-                                <span v-if="!i.is_bonus && (Number(i.discount_z1_pct) > 0 || Number(i.discount_z2_pct) > 0)">
-                                    {{ Number(i.discount_z1_pct) }}/{{ Number(i.discount_z2_pct) }}
+                                <span v-if="!i.is_bonus && i.discount_type && Number(i.discount_value) > 0">
+                                    {{ i.discount_type === 'percent' ? `${Number(i.discount_value)}%` : fmtRp(i.discount_value) }}
                                 </span>
                                 <span v-else>—</span>
                             </td>
@@ -232,7 +233,7 @@ function daysUntilDue(dueDate) {
                     </tbody>
                 </table>
             </div>
-            <div class="border-t border-border/70 px-5 py-3 flex justify-end">
+            <div class="border-t border-foreground/5 px-5 py-3 flex justify-end">
                 <div class="w-full max-w-sm space-y-1.5 text-sm">
                     <div class="flex justify-between">
                         <span class="text-muted-foreground">Subtotal</span>
@@ -242,7 +243,11 @@ function daysUntilDue(dueDate) {
                         <span>Diskon Header</span>
                         <span class="font-mono">− {{ fmtRp(invoice.header_discount_amount) }}</span>
                     </div>
-                    <div class="flex justify-between pt-2 border-t border-border/70 font-bold">
+                    <div v-if="Number(invoice.cashback_amount) > 0" class="flex justify-between text-emerald-700">
+                        <span>Cashback</span>
+                        <span class="font-mono">− {{ fmtRp(invoice.cashback_amount) }}</span>
+                    </div>
+                    <div class="flex justify-between pt-2 border-t border-foreground/5 font-bold">
                         <span>TOTAL</span>
                         <span class="font-mono">{{ fmtRp(invoice.total) }}</span>
                     </div>
@@ -252,12 +257,12 @@ function daysUntilDue(dueDate) {
 
         <!-- Notes -->
         <div v-if="invoice.notes || invoice.delivery_notes_snapshot" class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            <div v-if="invoice.notes" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5">
-                <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Catatan</p>
+            <div v-if="invoice.notes" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-5">
+                <p class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Catatan</p>
                 <p class="text-sm whitespace-pre-line">{{ invoice.notes }}</p>
             </div>
-            <div v-if="invoice.delivery_notes_snapshot" class="rounded-lg bg-muted/40 p-5">
-                <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Catatan Pengiriman</p>
+            <div v-if="invoice.delivery_notes_snapshot" class="rounded-2xl bg-muted/40 p-5">
+                <p class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Catatan Pengiriman</p>
                 <p class="text-sm whitespace-pre-line">{{ invoice.delivery_notes_snapshot }}</p>
             </div>
         </div>

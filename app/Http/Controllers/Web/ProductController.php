@@ -72,32 +72,28 @@ class ProductController extends Controller
     {
         $data = $request->validated();
         $units = $data['units'];
-        $supplierIds = $data['supplier_ids'];
-        unset($data['units'], $data['supplier_ids']);
+        $packages = $data['packages'];
+        unset($data['units'], $data['packages']);
 
-        $product = $this->service->create($data, $units, $supplierIds);
+        $product = $this->service->create($data, $units, $packages);
 
-        return back()->with([
-            'flash.success' => "Produk {$product->name} ({$product->sku}) berhasil dibuat.",
-            'newly_created_product_id' => $product->id,
-        ]);
+        return back()->with('flash.success', "Produk {$product->name} ({$product->sku}) berhasil dibuat.");
     }
 
     /**
-     * AJAX endpoint untuk memuat detail produk lengkap (satuan + supplier-harga + tagging)
-     * ke modal Kelola di halaman /products. Pengganti halaman Show.
+     * AJAX endpoint untuk memuat detail produk lengkap (supplier + satuan +
+     * paket harga) untuk prefill form Edit di halaman /products.
      */
     public function details(Product $product): JsonResponse
     {
         $this->authorize('view', $product);
 
         $product->load([
+            'supplier:id,code,name',
             'category:id,code,name',
             'baseUnit:id,product_id,name,qty_to_base',
             'units.unit:id,name',
-            'supplierProductUnits.supplier:id,code,name',
-            'supplierProductUnits.productUnit:id,name,qty_to_base',
-            'supplierProducts.supplier:id,code,name',
+            'pricePackages.items.productUnit:id,name,qty_to_base',
         ]);
 
         return response()->json([
@@ -107,7 +103,12 @@ class ProductController extends Controller
 
     public function update(UpdateProductRequest $request, Product $product): RedirectResponse
     {
-        $this->service->update($product, $request->validated());
+        $data = $request->validated();
+        $units = $data['units'] ?? null;
+        $packages = $data['packages'] ?? null;
+        unset($data['units'], $data['packages']);
+
+        $this->service->update($product, $data, $units, $packages);
 
         return back()->with('flash.success', 'Produk diperbarui.');
     }

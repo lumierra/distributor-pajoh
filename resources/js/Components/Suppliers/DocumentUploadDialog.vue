@@ -79,16 +79,16 @@ function submit() {
 
 <template>
     <Dialog :open="open" @update:open="(v) => $emit('update:open', v)">
-        <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden">
-            <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
-                <div class="flex items-start gap-3">
+        <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl gap-0">
+            <DialogHeader class="px-6 pt-6 pb-4">
+                <div class="flex items-start gap-3.5">
                     <div
-                        class="size-10 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 ring-1 ring-emerald-200"
+                        class="size-11 rounded-full bg-brand-light/70 text-brand flex items-center justify-center shrink-0"
                     >
                         <Upload class="size-5" />
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <DialogTitle class="text-base font-bold tracking-tight">
+                    <div class="flex-1 min-w-0 pt-0.5">
+                        <DialogTitle class="text-base font-semibold tracking-tight">
                             Upload Dokumen
                         </DialogTitle>
                         <DialogDescription class="text-xs text-muted-foreground mt-0.5">
@@ -98,12 +98,12 @@ function submit() {
                 </div>
             </DialogHeader>
 
-            <form class="px-5 py-4 space-y-3.5" @submit.prevent="submit">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <form class="px-6 pb-2 space-y-3.5" @submit.prevent="submit">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div class="space-y-1">
                         <Label class="text-xs font-medium">Tipe *</Label>
                         <Select v-model="form.type">
-                            <SelectTrigger class="h-9">
+                            <SelectTrigger class="h-10 w-full rounded-xl">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -115,7 +115,7 @@ function submit() {
                     </div>
                     <div class="space-y-1">
                         <Label class="text-xs font-medium">Judul *</Label>
-                        <Input v-model="form.title" required class="h-9" />
+                        <Input v-model="form.title" required class="h-10 rounded-xl" />
                         <p v-if="form.errors.title" class="text-xs text-destructive">
                             {{ form.errors.title }}
                         </p>
@@ -125,7 +125,7 @@ function submit() {
                 <div class="space-y-1">
                     <Label class="text-xs font-medium">File *</Label>
                     <label
-                        class="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border bg-muted/40 px-4 py-6 cursor-pointer hover:bg-muted/60 transition-colors"
+                        class="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-foreground/15 bg-muted/40 px-4 py-6 cursor-pointer hover:bg-muted/60 transition-colors"
                     >
                         <input
                             ref="fileInput"
@@ -147,14 +147,14 @@ function submit() {
                     </p>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-3.5">
                     <div class="space-y-1">
                         <Label class="text-xs font-medium">Tgl terbit</Label>
-                        <Input v-model="form.issued_date" type="date" class="h-9" />
+                        <Input v-model="form.issued_date" type="date" class="h-10 rounded-xl" />
                     </div>
                     <div class="space-y-1">
                         <Label class="text-xs font-medium">Tgl expired</Label>
-                        <Input v-model="form.expires_date" type="date" class="h-9" />
+                        <Input v-model="form.expires_date" type="date" class="h-10 rounded-xl" />
                         <p v-if="form.errors.expires_date" class="text-xs text-destructive">
                             {{ form.errors.expires_date }}
                         </p>
@@ -163,18 +163,18 @@ function submit() {
 
                 <div class="space-y-1">
                     <Label class="text-xs font-medium">Catatan</Label>
-                    <Textarea v-model="form.notes" rows="2" />
+                    <Textarea v-model="form.notes" rows="2" class="rounded-xl" />
                 </div>
             </form>
 
-            <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">
-                <Button type="button" variant="outline" size="default" @click="close">
+            <DialogFooter class="px-6 py-4 gap-2">
+                <Button type="button" variant="outline" size="default" class="rounded-full" @click="close">
                     Batal
                 </Button>
                 <Button
                     type="button"
-                    variant="secondary"
                     size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
                     :disabled="form.processing || !form.file"
                     @click="submit"
                 >

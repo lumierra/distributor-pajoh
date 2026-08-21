@@ -12,6 +12,7 @@ import {
     MapPin,
     ShieldAlert,
     Store,
+    Tags,
     Trash2,
     UserCog,
     UserCheck,
@@ -22,7 +23,9 @@ import ActionButton from '@/Components/Shared/ActionButton.vue';
 import ActionGroup from '@/Components/Shared/ActionGroup.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import TabsPill from '@/Components/Shared/TabsPill.vue';
+import { confirm } from '@/Composables/useConfirm';
 import CreditLimitDialog from '@/Components/Customers/CreditLimitDialog.vue';
+import PricePackageDialog from '@/Components/Customers/PricePackageDialog.vue';
 import CustomerFormDialog from '@/Components/Customers/CustomerFormDialog.vue';
 import PhotoUploadDialog from '@/Components/Customers/PhotoUploadDialog.vue';
 import ReassignSalesDialog from '@/Components/Customers/ReassignSalesDialog.vue';
@@ -53,6 +56,7 @@ const geoOpen = ref(false);
 const reassignOpen = ref(false);
 const photoOpen = ref(false);
 const creditLimitOpen = ref(false);
+const pricePackageOpen = ref(false);
 
 const pendingGeos = computed(() => props.customer.geo_pendings ?? []);
 
@@ -80,8 +84,8 @@ function rejectPending(p) {
     });
 }
 
-function destroyPhoto(p) {
-    if (!window.confirm('Hapus foto ini?')) return;
+async function destroyPhoto(p) {
+    if (!(await confirm({ title: 'Hapus foto ini?', destructive: true }))) return;
     useForm({}).delete(route('customer-photos.destroy', p.id), { preserveScroll: true });
 }
 
@@ -108,9 +112,9 @@ function daysOverdue(dueDate) {
 
 function overdueBadgeClass(dueDate) {
     const d = daysOverdue(dueDate);
-    if (d > 90) return 'bg-red-50 text-red-700 ring-1 ring-red-200';
-    if (d > 60) return 'bg-amber-50 text-amber-700 ring-1 ring-amber-200';
-    return 'bg-muted text-muted-foreground';
+    if (d > 90) return 'bg-red-50 text-red-700';
+    if (d > 60) return 'bg-amber-50 text-amber-700';
+    return 'bg-muted/70 text-muted-foreground';
 }
 
 function photoUrl(path) {
@@ -128,13 +132,18 @@ function photoUrl(path) {
             :icon="Store"
         >
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('customers.index')">
                         <ArrowLeft class="size-4" />
                         Daftar Customer
                     </Link>
                 </Button>
-                <Button v-if="canUpdate" size="default" variant="secondary" @click="editOpen = true">
+                <Button
+                    v-if="canUpdate"
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                    @click="editOpen = true"
+                >
                     <Edit class="size-4" />
                     Edit
                 </Button>
@@ -146,7 +155,7 @@ function photoUrl(path) {
             <div
                 v-for="p in pendingGeos"
                 :key="p.id"
-                class="rounded-lg bg-warning-soft ring-1 ring-warning/30 p-3 flex items-center gap-3 mb-2"
+                class="rounded-2xl bg-warning-soft ring-1 ring-warning/30 p-3.5 flex items-center gap-3 mb-2"
             >
                 <MapPin class="size-5 text-amber-700 shrink-0" />
                 <div class="flex-1 min-w-0 text-sm">
@@ -158,23 +167,23 @@ function photoUrl(path) {
                         <span v-if="p.accuracy_meter"> · ±{{ p.accuracy_meter }}m</span>
                     </p>
                 </div>
-                <Button size="sm" variant="secondary" @click="approvePending(p)">
+                <Button size="sm" class="rounded-full bg-brand text-white hover:bg-brand-dark" @click="approvePending(p)">
                     <Check class="size-3.5" /> Approve
                 </Button>
-                <Button size="sm" variant="outline" @click="rejectPending(p)">
+                <Button size="sm" variant="outline" class="rounded-full" @click="rejectPending(p)">
                     <X class="size-3.5" /> Reject
                 </Button>
             </div>
         </section>
 
         <!-- Compact summary + tabs -->
-        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm mb-4 overflow-hidden">
-            <div class="px-4 py-2.5 flex flex-wrap items-center gap-3 border-b border-border/70">
-                <div class="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+        <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm mb-4 overflow-hidden">
+            <div class="px-4 py-3 flex flex-wrap items-center gap-3 border-b border-foreground/5">
+                <div class="size-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                     <Store class="size-4" />
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         {{ customer.code }}
                         <span v-if="customer.assigned_sales"> · Sales {{ customer.assigned_sales.name }}</span>
                     </p>
@@ -183,82 +192,93 @@ function photoUrl(path) {
                     </h2>
                 </div>
                 <span
-                    v-if="customer.is_active"
-                    class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                    :class="[
+                        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium',
+                        customer.is_active ? 'text-emerald-700' : 'text-muted-foreground',
+                    ]"
                 >
-                    Aktif
-                </span>
-                <span
-                    v-else
-                    class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground"
-                >
-                    Nonaktif
+                    <span
+                        :class="[
+                            'size-1.5 rounded-full',
+                            customer.is_active ? 'bg-emerald-500' : 'bg-muted-foreground/50',
+                        ]"
+                    />
+                    {{ customer.is_active ? 'Aktif' : 'Nonaktif' }}
                 </span>
                 <div v-if="canUpdate" class="flex items-center gap-1.5">
-                    <Button variant="outline" size="sm" @click="creditLimitOpen = true">
+                    <Button variant="outline" size="sm" class="rounded-full" @click="creditLimitOpen = true">
                         <ShieldAlert class="size-3.5" />
                         Credit Limit
                     </Button>
-                    <Button variant="outline" size="sm" @click="reassignOpen = true">
+                    <Button variant="outline" size="sm" class="rounded-full" @click="pricePackageOpen = true">
+                        <Tags class="size-3.5" />
+                        Paket Harga
+                    </Button>
+                    <Button variant="outline" size="sm" class="rounded-full" @click="reassignOpen = true">
                         <UserCog class="size-3.5" />
                         Reassign Sales
                     </Button>
-                    <Button variant="outline" size="sm" @click="toggleActive">
+                    <Button variant="outline" size="sm" class="rounded-full" @click="toggleActive">
                         <component :is="customer.is_active ? Ban : UserCheck" class="size-3.5" />
                         {{ customer.is_active ? 'Nonaktifkan' : 'Aktifkan' }}
                     </Button>
                 </div>
             </div>
-            <div class="px-4 py-2">
-                <TabsPill v-model="tab" :tabs="tabs" />
+            <div class="px-4 py-2.5">
+                <TabsPill v-model="tab" :tabs="tabs" tone="brand" />
             </div>
         </section>
 
         <!-- Tab: Info -->
         <section v-show="tab === 'info'" class="space-y-3">
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
+            <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
                 <dl class="px-5 py-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-3 text-sm">
                     <div>
-                        <dt class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Pemilik</dt>
+                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Pemilik</dt>
                         <dd class="mt-0.5">{{ customer.owner_name || '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Tipe</dt>
+                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Tipe</dt>
                         <dd class="mt-0.5">{{ customer.type?.name || '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">No. WhatsApp</dt>
+                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">No. WhatsApp</dt>
                         <dd class="font-mono mt-0.5">{{ customer.whatsapp || '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Area Kerja</dt>
+                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Area Kerja</dt>
                         <dd class="mt-0.5">{{ customer.area || '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Payment Term</dt>
+                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Payment Term</dt>
                         <dd class="mt-0.5">{{ customer.payment_term_days }} hari</dd>
                     </div>
                     <div>
-                        <dt class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Credit Limit (fallback)</dt>
-                        <dd class="font-mono mt-0.5">{{ formatRupiah(customer.credit_limit) }}</dd>
+                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Credit Limit</dt>
+                        <dd class="mt-0.5 text-muted-foreground text-[13px]">Diatur per supplier — lihat tombol <strong>Credit Limit</strong> di atas.</dd>
                     </div>
                     <div>
-                        <dt class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Dibuat</dt>
+                        <dt class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Dibuat</dt>
                         <dd class="mt-0.5">{{ formatDate(customer.created_at) }}</dd>
                     </div>
                 </dl>
-                <div v-if="customer.notes" class="border-t border-border/70 px-5 py-3 text-sm">
-                    <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Catatan</p>
+                <div v-if="customer.notes" class="border-t border-foreground/5 px-5 py-3 text-sm">
+                    <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Catatan</p>
                     <p class="text-foreground whitespace-pre-line">{{ customer.notes }}</p>
                 </div>
             </div>
         </section>
 
         <!-- Tab: Lokasi -->
-        <section v-show="tab === 'lokasi'" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-            <header class="border-b border-border/70 px-5 py-3 flex items-center justify-between">
+        <section v-show="tab === 'lokasi'" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+            <header class="border-b border-foreground/5 px-5 py-3 flex items-center justify-between">
                 <h3 class="text-sm font-semibold">Koordinat GPS</h3>
-                <Button v-if="canUpdate" size="default" variant="secondary" @click="geoOpen = true">
+                <Button
+                    v-if="canUpdate"
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                    @click="geoOpen = true"
+                >
                     <MapPin class="size-4" />
                     {{ customer.latitude ? 'Ubah Koordinat' : 'Set Koordinat' }}
                 </Button>
@@ -289,10 +309,15 @@ function photoUrl(path) {
         </section>
 
         <!-- Tab: Foto -->
-        <section v-show="tab === 'photos'" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <header class="border-b border-border/70 px-5 py-3 flex items-center justify-between">
+        <section v-show="tab === 'photos'" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <header class="border-b border-foreground/5 px-5 py-3 flex items-center justify-between">
                 <h3 class="text-sm font-semibold">Foto Outlet</h3>
-                <Button v-if="canUpdate" size="default" variant="secondary" @click="photoOpen = true">
+                <Button
+                    v-if="canUpdate"
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                    @click="photoOpen = true"
+                >
                     <Camera class="size-4" />
                     Upload
                 </Button>
@@ -301,18 +326,18 @@ function photoUrl(path) {
                 <div
                     v-for="p in customer.photos"
                     :key="p.id"
-                    class="rounded-md ring-1 ring-foreground/10 overflow-hidden bg-muted relative group"
+                    class="rounded-2xl ring-1 ring-foreground/10 overflow-hidden bg-muted relative group"
                 >
                     <img :src="photoUrl(p.file_path)" :alt="p.caption || p.type" class="w-full h-32 object-cover" />
-                    <div class="absolute top-1 left-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-black/60 text-white">
+                    <div class="absolute top-1.5 left-1.5 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-black/60 text-white">
                         {{ p.type }}
                     </div>
                     <div class="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-end justify-end p-2 opacity-0 group-hover:opacity-100">
-                        <ActionGroup v-if="canUpdate">
+                        <ActionGroup v-if="canUpdate" class="rounded-full">
                             <ActionButton :icon="Trash2" label="Hapus" tone="red" @click="destroyPhoto(p)" />
                         </ActionGroup>
                     </div>
-                    <p v-if="p.caption" class="px-2 py-1 text-[11px] truncate">{{ p.caption }}</p>
+                    <p v-if="p.caption" class="px-2 py-1 text-[12px] truncate">{{ p.caption }}</p>
                 </div>
             </div>
             <div v-else class="px-5 py-10 text-center text-sm text-muted-foreground">
@@ -324,10 +349,10 @@ function photoUrl(path) {
         <!-- Tab: Outstanding -->
         <section v-show="tab === 'ar'" class="space-y-3">
             <!-- Total + Aging strip -->
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-                <div class="grid grid-cols-1 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-border/70">
+            <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+                <div class="grid grid-cols-1 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-foreground/5">
                     <div class="px-4 py-3 sm:col-span-1">
-                        <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Total Outstanding</p>
+                        <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Total Outstanding</p>
                         <p class="text-lg font-bold font-mono mt-0.5">{{ formatRupiah(outstanding.total) }}</p>
                     </div>
                     <div
@@ -335,7 +360,7 @@ function photoUrl(path) {
                         :key="bucket"
                         class="px-4 py-3"
                     >
-                        <p class="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        <p class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
                             {{ bucket }} hari
                         </p>
                         <p
@@ -352,17 +377,17 @@ function photoUrl(path) {
             </div>
 
             <!-- Invoice list -->
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-                <header class="border-b border-border/70 px-4 py-2.5">
+            <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+                <header class="border-b border-foreground/5 px-4 py-2.5">
                     <h3 class="text-sm font-semibold">Invoice belum lunas</h3>
                 </header>
-                <div v-if="outstanding.invoices?.length" class="divide-y divide-border/60">
+                <div v-if="outstanding.invoices?.length" class="divide-y divide-foreground/5">
                     <div
                         v-for="inv in outstanding.invoices"
                         :key="inv.id"
-                        class="px-4 py-2.5 flex items-center gap-3 text-sm hover:bg-muted/30 transition-colors"
+                        class="px-4 py-2.5 flex items-center gap-3 text-sm hover:bg-foreground/2.5 transition-colors"
                     >
-                        <div class="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                        <div class="size-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                             <DollarSign class="size-4" />
                         </div>
                         <div class="flex-1 min-w-0">
@@ -371,7 +396,7 @@ function photoUrl(path) {
                                 {{ formatDate(inv.invoice_date) }} · jatuh tempo {{ formatDate(inv.due_date) }}
                                 <span
                                     v-if="daysOverdue(inv.due_date) > 0"
-                                    class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                                    class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold"
                                     :class="overdueBadgeClass(inv.due_date)"
                                 >
                                     Lewat {{ daysOverdue(inv.due_date) }} hari
@@ -380,7 +405,7 @@ function photoUrl(path) {
                         </div>
                         <div class="text-right">
                             <p class="font-mono font-semibold text-sm">{{ formatRupiah(inv.outstanding) }}</p>
-                            <p class="text-[11px] text-muted-foreground">
+                            <p class="text-[12px] text-muted-foreground">
                                 dari {{ formatRupiah(inv.total) }}
                             </p>
                         </div>
@@ -413,6 +438,12 @@ function photoUrl(path) {
         <PhotoUploadDialog v-model:open="photoOpen" :customer-id="customer.id" @saved="onSaved" />
         <CreditLimitDialog
             v-model:open="creditLimitOpen"
+            :customer="customer"
+            :can-update="canUpdate"
+            @saved="onSaved"
+        />
+        <PricePackageDialog
+            v-model:open="pricePackageOpen"
             :customer="customer"
             :can-update="canUpdate"
             @saved="onSaved"

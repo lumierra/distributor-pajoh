@@ -101,7 +101,7 @@ function statusBadge(s) {
             <h3 class="px-4 py-3 border-b text-sm font-semibold">Pending Approval ({{ pending.length }})</h3>
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">User</TableHead>
                         <TableHead>Device</TableHead>
                         <TableHead>OS</TableHead>
@@ -115,7 +115,7 @@ function statusBadge(s) {
                         <TableCell class="pl-4">{{ req.user?.name }}</TableCell>
                         <TableCell>
                             <p>{{ req.device_name ?? '—' }}</p>
-                            <p class="text-[11px] text-muted-foreground font-mono">{{ req.device_uuid }}</p>
+                            <p class="text-[12px] text-muted-foreground font-mono">{{ req.device_uuid }}</p>
                         </TableCell>
                         <TableCell class="text-xs">{{ req.os ?? '—' }} {{ req.os_version }}</TableCell>
                         <TableCell class="font-mono text-xs">{{ req.requested_ip ?? '—' }}</TableCell>
@@ -132,7 +132,7 @@ function statusBadge(s) {
         <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:uppercase [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">User</TableHead>
                         <TableHead>Device</TableHead>
                         <TableHead>OS</TableHead>
@@ -149,12 +149,12 @@ function statusBadge(s) {
                         <TableCell class="pl-4">{{ d.user?.name }}</TableCell>
                         <TableCell>
                             <p>{{ d.device_name ?? '—' }}</p>
-                            <p class="text-[11px] text-muted-foreground font-mono">{{ d.device_uuid }}</p>
+                            <p class="text-[12px] text-muted-foreground font-mono">{{ d.device_uuid }}</p>
                         </TableCell>
                         <TableCell class="text-xs">{{ d.os ?? '—' }} {{ d.os_version }}</TableCell>
                         <TableCell class="text-xs">{{ fmt(d.last_login_at) }}</TableCell>
                         <TableCell>
-                            <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ring-1 capitalize', statusBadge(d.status)]">
+                            <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[12px] font-medium ring-1 capitalize', statusBadge(d.status)]">
                                 {{ d.status }}
                             </span>
                         </TableCell>

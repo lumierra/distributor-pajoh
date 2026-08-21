@@ -58,7 +58,7 @@ async function testConnection() {
                 <div>
                     <Label>Gateway URL</Label>
                     <Input v-model="form.gateway_url" placeholder="https://api.wa-gateway.example.com" />
-                    <p class="text-[11px] text-muted-foreground mt-1">Endpoint dasar gateway. POST ke <code>/send</code>.</p>
+                    <p class="text-[12px] text-muted-foreground mt-1">Endpoint dasar gateway. POST ke <code>/send</code>.</p>
                 </div>
                 <div>
                     <Label>Gateway Token</Label>

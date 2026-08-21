@@ -53,7 +53,7 @@ function submit() {
     <AppLayout>
         <PageHeader title="Buat Purchase Order" description="Draft PO baru. Setelah approve, status & data terkunci." :icon="ShoppingCart">
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('purchase-orders.index')">
                         <ArrowLeft class="size-4" />
                         Daftar PO
@@ -64,7 +64,7 @@ function submit() {
 
         <PoForm :form="form" :suppliers="suppliers" submit-label="Simpan Draft" @submit="submit">
             <template #actions>
-                <Button as-child type="button" variant="outline" size="default">
+                <Button as-child type="button" variant="outline" size="default" class="rounded-full">
                     <Link :href="route('purchase-orders.index')">Batal</Link>
                 </Button>
             </template>

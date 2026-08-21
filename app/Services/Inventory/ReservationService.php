@@ -7,14 +7,20 @@ use App\Models\DoItem;
 use App\Models\ProductUnit;
 use App\Models\SalesOrder;
 use App\Models\SoReservation;
-use App\Models\StockBalance;
 use App\Models\StockLedger;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Reserve stok untuk Sales Order. Pakai FifoPicker untuk pilih batch,
- * lalu insert `so_reservations` rows + increment `stock_balances.qty_reserved`.
+ * Konsumsi stok untuk Sales Order. Model baru: stok fisik LANGSUNG DIPOTONG
+ * saat SO di-approve (bukan saat DO delivered). Pakai FifoPicker untuk pilih
+ * batch, tulis ledger `sale_out` per batch (qty_on_hand turun), lalu catat
+ * `so_reservations` dengan status CONSUMED sebagai catatan batch mana yang
+ * dipakai — dipakai DeliveryOrderService untuk menyusun DO.
+ *
+ * `stock_balances.qty_reserved` TIDAK dipakai lagi (tidak ada tahap "hold");
+ * kolom `so_reservations.qty_reserved` di sini bermakna "qty base yang diambil
+ * per batch" (catatan), bukan hold.
  *
  * Untuk bonus items (is_bonus=true) — coba ambil dari `qty_bonus_pool` dulu
  * (preferBonus=true). Kalau tidak cukup, picker fallback ke regular stock.
@@ -27,16 +33,17 @@ class ReservationService
     ) {}
 
     /**
-     * Reserve stock untuk semua items di SO. Atomic — gagal salah satu,
-     * rollback semua (termasuk yang sudah ter-reserve).
+     * Potong stok untuk semua item SO saat approve. Atomic — gagal salah satu,
+     * rollback semua. Menulis `sale_out` per batch (ref SO) & mencatat batch di
+     * `so_reservations` (status CONSUMED) untuk penyusunan DO nanti.
      *
-     * @return int jumlah row reservation yang dibuat
+     * @return int jumlah row catatan batch yang dibuat
      */
-    public function reserveForSo(SalesOrder $so): int
+    public function consumeForSo(SalesOrder $so, ?User $by = null): int
     {
         $created = 0;
 
-        DB::transaction(function () use ($so, &$created): void {
+        DB::transaction(function () use ($so, $by, &$created): void {
             $so->loadMissing(['items.productUnit', 'items.product']);
 
             foreach ($so->items as $item) {
@@ -51,21 +58,29 @@ class ReservationService
                 );
 
                 foreach ($picks as $pick) {
+                    // Potong stok fisik sekarang (sale_out).
+                    $this->ledger->writeOut([
+                        'product_id' => $item->product_id,
+                        'batch_id' => $pick['batch_id'],
+                        'product_unit_id' => $unit->id,
+                        'type' => StockLedger::TYPE_SALE_OUT,
+                        'is_bonus_pool' => (bool) $pick['is_bonus_pool'],
+                        'qty_out' => (int) $pick['qty'],
+                        'cost_price' => (float) $pick['cost_price'],
+                        'ref_type' => 'SO',
+                        'ref_id' => $so->id,
+                    ], $by);
+
+                    // Catat batch yang dipakai (bukan hold) untuk penyusunan DO.
                     SoReservation::create([
                         'sales_order_id' => $so->id,
                         'so_item_id' => $item->id,
                         'product_id' => $item->product_id,
                         'batch_id' => $pick['batch_id'],
                         'qty_reserved' => $pick['qty'],
-                        'status' => SoReservation::STATUS_ACTIVE,
+                        'status' => SoReservation::STATUS_CONSUMED,
+                        'consumed_at' => now(),
                     ]);
-
-                    // Bump qty_reserved di balance (atomic)
-                    StockBalance::query()
-                        ->where('product_id', $item->product_id)
-                        ->where('batch_id', $pick['batch_id'])
-                        ->lockForUpdate()
-                        ->increment('qty_reserved', $pick['qty']);
 
                     $created++;
                 }
@@ -76,27 +91,47 @@ class ReservationService
     }
 
     /**
-     * Release semua reservation aktif untuk SO. Dipanggil saat SO cancelled
-     * setelah approved.
+     * Kembalikan stok SO saat SO di-cancel setelah approve. Untuk tiap catatan
+     * batch yang BELUM dikirim lewat DO (belum ada consumed_by_do_id), tulis
+     * ledger `return_in` ke batch semula (qty_on_hand naik) dan set catatan →
+     * RELEASED. Catatan yang sudah dikirim lewat DO tidak dikembalikan (barang
+     * sudah keluar fisik; itu urusan retur customer).
+     *
+     * @return int jumlah row yang dikembalikan
      */
-    public function releaseForSo(SalesOrder $so, string $reason): int
+    public function returnForSo(SalesOrder $so, string $reason, ?User $by = null): int
     {
-        $released = 0;
+        $returned = 0;
 
-        DB::transaction(function () use ($so, $reason, &$released): void {
-            $activeReservations = SoReservation::query()
+        DB::transaction(function () use ($so, $reason, $by, &$returned): void {
+            $so->loadMissing(['items.productUnit']);
+            $unitByItem = $so->items->keyBy('id');
+
+            $records = SoReservation::query()
                 ->where('sales_order_id', $so->id)
-                ->where('status', SoReservation::STATUS_ACTIVE)
+                ->where('status', SoReservation::STATUS_CONSUMED)
+                ->whereNull('consumed_by_do_id')
                 ->lockForUpdate()
                 ->get();
 
-            foreach ($activeReservations as $res) {
-                // Decrement qty_reserved
-                StockBalance::query()
-                    ->where('product_id', $res->product_id)
-                    ->where('batch_id', $res->batch_id)
-                    ->lockForUpdate()
-                    ->decrement('qty_reserved', $res->qty_reserved);
+            foreach ($records as $res) {
+                $soItem = $unitByItem->get($res->so_item_id);
+                $unitId = $soItem?->productUnit?->id;
+                $isBonus = (bool) ($soItem?->is_bonus);
+                $cost = $this->batchCostFor($res->product_id, $res->batch_id);
+
+                $this->ledger->writeIn([
+                    'product_id' => $res->product_id,
+                    'batch_id' => $res->batch_id,
+                    'product_unit_id' => $unitId,
+                    'type' => StockLedger::TYPE_RETURN_IN,
+                    'is_bonus_pool' => $isBonus,
+                    'qty_in' => (int) $res->qty_reserved,
+                    'cost_price' => $cost,
+                    'ref_type' => 'SO',
+                    'ref_id' => $so->id,
+                    'notes' => $reason,
+                ], $by);
 
                 $res->update([
                     'status' => SoReservation::STATUS_RELEASED,
@@ -104,11 +139,26 @@ class ReservationService
                     'released_reason' => $reason,
                 ]);
 
-                $released++;
+                $returned++;
             }
         });
 
-        return $released;
+        return $returned;
+    }
+
+    /**
+     * Cost per unit batch dari ledger IN terakhir (untuk nilai return_in).
+     */
+    private function batchCostFor(int $productId, int $batchId): float
+    {
+        $cost = StockLedger::query()
+            ->where('product_id', $productId)
+            ->where('batch_id', $batchId)
+            ->where('qty_in', '>', 0)
+            ->orderByDesc('id')
+            ->value('cost_price');
+
+        return (float) ($cost ?? 0);
     }
 
     /**
@@ -134,81 +184,25 @@ class ReservationService
     }
 
     /**
-     * Consume reservation untuk DoItem yang sudah delivered:
-     *  1. Tulis stock_ledger sale_out → balance.qty_on_hand decrement
-     *  2. Release reservation (kalau ada) → balance.qty_reserved decrement
+     * Tandai catatan batch (reservation) sebagai sudah dikirim lewat DO ini.
+     * Model baru: stok fisik SUDAH dipotong saat SO approve, jadi di sini TIDAK
+     * ada `sale_out` lagi dan TIDAK menyentuh qty_reserved. Barang yang di-retur
+     * customer dikembalikan terpisah lewat CustomerReturn (return_in).
      *
      * Atomic. Dipanggil dari DeliveryOrderService::markDelivered().
      */
     public function consumeForDoItem(DoItem $item, User $by): void
     {
-        DB::transaction(function () use ($item, $by): void {
-            $item->loadMissing(['productUnit', 'reservation']);
+        DB::transaction(function () use ($item): void {
+            $item->loadMissing(['reservation']);
 
-            /** @var ProductUnit $unit */
-            $unit = $item->productUnit;
-            $qtyDelivered = (int) $item->qty_delivered;
-            $qtyReturned = (int) $item->qty_returned;
-            $qtyToConsume = max(0, $qtyDelivered - $qtyReturned);
-
-            if ($qtyToConsume <= 0 && $item->reservation !== null) {
-                // Semua di-return: release reservation, tidak ada sale_out.
-                $this->releaseReservation($item->reservation, 'All qty returned saat delivered.');
-
-                return;
-            }
-
-            if ($qtyToConsume > 0) {
-                $qtyBase = $qtyToConsume * (int) $unit->qty_to_base;
-
-                $this->ledger->writeOut([
-                    'product_id' => $item->product_id,
-                    'batch_id' => $item->batch_id,
-                    'product_unit_id' => $unit->id,
-                    'type' => StockLedger::TYPE_SALE_OUT,
-                    'is_bonus_pool' => (bool) $item->is_bonus,
-                    'qty_out' => $qtyBase,
-                    'cost_price' => (float) ($item->cost_price_base ?? 0),
-                    'ref_type' => 'DO',
-                    'ref_id' => $item->delivery_order_id,
-                ], $by);
-            }
-
-            // Update reservation: consumed atau released parsial.
             if ($item->reservation !== null) {
-                $res = $item->reservation;
-
-                // Decrement qty_reserved sebesar planned (yang ter-hold). Bukan
-                // delivered. Karena reservation memang menahan planned qty.
-                $plannedBase = (int) $item->qty_planned * (int) $unit->qty_to_base;
-
-                StockBalance::query()
-                    ->where('product_id', $item->product_id)
-                    ->where('batch_id', $item->batch_id)
-                    ->lockForUpdate()
-                    ->decrement('qty_reserved', $plannedBase);
-
-                $res->update([
+                $item->reservation->update([
                     'status' => SoReservation::STATUS_CONSUMED,
-                    'consumed_at' => now(),
+                    'consumed_at' => $item->reservation->consumed_at ?? now(),
                     'consumed_by_do_id' => $item->delivery_order_id,
                 ]);
             }
         });
-    }
-
-    private function releaseReservation(SoReservation $res, string $reason): void
-    {
-        StockBalance::query()
-            ->where('product_id', $res->product_id)
-            ->where('batch_id', $res->batch_id)
-            ->lockForUpdate()
-            ->decrement('qty_reserved', (int) $res->qty_reserved);
-
-        $res->update([
-            'status' => SoReservation::STATUS_RELEASED,
-            'released_at' => now(),
-            'released_reason' => $reason,
-        ]);
     }
 }

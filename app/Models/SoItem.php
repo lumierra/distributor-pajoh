@@ -21,6 +21,8 @@ class SoItem extends Model
         'unit_price',
         'discount_z1_pct',
         'discount_z2_pct',
+        'discount_type',
+        'discount_value',
         'unit_net_price',
         'line_subtotal',
         'is_bonus',
@@ -36,6 +38,7 @@ class SoItem extends Model
             'unit_price' => 'decimal:2',
             'discount_z1_pct' => 'decimal:2',
             'discount_z2_pct' => 'decimal:2',
+            'discount_value' => 'decimal:2',
             'unit_net_price' => 'decimal:2',
             'line_subtotal' => 'decimal:2',
             'is_bonus' => 'boolean',
@@ -68,19 +71,32 @@ class SoItem extends Model
         return $this->hasMany(SoReservation::class);
     }
 
+    public const DISCOUNT_PERCENT = 'percent';
+
+    public const DISCOUNT_RP = 'rp';
+
+    public const DISCOUNT_TYPES = [self::DISCOUNT_PERCENT, self::DISCOUNT_RP];
+
     /**
-     * Compound Z1+Z2 net price: price × (1-z1) × (1-z2). Bonus → 0.
+     * Harga net per unit setelah diskon per-item. Diskon bisa persen atau rupiah
+     * (per unit). Bonus → 0. Net tidak boleh negatif.
      */
     public static function computeUnitNetPrice(
         float $price,
-        float $z1Pct,
-        float $z2Pct,
+        ?string $discountType,
+        float $discountValue,
         bool $isBonus,
     ): float {
         if ($isBonus) {
             return 0.0;
         }
 
-        return round($price * (1 - $z1Pct / 100) * (1 - $z2Pct / 100), 2);
+        $net = match ($discountType) {
+            self::DISCOUNT_PERCENT => $price * (1 - max(0.0, min(100.0, $discountValue)) / 100),
+            self::DISCOUNT_RP => $price - $discountValue,
+            default => $price,
+        };
+
+        return round(max(0.0, $net), 2);
     }
 }

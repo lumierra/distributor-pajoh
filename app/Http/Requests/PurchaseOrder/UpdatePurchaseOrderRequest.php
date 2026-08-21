@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\PurchaseOrder;
 
+use App\Models\Product;
 use App\Models\PurchaseOrder;
-use App\Models\SupplierProduct;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -56,15 +56,14 @@ class UpdatePurchaseOrderRequest extends FormRequest
                 if ($productId <= 0) {
                     continue;
                 }
-                $exists = SupplierProduct::query()
+                $exists = Product::query()
+                    ->where('id', $productId)
                     ->where('supplier_id', $supplierId)
-                    ->where('product_id', $productId)
-                    ->where('is_active', true)
                     ->exists();
                 if (! $exists) {
                     $validator->errors()->add(
                         "items.{$idx}.product_id",
-                        'Produk tidak tertaut ke supplier ini.',
+                        'Produk bukan milik supplier ini.',
                     );
                 }
             }

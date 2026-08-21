@@ -242,7 +242,7 @@ class DeliveryOrderService
     public function markDelivered(
         DeliveryOrder $do,
         array $data,
-        UploadedFile $proofPhoto,
+        ?UploadedFile $proofPhoto,
         ?UploadedFile $signaturePhoto,
         User $by,
     ): DeliveryOrder {
@@ -253,18 +253,16 @@ class DeliveryOrderService
         return DB::transaction(function () use ($do, $data, $proofPhoto, $signaturePhoto, $by): DeliveryOrder {
             $do->load(['items.productUnit', 'salesOrder']);
 
-            $proofPath = $this->storeProofPhoto($do, $proofPhoto, 'signed');
-            $signaturePath = null;
-            if ($signaturePhoto !== null) {
-                $signaturePath = $this->storeProofPhoto($do, $signaturePhoto, 'signature');
-            }
+            // Foto bukti & tanda tangan kini opsional.
+            $proofPath = $proofPhoto !== null ? $this->storeProofPhoto($do, $proofPhoto, 'signed') : null;
+            $signaturePath = $signaturePhoto !== null ? $this->storeProofPhoto($do, $signaturePhoto, 'signature') : null;
 
             // Update header
             $do->update([
                 'status' => DeliveryOrder::STATUS_DELIVERED,
                 'delivered_at' => now(),
                 'delivered_by' => $by->id,
-                'receiver_name' => $data['receiver_name'],
+                'receiver_name' => $data['receiver_name'] ?? null,
                 'receiver_notes' => $data['receiver_notes'] ?? null,
                 'proof_photo_signed_path' => $proofPath,
                 'digital_signature_path' => $signaturePath,
@@ -306,7 +304,8 @@ class DeliveryOrderService
                     $hasPartialReturn = true;
                 }
 
-                // Consume reservation → ledger sale_out
+                // Tandai catatan batch sudah dikirim lewat DO ini (stok fisik
+                // sudah dipotong saat SO approve; tidak ada sale_out di sini).
                 $this->reservation->consumeForDoItem($item->refresh(), $by);
 
                 // Update so_items.qty_delivered (net = delivered - returned)
@@ -438,12 +437,24 @@ class DeliveryOrderService
                 ]);
             }
 
-            // Distribute qty per active reservation (FIFO order by reservation id).
+            // Distribute qty per catatan batch SO ini (status CONSUMED = stok
+            // sudah dipotong saat approve). `qty_reserved` = total base yang
+            // dipotong per batch (tetap, dipakai returnForSo saat cancel). Sisa
+            // yang bisa dikirim = qty_reserved − base yang sudah dialokasikan ke
+            // DO lain (dihitung dari qty_planned_base DoItem non-cancelled).
             $reservations = SoReservation::query()
                 ->where('so_item_id', $soItem->id)
-                ->where('status', SoReservation::STATUS_ACTIVE)
+                ->where('status', SoReservation::STATUS_CONSUMED)
                 ->orderBy('id')
                 ->get();
+
+            // Base yang sudah dialokasikan ke DO (belum cancelled), per reservation.
+            $allocatedBaseByRes = DoItem::query()
+                ->whereIn('reservation_id', $reservations->pluck('id'))
+                ->whereHas('deliveryOrder', fn ($q) => $q->where('status', '!=', DeliveryOrder::STATUS_CANCELLED))
+                ->selectRaw('reservation_id, COALESCE(SUM(qty_planned_base),0) AS base')
+                ->groupBy('reservation_id')
+                ->pluck('base', 'reservation_id');
 
             $unit = $soItem->productUnit;
             $unitFactor = (int) $unit->qty_to_base;
@@ -455,7 +466,10 @@ class DeliveryOrderService
                     break;
                 }
 
-                $reservedInUom = (int) floor($res->qty_reserved / max(1, $unitFactor));
+                // Sisa base pada catatan ini = total − yang sudah dialokasikan.
+                $allocatedBase = (int) ($allocatedBaseByRes[$res->id] ?? 0);
+                $remainingBase = max(0, (int) $res->qty_reserved - $allocatedBase);
+                $reservedInUom = (int) floor($remainingBase / max(1, $unitFactor));
                 if ($reservedInUom <= 0) {
                     continue;
                 }

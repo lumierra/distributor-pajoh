@@ -50,7 +50,7 @@ function submit() {
         <div class="w-full max-w-md space-y-7 animate-fade-in-up">
             <div class="text-center space-y-2.5">
                 <div
-                    class="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-lg shadow-md ring-2 ring-primary/15"
+                    class="inline-flex h-14 w-14 items-center justify-center rounded-full bg-brand text-white font-bold text-xl shadow-md"
                 >
                     P
                 </div>
@@ -60,7 +60,7 @@ function submit() {
                 <p class="text-sm text-muted-foreground">Sistem Distribusi &amp; Pergudangan</p>
             </div>
 
-            <section class="rounded-xl ring-1 ring-foreground/10 bg-card shadow-md overflow-hidden">
+            <section class="rounded-3xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-md overflow-hidden">
                 <header class="px-6 pt-6 pb-2">
                     <h2 class="text-base font-semibold">Masuk ke akun Anda</h2>
                     <p class="text-xs text-muted-foreground mt-1">
@@ -79,7 +79,7 @@ function submit() {
                             placeholder="username"
                             autofocus
                             required
-                            class="h-9"
+                            class="h-10 rounded-xl"
                             :aria-invalid="!!form.errors.username"
                             :disabled="form.processing"
                         />
@@ -98,7 +98,7 @@ function submit() {
                                 autocomplete="current-password"
                                 placeholder="••••••••"
                                 required
-                                class="pr-10 h-9"
+                                class="pr-10 h-10 rounded-xl"
                                 :aria-invalid="!!form.errors.password"
                                 :disabled="form.processing"
                             />
@@ -120,7 +120,7 @@ function submit() {
 
                     <div class="flex items-center gap-2 pt-1">
                         <Checkbox id="remember" v-model="form.remember" />
-                        <Label for="remember" class="text-xs font-normal cursor-pointer">
+                        <Label for="remember" class="text-xs font-normal cursor-pointer mb-0">
                             Ingat saya selama 30 hari
                         </Label>
                     </div>
@@ -128,7 +128,7 @@ function submit() {
                     <Button
                         type="submit"
                         size="lg"
-                        class="w-full"
+                        class="w-full rounded-full bg-brand text-white hover:bg-brand-dark"
                         :disabled="form.processing || !form.username || !form.password"
                     >
                         <Loader2 v-if="form.processing" class="size-4 animate-spin" />

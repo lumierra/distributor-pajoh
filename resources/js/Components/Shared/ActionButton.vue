@@ -49,7 +49,7 @@ defineProps({
         </component>
         <!-- Tooltip -->
         <div
-            class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover/abtn:block bg-gray-800 text-white text-[11px] px-2 py-1 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none"
+            class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover/abtn:block bg-gray-800 text-white text-[12px] px-2 py-1 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none"
         >
             {{ label }}
         </div>

@@ -10,6 +10,7 @@ import {
     Search,
     Shield,
     ShieldCheck,
+    Trash2,
     Users as UsersIcon,
     UserCheck,
     UserX,
@@ -18,8 +19,8 @@ import { computed, reactive, ref, watch } from 'vue';
 import ActionButton from '@/Components/Shared/ActionButton.vue';
 import ActionGroup from '@/Components/Shared/ActionGroup.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
+import { confirm } from '@/Composables/useConfirm';
 import Pagination from '@/Components/Shared/Pagination.vue';
-import StatCard from '@/Components/Shared/StatCard.vue';
 import TabsPill from '@/Components/Shared/TabsPill.vue';
 import UserDetailDialog from '@/Components/Users/UserDetailDialog.vue';
 import UserFormDialog from '@/Components/Users/UserFormDialog.vue';
@@ -129,6 +130,11 @@ function toggleActive(user) {
     useForm({}).post(route('users.toggle-active', user.id), { preserveScroll: true });
 }
 
+async function destroy(user) {
+    if (!(await confirm({ title: `Hapus user ${user.name}?`, destructive: true }))) return;
+    useForm({}).delete(route('users.destroy', user.id), { preserveScroll: true });
+}
+
 function userInitials(name) {
     if (!name) return '?';
     const parts = String(name).trim().split(/\s+/);
@@ -150,6 +156,16 @@ const roleTabs = computed(() => [
     { value: 'superadmin', label: 'Superadmin', icon: Shield },
     { value: 'admin', label: 'Admin', icon: ShieldCheck },
 ]);
+
+const statTiles = computed(() => {
+    if (!props.stats) return [];
+    return [
+        { label: 'Total User', value: props.stats.total ?? 0, icon: UsersIcon },
+        { label: 'User Aktif', value: props.stats.active ?? 0, icon: UserCheck },
+        { label: 'Nonaktif', value: props.stats.inactive ?? 0, icon: UserX },
+        { label: 'Superadmin', value: props.stats.superadmin ?? 0, icon: ShieldCheck },
+    ];
+});
 </script>
 
 <template>
@@ -162,49 +178,58 @@ const roleTabs = computed(() => [
             :icon="UsersIcon"
         >
             <template #actions>
-                <Button v-if="canCreate" size="default" variant="secondary" @click="openCreate">
+                <TabsPill v-model="filters.role" :tabs="roleTabs" tone="brand" />
+                <Button
+                    v-if="canCreate"
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                    @click="openCreate"
+                >
                     <Plus class="size-4" />
                     Tambah User
                 </Button>
             </template>
         </PageHeader>
 
-        <div class="mb-4">
-            <TabsPill v-model="filters.role" :tabs="roleTabs" />
-        </div>
-
+        <!-- ── Stat tiles — soft red tint, angka+label kiri, ikon kanan ── -->
         <section v-if="stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <StatCard label="Total User" :value="stats.total ?? 0" tone="brand">
-                <template #icon><UsersIcon class="size-5" /></template>
-            </StatCard>
-            <StatCard label="User Aktif" :value="stats.active ?? 0" tone="brand">
-                <template #icon><UserCheck class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Nonaktif" :value="stats.inactive ?? 0" tone="brand">
-                <template #icon><UserX class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Superadmin" :value="stats.superadmin ?? 0" tone="brand-orange">
-                <template #icon><ShieldCheck class="size-5" /></template>
-            </StatCard>
+            <div
+                v-for="tile in statTiles"
+                :key="tile.label"
+                class="rounded-2xl bg-brand-light/60 ring-1 ring-brand/10 shadow-sm px-4 py-3.5 flex items-center justify-between gap-3 transition-all duration-200 hover:ring-brand/25 hover:shadow-md hover:-translate-y-0.5"
+            >
+                <div class="min-w-0">
+                    <p class="text-lg font-semibold tracking-tight leading-tight text-brand-dark">
+                        {{ tile.value }}
+                    </p>
+                    <p class="text-[12px] text-brand-dark/70 truncate leading-tight mt-0.5">
+                        {{ tile.label }}
+                    </p>
+                </div>
+                <div
+                    class="size-9 rounded-full bg-brand/10 text-brand flex items-center justify-center shrink-0"
+                >
+                    <component :is="tile.icon" class="size-4.5" />
+                </div>
+            </div>
         </section>
 
-        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <div
-                class="border-b border-border/70 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2"
-            >
+        <!-- ── Grouped card: toolbar menyatu + list rows dipisah hairline (bukan tabel) ── -->
+        <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
                 <div class="relative flex-1">
                     <Search
-                        class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground"
+                        class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground"
                     />
                     <Input
                         v-model="filters.q"
                         placeholder="Cari nama atau email di halaman ini…"
-                        class="pl-8 h-9 rounded-md"
+                        class="pl-8 h-9 rounded-full bg-muted/50 border-transparent focus-visible:bg-card"
                     />
                 </div>
                 <div class="flex items-center gap-2">
                     <Select v-model="filters.active">
-                        <SelectTrigger class="w-[130px] h-9 rounded-md">
+                        <SelectTrigger class="w-[130px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -213,124 +238,134 @@ const roleTabs = computed(() => [
                             <SelectItem value="0">Nonaktif</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button type="button" variant="outline" size="default" @click="reset">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="default"
+                        class="rounded-full"
+                        @click="reset"
+                    >
                         <RotateCcw class="size-3.5" />
                         Reset
                     </Button>
                 </div>
             </div>
 
-            <Table>
+            <div v-if="users.data.length === 0" class="px-4 py-16">
+                <div class="flex flex-col items-center gap-2 text-muted-foreground">
+                    <UsersIcon class="size-7 opacity-40" />
+                    <p class="text-sm">Tidak ada user yang cocok dengan filter.</p>
+                </div>
+            </div>
+
+            <Table v-else class="border-t border-foreground/5">
                 <TableHeader>
-                    <TableRow
-                        class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5"
-                    >
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5 hover:bg-transparent">
                         <TableHead class="pl-4">User</TableHead>
-                        <TableHead>No. HP</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Dibuat</TableHead>
                         <TableHead class="text-center pr-4">Aksi</TableHead>
                     </TableRow>
                 </TableHeader>
-                <TableBody class="text-sm">
-                    <TableRow v-if="users.data.length === 0">
-                        <TableCell colspan="6" class="text-center py-16">
-                            <div class="flex flex-col items-center gap-2 text-muted-foreground">
-                                <UsersIcon class="size-7 opacity-40" />
-                                <p class="text-sm">Tidak ada user yang cocok dengan filter.</p>
-                            </div>
-                        </TableCell>
-                    </TableRow>
+                <TableBody>
                     <TableRow
                         v-for="u in users.data"
                         :key="u.id"
-                        class="hover:bg-muted/30 transition-colors"
+                        class="hover:bg-foreground/2.5 transition-colors border-foreground/5"
                     >
                         <TableCell class="pl-4 py-2.5">
-                            <div class="flex items-center gap-2.5">
+                            <div class="flex items-center gap-3">
                                 <div
-                                    class="size-8 rounded-md bg-primary text-primary-foreground flex items-center justify-center text-[11px] font-semibold shadow-sm shrink-0"
+                                    class="size-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[12px] font-semibold shadow-sm shrink-0"
                                 >
                                     {{ userInitials(u.name) }}
                                 </div>
-                                <div class="min-w-0">
-                                    <button
-                                        type="button"
-                                        class="text-left font-medium text-foreground truncate leading-tight hover:text-primary transition-colors block"
-                                        @click="openDetail(u)"
-                                    >
+                                <button type="button" class="text-left min-w-0" @click="openDetail(u)">
+                                    <p class="font-medium text-foreground truncate leading-tight hover:text-primary transition-colors">
                                         {{ u.name }}
-                                    </button>
-                                    <p class="text-xs text-muted-foreground truncate leading-tight">
-                                        {{ u.email || u.username }}
                                     </p>
-                                </div>
+                                    <p class="text-[12px] text-muted-foreground truncate leading-tight mt-0.5">
+                                        {{ u.email || u.username }}
+                                        <span v-if="u.phone"> · {{ u.phone }}</span>
+                                    </p>
+                                </button>
                             </div>
                         </TableCell>
-                        <TableCell>
-                            <span v-if="u.phone" class="text-xs font-mono">{{ u.phone }}</span>
-                            <span v-else class="text-muted-foreground">—</span>
-                        </TableCell>
+
                         <TableCell>
                             <span
-                                class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground capitalize"
+                                class="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-medium bg-muted/70 text-muted-foreground capitalize"
                             >
                                 {{ u.role?.name }}
                             </span>
                         </TableCell>
+
                         <TableCell>
                             <span
-                                v-if="u.is_active"
-                                class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                                :class="[
+                                    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium',
+                                    u.is_active ? 'text-emerald-700' : 'text-muted-foreground',
+                                ]"
                             >
-                                Aktif
-                            </span>
-                            <span
-                                v-else
-                                class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground"
-                            >
-                                Nonaktif
+                                <span
+                                    :class="[
+                                        'size-1.5 rounded-full',
+                                        u.is_active ? 'bg-emerald-500' : 'bg-muted-foreground/50',
+                                    ]"
+                                />
+                                {{ u.is_active ? 'Aktif' : 'Nonaktif' }}
                             </span>
                         </TableCell>
-                        <TableCell class="text-xs text-muted-foreground whitespace-nowrap">
+
+                        <TableCell class="text-[12px] text-muted-foreground">
                             {{ formatDate(u.created_at) }}
                         </TableCell>
-                        <TableCell class="py-3 px-4 text-center whitespace-nowrap">
-                            <ActionGroup>
-                                <ActionButton
-                                    :icon="Eye"
-                                    label="Detail & aksi cepat"
-                                    tone="indigo"
-                                    @click="openDetail(u)"
-                                />
-                                <ActionButton
-                                    :icon="Pencil"
-                                    label="Edit data"
-                                    tone="blue"
-                                    @click="openEdit(u)"
-                                />
-                                <ActionButton
-                                    v-if="u.is_active"
-                                    :icon="Ban"
-                                    label="Suspend"
-                                    tone="amber"
-                                    @click="toggleActive(u)"
-                                />
-                                <ActionButton
-                                    v-else
-                                    :icon="LogIn"
-                                    label="Aktifkan"
-                                    tone="emerald"
-                                    @click="toggleActive(u)"
-                                />
-                            </ActionGroup>
+
+                        <TableCell class="pr-4 text-center">
+                            <div class="flex justify-center">
+                                <ActionGroup class="rounded-full">
+                                    <ActionButton
+                                        :icon="Eye"
+                                        label="Detail & aksi cepat"
+                                        tone="indigo"
+                                        @click="openDetail(u)"
+                                    />
+                                    <ActionButton
+                                        :icon="Pencil"
+                                        label="Edit data"
+                                        tone="blue"
+                                        @click="openEdit(u)"
+                                    />
+                                    <ActionButton
+                                        v-if="u.is_active"
+                                        :icon="Ban"
+                                        label="Suspend"
+                                        tone="amber"
+                                        @click="toggleActive(u)"
+                                    />
+                                    <ActionButton
+                                        v-else
+                                        :icon="LogIn"
+                                        label="Aktifkan"
+                                        tone="emerald"
+                                        @click="toggleActive(u)"
+                                    />
+                                    <ActionButton
+                                        v-if="u.permissions_summary?.canDelete"
+                                        :icon="Trash2"
+                                        label="Hapus"
+                                        tone="red"
+                                        @click="destroy(u)"
+                                    />
+                                </ActionGroup>
+                            </div>
                         </TableCell>
                     </TableRow>
                 </TableBody>
             </Table>
 
-            <div v-if="users.data.length > 0" class="border-t border-border/70 px-4 py-2.5">
+            <div v-if="users.data.length > 0" class="border-t border-foreground/5 px-4 py-3">
                 <Pagination :meta="users" />
             </div>
         </section>

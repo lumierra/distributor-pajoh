@@ -67,16 +67,38 @@ const supplierFilter = ref(''); // '' = semua, atau supplier_id string
 const initialSelectedProductIds = new Set((props.group.products ?? []).map((p) => p.id));
 const selectedProductIds = ref(new Set(initialSelectedProductIds));
 
+// Paket harga terpilih per produk: {[product_id]: price_package_id|null}.
+// Diisi dari pivot untuk produk yang sudah ada di group.
+const initialPackageByProduct = (() => {
+    const map = {};
+    for (const p of props.group.products ?? []) {
+        map[p.id] = p.pivot?.price_package_id ?? null;
+    }
+    return map;
+})();
+const packageByProduct = ref({ ...initialPackageByProduct });
+
+function packagesFor(p) {
+    return props.availableProducts.find((ap) => ap.id === p.id)?.packages ?? [];
+}
+
+function setPackage(productId, value) {
+    packageByProduct.value = {
+        ...packageByProduct.value,
+        [productId]: value ? Number(value) : null,
+    };
+}
+
 const filteredProducts = computed(() => {
     const q = productSearch.value.trim().toLowerCase();
     const supId = supplierFilter.value ? Number(supplierFilter.value) : null;
     return props.availableProducts.filter((p) => {
-        if (supId && !(p.supplier_ids ?? []).includes(supId)) return false;
+        if (supId && p.supplier_id !== supId) return false;
         if (q) {
             return (
                 p.name.toLowerCase().includes(q)
                 || (p.sku ?? '').toLowerCase().includes(q)
-                || (p.brand ?? '').toLowerCase().includes(q)
+                || (p.supplier_name ?? '').toLowerCase().includes(q)
             );
         }
         return true;
@@ -97,22 +119,34 @@ function toggleAllFiltered() {
 function toggleProduct(p) {
     if (!canUpdate.value) return;
     const next = new Set(selectedProductIds.value);
-    if (next.has(p.id)) next.delete(p.id);
-    else next.add(p.id);
+    if (next.has(p.id)) {
+        next.delete(p.id);
+    } else {
+        next.add(p.id);
+        // Default ke paket pertama kalau belum ada pilihan.
+        if (packageByProduct.value[p.id] == null) {
+            const pkgs = packagesFor(p);
+            setPackage(p.id, pkgs.length > 0 ? pkgs[0].id : null);
+        }
+    }
     selectedProductIds.value = next;
 }
 
-const productsForm = useForm({ product_ids: [] });
+const productsForm = useForm({ products: [] });
 const productsDirty = computed(() => {
     if (selectedProductIds.value.size !== initialSelectedProductIds.size) return true;
     for (const id of selectedProductIds.value) {
         if (!initialSelectedProductIds.has(id)) return true;
+        if ((packageByProduct.value[id] ?? null) !== (initialPackageByProduct[id] ?? null)) return true;
     }
     return false;
 });
 
 function saveProducts() {
-    productsForm.product_ids = Array.from(selectedProductIds.value);
+    productsForm.products = Array.from(selectedProductIds.value).map((id) => ({
+        product_id: id,
+        price_package_id: packageByProduct.value[id] ?? null,
+    }));
     productsForm.put(route('product-groups.sync-products', props.group.id), {
         preserveScroll: true,
     });
@@ -185,7 +219,7 @@ function fmtRp(v) {
             :icon="Layers"
         >
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('product-groups.index')">
                         <ArrowLeft class="size-4" />
                         Kembali
@@ -194,7 +228,7 @@ function fmtRp(v) {
             </template>
         </PageHeader>
 
-        <section class="mb-4 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm px-5 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+        <section class="mb-4 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm px-5 py-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
             <div>
                 <span class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Kode</span>
                 <p class="font-mono mt-0.5">{{ group.code }}</p>
@@ -203,16 +237,18 @@ function fmtRp(v) {
                 <span class="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Status</span>
                 <p class="mt-0.5">
                     <span
-                        v-if="group.is_active"
-                        class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                        :class="[
+                            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-medium',
+                            group.is_active ? 'text-emerald-700' : 'text-muted-foreground',
+                        ]"
                     >
-                        Aktif
-                    </span>
-                    <span
-                        v-else
-                        class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-muted text-muted-foreground"
-                    >
-                        Nonaktif
+                        <span
+                            :class="[
+                                'size-1.5 rounded-full',
+                                group.is_active ? 'bg-emerald-500' : 'bg-muted-foreground/50',
+                            ]"
+                        />
+                        {{ group.is_active ? 'Aktif' : 'Nonaktif' }}
                     </span>
                 </p>
             </div>
@@ -227,14 +263,14 @@ function fmtRp(v) {
         </section>
 
         <div class="mb-4">
-            <TabsPill v-model="tab" :tabs="tabs" />
+            <TabsPill v-model="tab" :tabs="tabs" tone="brand" />
         </div>
 
         <!-- ─────────────── Tab: Produk ─────────────── -->
-        <section v-show="tab === 'products'" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <div class="border-b border-border/70 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+        <section v-show="tab === 'products'" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
                 <Select v-model="supplierFilter">
-                    <SelectTrigger class="w-[200px] h-9 rounded-md">
+                    <SelectTrigger class="w-[200px] h-9 rounded-full bg-muted/50 border-transparent">
                         <SelectValue placeholder="Filter Supplier" />
                     </SelectTrigger>
                     <SelectContent>
@@ -245,14 +281,14 @@ function fmtRp(v) {
                     </SelectContent>
                 </Select>
                 <div class="relative flex-1">
-                    <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                     <Input
                         v-model="productSearch"
-                        placeholder="Cari SKU / nama / brand…"
-                        class="pl-8 h-9 rounded-md"
+                        placeholder="Cari SKU / nama / supplier…"
+                        class="pl-8 h-9 rounded-full bg-muted/50 border-transparent focus-visible:bg-card"
                     />
                 </div>
-                <div class="text-xs text-muted-foreground">
+                <div class="text-xs text-muted-foreground whitespace-nowrap">
                     Terpilih: <span class="font-semibold text-foreground">{{ selectedProductIds.size }}</span>
                 </div>
                 <Button
@@ -260,6 +296,7 @@ function fmtRp(v) {
                     type="button"
                     variant="outline"
                     size="default"
+                    class="rounded-full"
                     :disabled="filteredProducts.length === 0"
                     @click="toggleAllFiltered"
                 >
@@ -268,8 +305,8 @@ function fmtRp(v) {
                 <Button
                     v-if="canUpdate"
                     type="button"
-                    variant="secondary"
                     size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
                     :disabled="!productsDirty || productsForm.processing"
                     @click="saveProducts"
                 >
@@ -279,18 +316,19 @@ function fmtRp(v) {
                 </Button>
             </div>
 
-            <Table>
+            <Table class="border-t border-foreground/5">
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5 hover:bg-transparent">
                         <TableHead class="pl-4 w-10"></TableHead>
                         <TableHead>SKU</TableHead>
                         <TableHead>Nama Produk</TableHead>
-                        <TableHead>Brand</TableHead>
+                        <TableHead>Supplier</TableHead>
+                        <TableHead class="w-56">Paket Harga (untuk sales)</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody class="text-sm">
                     <TableRow v-if="filteredProducts.length === 0">
-                        <TableCell colspan="4" class="text-center py-10 text-muted-foreground">
+                        <TableCell colspan="5" class="text-center py-10 text-muted-foreground">
                             Tidak ada produk yang cocok.
                         </TableCell>
                     </TableRow>
@@ -298,17 +336,17 @@ function fmtRp(v) {
                         v-for="p in filteredProducts"
                         :key="p.id"
                         :class="[
-                            'hover:bg-muted/30 transition-colors cursor-pointer',
-                            selectedProductIds.has(p.id) ? 'bg-emerald-50/40' : '',
+                            'transition-colors cursor-pointer border-foreground/5',
+                            selectedProductIds.has(p.id) ? 'bg-brand-light/40 hover:bg-brand-light/50' : 'hover:bg-foreground/2.5',
                         ]"
                         @click="toggleProduct(p)"
                     >
                         <TableCell class="pl-4 py-2.5">
                             <div
                                 :class="[
-                                    'size-5 rounded border flex items-center justify-center transition-colors',
+                                    'size-5 rounded-full border flex items-center justify-center transition-colors',
                                     selectedProductIds.has(p.id)
-                                        ? 'bg-emerald-600 border-emerald-600 text-white'
+                                        ? 'bg-brand border-brand text-white'
                                         : 'border-muted-foreground/30',
                                 ]"
                             >
@@ -317,28 +355,55 @@ function fmtRp(v) {
                         </TableCell>
                         <TableCell class="font-mono text-xs">{{ p.sku }}</TableCell>
                         <TableCell class="font-medium">{{ p.name }}</TableCell>
-                        <TableCell class="text-muted-foreground">{{ p.brand || '—' }}</TableCell>
+                        <TableCell class="text-muted-foreground">{{ p.supplier_name || '—' }}</TableCell>
+                        <TableCell class="py-1.5" @click.stop>
+                            <template v-if="selectedProductIds.has(p.id)">
+                                <Select
+                                    v-if="(p.packages ?? []).length > 0"
+                                    :model-value="packageByProduct[p.id] ? String(packageByProduct[p.id]) : ''"
+                                    :disabled="!canUpdate"
+                                    @update:model-value="(v) => setPackage(p.id, v)"
+                                >
+                                    <SelectTrigger class="h-8 rounded-lg">
+                                        <SelectValue placeholder="Paket default" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem
+                                            v-for="pkg in p.packages"
+                                            :key="pkg.id"
+                                            :value="String(pkg.id)"
+                                        >
+                                            {{ pkg.name }}
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <span v-else class="text-xs text-muted-foreground italic">
+                                    Belum ada paket harga
+                                </span>
+                            </template>
+                            <span v-else class="text-xs text-muted-foreground/60">—</span>
+                        </TableCell>
                     </TableRow>
                 </TableBody>
             </Table>
         </section>
 
         <!-- ─────────────── Tab: Sales ─────────────── -->
-        <section v-show="tab === 'sales'" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <div class="border-b border-border/70 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+        <section v-show="tab === 'sales'" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
                 <div class="relative flex-1">
-                    <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                     <Input
                         v-model="salesSearch"
                         placeholder="Cari nama / username sales…"
-                        class="pl-8 h-9 rounded-md"
+                        class="pl-8 h-9 rounded-full bg-muted/50 border-transparent focus-visible:bg-card"
                     />
                 </div>
                 <Button
                     v-if="canUpdate"
                     type="button"
-                    variant="secondary"
                     size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
                     :disabled="salesForm.processing"
                     @click="saveSales"
                 >
@@ -348,15 +413,15 @@ function fmtRp(v) {
                 </Button>
             </div>
 
-            <div class="px-4 py-2 text-[11px] text-muted-foreground bg-muted/30 border-b border-border/70">
-                Ceklis sales yang boleh menjual produk dari group ini. Isi <strong>Limit bulanan</strong>
+            <div class="px-4 py-3 text-[12px] text-muted-foreground bg-muted/40">
+                Ceklis sales yang boleh menjual produk dari group ini. Isi <strong class="text-foreground">Limit bulanan</strong>
                 kalau ingin membatasi total penjualan sales tsb dari group ini per bulan
                 (kosong = tanpa limit).
             </div>
 
-            <Table>
+            <Table class="border-t border-foreground/5">
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5 hover:bg-transparent">
                         <TableHead class="pl-4 w-10"></TableHead>
                         <TableHead>Sales</TableHead>
                         <TableHead class="text-right">Limit bulanan (Rp)</TableHead>
@@ -372,8 +437,8 @@ function fmtRp(v) {
                         v-for="s in filteredSales"
                         :key="s.id"
                         :class="[
-                            'hover:bg-muted/30 transition-colors',
-                            assignments[s.id]?.selected ? 'bg-emerald-50/40' : '',
+                            'transition-colors border-foreground/5',
+                            assignments[s.id]?.selected ? 'bg-brand-light/40 hover:bg-brand-light/50' : 'hover:bg-foreground/2.5',
                         ]"
                     >
                         <TableCell class="pl-4 py-2.5">
@@ -381,9 +446,9 @@ function fmtRp(v) {
                                 type="button"
                                 :disabled="!canUpdate"
                                 :class="[
-                                    'size-5 rounded border flex items-center justify-center transition-colors',
+                                    'size-5 rounded-full border flex items-center justify-center transition-colors',
                                     assignments[s.id]?.selected
-                                        ? 'bg-emerald-600 border-emerald-600 text-white'
+                                        ? 'bg-brand border-brand text-white'
                                         : 'border-muted-foreground/30',
                                 ]"
                                 @click="toggleSales(s)"
@@ -403,7 +468,7 @@ function fmtRp(v) {
                                     min="0"
                                     step="1000"
                                     placeholder="tanpa limit"
-                                    class="h-8 w-40 text-right font-mono text-xs"
+                                    class="h-8 w-40 rounded-lg text-right font-mono text-xs"
                                 />
                             </div>
                             <span v-else class="text-muted-foreground text-xs">—</span>

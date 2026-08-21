@@ -121,35 +121,35 @@ function formatDate(v) {
                 </div>
                 <dl class="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Customer</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Customer</dt>
                         <dd class="font-medium">{{ customerReturn.customer?.name }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Sales</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Sales</dt>
                         <dd>{{ customerReturn.sales?.name ?? '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Invoice</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Invoice</dt>
                         <dd class="font-mono text-xs">{{ customerReturn.invoice?.invoice_number ?? '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">DO</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">DO</dt>
                         <dd class="font-mono text-xs">{{ customerReturn.delivery_order?.do_number ?? '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Tgl Retur</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Tgl Retur</dt>
                         <dd>{{ formatDate(customerReturn.return_date) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Brand</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Brand</dt>
                         <dd>{{ customerReturn.brand_tag ?? '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Reason</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Reason</dt>
                         <dd>{{ customerReturn.reason_code ?? '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Total Value</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Total Value</dt>
                         <dd class="font-mono font-semibold">{{ fmtRp(customerReturn.total_value) }}</dd>
                     </div>
                 </dl>
@@ -187,7 +187,7 @@ function formatDate(v) {
                 </div>
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="text-[10px] uppercase text-muted-foreground border-b">
+                        <tr class="text-[11px] uppercase text-muted-foreground border-b">
                             <th class="text-left py-2">Produk</th>
                             <th class="text-right">Qty Total</th>
                             <th class="text-right">Qty BAIK</th>

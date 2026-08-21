@@ -36,6 +36,8 @@ class StockLedger extends Model
 
     public const TYPE_OPNAME_OUT = 'opname_out';
 
+    public const TYPE_OPENING_IN = 'opening_in';
+
     public const TYPE_WRITE_OFF = 'write_off';
 
     public const TYPES = [
@@ -48,6 +50,7 @@ class StockLedger extends Model
         self::TYPE_ADJUSTMENT_OUT,
         self::TYPE_OPNAME_IN,
         self::TYPE_OPNAME_OUT,
+        self::TYPE_OPENING_IN,
         self::TYPE_WRITE_OFF,
     ];
 

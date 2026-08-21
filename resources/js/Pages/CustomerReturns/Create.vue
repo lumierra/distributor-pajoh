@@ -21,13 +21,15 @@ const props = defineProps({
     products: { type: Array, default: () => [] },
     openInvoices: { type: Array, default: () => [] },
     salesUsers: { type: Array, default: () => [] },
+    prefill: { type: Object, default: () => ({}) },
 });
 
 const form = useForm({
-    customer_id: '',
+    // Prefill dari "Sesuaikan" di halaman SO (customer & faktur terkait).
+    customer_id: props.prefill?.customer_id ? String(props.prefill.customer_id) : '',
     sales_id: '',
     return_date: new Date().toISOString().slice(0, 10),
-    invoice_id: '',
+    invoice_id: props.prefill?.invoice_id ? String(props.prefill.invoice_id) : '',
     brand_tag: '',
     reason_code: '',
     reason_notes: '',
@@ -172,7 +174,7 @@ function submit() {
                 <div class="space-y-2">
                     <div v-for="(item, idx) in form.items" :key="idx" class="grid grid-cols-12 gap-2 items-end p-2 rounded ring-1 ring-border/60">
                         <div class="col-span-3">
-                            <Label class="text-[10px]">Produk</Label>
+                            <Label class="text-[11px]">Produk</Label>
                             <Select v-model="item.product_id" @update:model-value="loadProductUnits($event, idx)">
                                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                                 <SelectContent>
@@ -181,7 +183,7 @@ function submit() {
                             </Select>
                         </div>
                         <div class="col-span-2">
-                            <Label class="text-[10px]">Unit</Label>
+                            <Label class="text-[11px]">Unit</Label>
                             <Select v-model="item.product_unit_id">
                                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                                 <SelectContent>
@@ -192,15 +194,15 @@ function submit() {
                             </Select>
                         </div>
                         <div class="col-span-1">
-                            <Label class="text-[10px]">Qty</Label>
+                            <Label class="text-[11px]">Qty</Label>
                             <Input v-model.number="item.qty_total" type="number" min="1" />
                         </div>
                         <div class="col-span-2">
-                            <Label class="text-[10px]">Unit Price</Label>
+                            <Label class="text-[11px]">Unit Price</Label>
                             <Input v-model.number="item.unit_price" type="number" min="0" step="0.01" />
                         </div>
                         <div class="col-span-3">
-                            <Label class="text-[10px]">Batch ID (opsional)</Label>
+                            <Label class="text-[11px]">Batch ID (opsional)</Label>
                             <Input v-model="item.batch_id" placeholder="kosongkan untuk pool" />
                         </div>
                         <div class="col-span-1 flex justify-end">

@@ -49,14 +49,14 @@ function submit() {
 
 <template>
     <Dialog :open="open" @update:open="(v) => $emit('update:open', v)">
-        <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden">
-            <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
-                <div class="flex items-start gap-3">
-                    <div class="size-10 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 ring-1 ring-emerald-200">
+        <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl gap-0">
+            <DialogHeader class="px-6 pt-6 pb-4">
+                <div class="flex items-start gap-3.5">
+                    <div class="size-11 rounded-full bg-brand-light/70 text-brand flex items-center justify-center shrink-0">
                         <MapPin class="size-5" />
                     </div>
-                    <div>
-                        <DialogTitle class="text-base font-bold tracking-tight">
+                    <div class="pt-0.5">
+                        <DialogTitle class="text-base font-semibold tracking-tight">
                             Set Koordinat Outlet
                         </DialogTitle>
                         <DialogDescription class="text-xs text-muted-foreground mt-0.5">
@@ -66,8 +66,8 @@ function submit() {
                 </div>
             </DialogHeader>
 
-            <form class="px-5 py-4 space-y-3.5" @submit.prevent="submit">
-                <div class="grid grid-cols-2 gap-3">
+            <form class="px-6 pb-2 space-y-3.5" @submit.prevent="submit">
+                <div class="grid grid-cols-2 gap-3.5">
                     <div class="space-y-1">
                         <Label class="text-xs font-medium">Latitude *</Label>
                         <Input
@@ -75,7 +75,7 @@ function submit() {
                             type="number"
                             step="0.0000001"
                             required
-                            class="h-9 font-mono"
+                            class="h-10 rounded-xl font-mono"
                             placeholder="4.4683"
                         />
                         <p v-if="form.errors.latitude" class="text-xs text-destructive">{{ form.errors.latitude }}</p>
@@ -87,25 +87,28 @@ function submit() {
                             type="number"
                             step="0.0000001"
                             required
-                            class="h-9 font-mono"
+                            class="h-10 rounded-xl font-mono"
                             placeholder="97.9740"
                         />
                         <p v-if="form.errors.longitude" class="text-xs text-destructive">{{ form.errors.longitude }}</p>
                     </div>
                 </div>
-                <div class="rounded-md bg-warning-soft ring-1 ring-warning/20 px-3 py-2 text-xs">
-                    💡 Tip: ambil koordinat dari Google Maps (klik kanan → "Salin koordinat").
+                <div class="rounded-2xl bg-muted/40 px-4 py-3 text-xs flex items-start gap-2.5">
+                    <MapPin class="size-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <p class="text-muted-foreground leading-relaxed">
+                        Tip: ambil koordinat dari Google Maps (klik kanan → "Salin koordinat").
+                    </p>
                 </div>
             </form>
 
-            <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">
-                <Button type="button" variant="outline" size="default" @click="$emit('update:open', false)">
+            <DialogFooter class="px-6 py-4 gap-2">
+                <Button type="button" variant="outline" size="default" class="rounded-full" @click="$emit('update:open', false)">
                     Batal
                 </Button>
                 <Button
                     type="button"
-                    variant="secondary"
                     size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
                     :disabled="form.processing"
                     @click="submit"
                 >

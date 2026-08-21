@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\SupplierProduct;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -29,13 +28,21 @@ return new class extends Migration
 
     private function backfill(string $table): void
     {
+        // Sumber map supplier per produk berasal dari pivot supplier_products
+        // yang di-drop pada migrasi berikutnya. Pada fresh migrate tabel item
+        // masih kosong sehingga backfill jadi no-op; kalau pivot sudah tidak
+        // ada (mis. re-run parsial), langsung berhenti.
+        if (! Schema::hasTable('supplier_products')) {
+            return;
+        }
+
         // Bangun map product_id => primary supplier_id sekali
-        $primaryMap = SupplierProduct::query()
+        $primaryMap = DB::table('supplier_products')
             ->where('is_primary', true)
             ->where('is_active', true)
             ->pluck('supplier_id', 'product_id');
 
-        $fallbackMap = SupplierProduct::query()
+        $fallbackMap = DB::table('supplier_products')
             ->where('is_active', true)
             ->orderBy('product_id')
             ->orderByDesc('id')

@@ -105,7 +105,7 @@ const hasItems = computed(() => form.items.some((r) => Number(r.qty_planned) > 0
     <AppLayout>
         <PageHeader title="Buat Surat Jalan" description="Pilih SO approved/partial, atur qty per item. Reservasi auto-distribusi per batch." :icon="Truck">
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('delivery-orders.index')">
                         <ArrowLeft class="size-4" /> Daftar DO
                     </Link>
@@ -115,32 +115,32 @@ const hasItems = computed(() => form.items.some((r) => Number(r.qty_planned) > 0
 
         <form @submit.prevent="submit">
             <!-- Header -->
-            <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5 mb-4">
-                <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Header</p>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div class="space-y-1 sm:col-span-2">
+            <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-5 mb-4">
+                <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3.5">Header</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-3.5">
+                    <div class="space-y-1.5 sm:col-span-2">
                         <Label class="text-xs font-medium">Sales Order *</Label>
                         <Select
                             :model-value="form.sales_order_id ? String(form.sales_order_id) : ''"
                             @update:model-value="onSoChange"
                         >
-                            <SelectTrigger class="h-9">
+                            <SelectTrigger class="h-10 w-full rounded-xl">
                                 <SelectValue placeholder="Pilih SO yang approved / partially_delivered" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem v-for="s in openSalesOrders" :key="s.id" :value="String(s.id)">
                                     {{ s.so_number }} · {{ s.customer?.name }}
-                                    <span class="text-[10px] text-muted-foreground ml-1">({{ s.status }})</span>
+                                    <span class="text-[11px] text-muted-foreground ml-1">({{ s.status }})</span>
                                 </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
-                    <div class="space-y-1">
+                    <div class="space-y-1.5">
                         <Label class="text-xs font-medium">Estimasi Tiba</Label>
-                        <Input v-model="form.expected_delivery_date" type="date" class="h-9" />
+                        <Input v-model="form.expected_delivery_date" type="date" class="h-10 w-full rounded-xl" />
                     </div>
-                    <div v-if="so" class="sm:col-span-3 text-xs text-muted-foreground">
-                        Tujuan: <strong>{{ so.customer?.name }}</strong>
+                    <div v-if="so" class="sm:col-span-3 rounded-xl bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground">
+                        Tujuan: <strong class="text-foreground">{{ so.customer?.name }}</strong>
                         <span v-if="so.customer?.address">— {{ so.customer.address }}</span>
                         <span v-if="so.customer?.city">, {{ so.customer.city }}</span>
                     </div>
@@ -148,15 +148,15 @@ const hasItems = computed(() => form.items.some((r) => Number(r.qty_planned) > 0
             </section>
 
             <!-- Items -->
-            <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden mb-4">
-                <header class="border-b border-border/70 px-5 py-3">
-                    <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Items ({{ form.items.length }})</p>
+            <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden mb-4">
+                <header class="border-b border-foreground/5 px-5 py-3">
+                    <p class="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Items ({{ form.items.length }})</p>
                 </header>
                 <p v-if="form.errors.items" class="text-xs text-destructive px-5 pt-2">{{ form.errors.items }}</p>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
-                            <tr class="text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border/70">
+                            <tr class="text-[11px] uppercase tracking-wider text-muted-foreground border-b border-foreground/5">
                                 <th class="text-left py-2 px-5">Produk</th>
                                 <th class="text-left py-2 px-3">Unit</th>
                                 <th class="text-right py-2 px-3">SO Order</th>
@@ -165,21 +165,21 @@ const hasItems = computed(() => form.items.some((r) => Number(r.qty_planned) > 0
                                 <th class="text-right py-2 px-5 w-[15%]">Qty Plan *</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-border/40">
+                        <tbody class="divide-y divide-foreground/5">
                             <tr v-if="form.items.length === 0">
                                 <td colspan="6" class="py-8 text-center text-muted-foreground text-xs">
                                     {{ form.sales_order_id ? 'Tidak ada item tersisa untuk dikirim.' : 'Pilih SO dulu.' }}
                                 </td>
                             </tr>
-                            <tr v-for="(row, idx) in form.items" :key="idx" class="hover:bg-muted/20">
+                            <tr v-for="(row, idx) in form.items" :key="idx" class="hover:bg-foreground/2.5 transition-colors">
                                 <td class="py-2 px-5">
                                     <p class="font-medium">
                                         {{ row.product_name }}
-                                        <span v-if="row.is_bonus" class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800">
+                                        <span v-if="row.is_bonus" class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">
                                             BONUS
                                         </span>
                                     </p>
-                                    <p class="text-[11px] text-muted-foreground font-mono">{{ row.product_sku }}</p>
+                                    <p class="text-[12px] text-muted-foreground font-mono">{{ row.product_sku }}</p>
                                 </td>
                                 <td class="py-2 px-3">{{ row.unit_name }}</td>
                                 <td class="py-2 px-3 text-right font-mono">{{ row.qty_ordered }}</td>
@@ -201,19 +201,19 @@ const hasItems = computed(() => form.items.some((r) => Number(r.qty_planned) > 0
             </section>
 
             <!-- Notes -->
-            <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5 mb-4">
+            <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-5 mb-4">
                 <Label class="text-xs font-medium">Catatan</Label>
-                <Textarea v-model="form.notes" rows="2" class="mt-1" />
+                <Textarea v-model="form.notes" rows="2" class="mt-1.5 w-full rounded-xl" />
             </section>
 
             <div class="flex justify-end gap-2">
-                <Button as-child type="button" variant="outline" size="default">
+                <Button as-child type="button" variant="outline" size="default" class="rounded-full">
                     <Link :href="route('delivery-orders.index')">Batal</Link>
                 </Button>
                 <Button
                     type="submit"
-                    variant="secondary"
                     size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
                     :disabled="form.processing || !form.sales_order_id || !hasItems"
                 >
                     <Loader2 v-if="form.processing" class="size-4 animate-spin" />

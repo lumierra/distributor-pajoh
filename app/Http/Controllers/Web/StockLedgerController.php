@@ -16,7 +16,12 @@ class StockLedgerController extends Controller
         abort_unless($request->user()?->canView('inventory.ledger'), 403);
 
         $query = StockLedger::query()
-            ->with(['product:id,sku,name', 'batch:id,batch_code', 'creator:id,name'])
+            ->with([
+                'product:id,sku,name',
+                'product.units:id,product_id,name,qty_to_base',
+                'batch:id,batch_code',
+                'creator:id,name',
+            ])
             ->orderByDesc('created_at')
             ->orderByDesc('id');
 

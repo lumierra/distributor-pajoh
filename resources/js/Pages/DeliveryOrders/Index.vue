@@ -18,7 +18,7 @@ import ActionGroup from '@/Components/Shared/ActionGroup.vue';
 import DoStatusBadge from '@/Components/DeliveryOrders/DoStatusBadge.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
-import StatCard from '@/Components/Shared/StatCard.vue';
+import StatTile from '@/Components/Shared/StatTile.vue';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import {
@@ -97,7 +97,12 @@ function formatDate(value) {
     <AppLayout>
         <PageHeader title="Surat Jalan" description="Delivery Order — pengiriman barang dari SO approved ke customer." :icon="Truck">
             <template #actions>
-                <Button v-if="canCreate" as-child size="default" variant="secondary">
+                <Button
+                    v-if="canCreate"
+                    as-child
+                    size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
+                >
                     <Link :href="route('delivery-orders.create')">
                         <Plus class="size-4" /> Buat DO
                     </Link>
@@ -106,35 +111,23 @@ function formatDate(value) {
         </PageHeader>
 
         <section v-if="stats" class="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-4">
-            <StatCard label="Total DO" :value="stats.total ?? 0" tone="brand">
-                <template #icon><Truck class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Draft" :value="stats.draft ?? 0" tone="brand">
-                <template #icon><FileText class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Picking" :value="stats.picking ?? 0" tone="brand">
-                <template #icon><ClipboardList class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Packed" :value="stats.packed ?? 0" tone="brand">
-                <template #icon><Package class="size-5" /></template>
-            </StatCard>
-            <StatCard label="In Transit" :value="stats.in_transit ?? 0" tone="brand-orange">
-                <template #icon><Truck class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Delivered" :value="stats.delivered ?? 0" tone="brand">
-                <template #icon><CheckCircle2 class="size-5" /></template>
-            </StatCard>
+            <StatTile label="Total DO" :value="stats.total ?? 0" :icon="Truck" />
+            <StatTile label="Draft" :value="stats.draft ?? 0" :icon="FileText" />
+            <StatTile label="Picking" :value="stats.picking ?? 0" :icon="ClipboardList" />
+            <StatTile label="Packed" :value="stats.packed ?? 0" :icon="Package" />
+            <StatTile label="Dalam Perjalanan" :value="stats.in_transit ?? 0" :icon="Truck" :tone="(stats.in_transit ?? 0) > 0 ? 'warn' : 'brand'" />
+            <StatTile label="Terkirim" :value="stats.delivered ?? 0" :icon="CheckCircle2" />
         </section>
 
-        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <div class="border-b border-border/70 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+        <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
                 <div class="relative flex-1">
-                    <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                    <Input v-model="filters.q" placeholder="Cari no DO, SO, atau customer…" class="pl-8 h-9 rounded-md" />
+                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                    <Input v-model="filters.q" placeholder="Cari no DO, SO, atau customer…" class="pl-8 h-9 rounded-full bg-muted/50 border-transparent focus-visible:bg-card" />
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <Select v-model="filters.status">
-                        <SelectTrigger class="w-[150px] h-9 rounded-md">
+                        <SelectTrigger class="w-[150px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -149,7 +142,7 @@ function formatDate(value) {
                         </SelectContent>
                     </Select>
                     <Select v-model="filters.driver_id">
-                        <SelectTrigger class="w-[160px] h-9 rounded-md">
+                        <SelectTrigger class="w-[160px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Driver" />
                         </SelectTrigger>
                         <SelectContent>
@@ -160,7 +153,7 @@ function formatDate(value) {
                         </SelectContent>
                     </Select>
                     <Select v-model="filters.vehicle_id">
-                        <SelectTrigger class="w-[160px] h-9 rounded-md">
+                        <SelectTrigger class="w-[160px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Vehicle" />
                         </SelectTrigger>
                         <SelectContent>
@@ -170,22 +163,22 @@ function formatDate(value) {
                             </SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button type="button" variant="outline" size="default" @click="reset">
+                    <Button type="button" variant="ghost" size="default" class="rounded-full" @click="reset">
                         <RotateCcw class="size-3.5" /> Reset
                     </Button>
                 </div>
             </div>
 
-            <Table>
+            <Table class="border-t border-foreground/5">
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">DO</TableHead>
                         <TableHead>SO</TableHead>
                         <TableHead>Customer</TableHead>
                         <TableHead>Tgl DO</TableHead>
                         <TableHead>Driver / Vehicle</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead class="text-right pr-4">Aksi</TableHead>
+                        <TableHead class="text-center pr-4">Aksi</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody class="text-sm">
@@ -197,10 +190,10 @@ function formatDate(value) {
                             </div>
                         </TableCell>
                     </TableRow>
-                    <TableRow v-for="do_ in deliveryOrders.data" :key="do_.id" class="hover:bg-muted/30 transition-colors">
+                    <TableRow v-for="do_ in deliveryOrders.data" :key="do_.id" class="hover:bg-foreground/2.5 transition-colors border-foreground/5">
                         <TableCell class="pl-4 py-2.5">
                             <div class="flex items-center gap-2.5">
-                                <div class="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <div class="size-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                                     <Truck class="size-4" />
                                 </div>
                                 <Link :href="route('delivery-orders.show', do_.id)" class="font-medium text-foreground font-mono hover:text-primary transition-colors">
@@ -215,7 +208,7 @@ function formatDate(value) {
                         </TableCell>
                         <TableCell>
                             <p class="font-medium">{{ do_.customer?.name ?? '—' }}</p>
-                            <p class="text-[11px] text-muted-foreground font-mono">{{ do_.customer?.code }}</p>
+                            <p class="text-[12px] text-muted-foreground font-mono">{{ do_.customer?.code }}</p>
                         </TableCell>
                         <TableCell class="text-xs">{{ formatDate(do_.do_date) }}</TableCell>
                         <TableCell class="text-xs">
@@ -226,25 +219,27 @@ function formatDate(value) {
                         <TableCell>
                             <DoStatusBadge :status="do_.status" />
                         </TableCell>
-                        <TableCell class="py-3 px-4 text-right whitespace-nowrap">
-                            <ActionGroup>
-                                <ActionButton :icon="Eye" label="Detail" as-child tone="brand">
-                                    <Link :href="route('delivery-orders.show', do_.id)">
-                                        <Eye class="w-4 h-4" />
-                                    </Link>
-                                </ActionButton>
-                                <ActionButton v-if="do_.pdf_path" :icon="FileText" label="Surat Jalan" as-child tone="blue">
-                                    <a :href="route('delivery-orders.pdf', do_.id)" target="_blank" rel="noopener">
-                                        <FileText class="w-4 h-4" />
-                                    </a>
-                                </ActionButton>
-                            </ActionGroup>
+                        <TableCell class="py-3 pr-4 text-center">
+                            <div class="flex justify-center">
+                                <ActionGroup class="rounded-full">
+                                    <ActionButton :icon="Eye" label="Detail" as-child tone="brand">
+                                        <Link :href="route('delivery-orders.show', do_.id)">
+                                            <Eye class="w-4 h-4" />
+                                        </Link>
+                                    </ActionButton>
+                                    <ActionButton v-if="do_.pdf_path" :icon="FileText" label="Surat Jalan" as-child tone="blue">
+                                        <a :href="route('delivery-orders.pdf', do_.id)" target="_blank" rel="noopener">
+                                            <FileText class="w-4 h-4" />
+                                        </a>
+                                    </ActionButton>
+                                </ActionGroup>
+                            </div>
                         </TableCell>
                     </TableRow>
                 </TableBody>
             </Table>
 
-            <div v-if="deliveryOrders.data.length > 0" class="border-t border-border/70 px-4 py-2.5">
+            <div v-if="deliveryOrders.data.length > 0" class="border-t border-foreground/5 px-4 py-3">
                 <Pagination :meta="deliveryOrders" />
             </div>
         </section>

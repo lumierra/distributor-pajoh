@@ -82,16 +82,16 @@ function submit() {
 
 <template>
     <Dialog :open="open" @update:open="(v) => $emit('update:open', v)">
-        <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden">
-            <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
-                <div class="flex items-start gap-3">
+        <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl gap-0">
+            <DialogHeader class="px-6 pt-6 pb-4">
+                <div class="flex items-start gap-3.5">
                     <div
-                        class="size-10 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 ring-1 ring-emerald-200"
+                        class="size-11 rounded-full bg-brand-light/70 text-brand flex items-center justify-center shrink-0"
                     >
                         <component :is="isEdit ? Shield : ShieldPlus" class="size-5" />
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <DialogTitle class="text-base font-bold tracking-tight">
+                    <div class="flex-1 min-w-0 pt-0.5">
+                        <DialogTitle class="text-base font-semibold tracking-tight">
                             {{ isEdit ? `Edit Role — ${role.name}` : 'Tambah Role' }}
                         </DialogTitle>
                         <DialogDescription class="text-xs text-muted-foreground mt-0.5">
@@ -105,15 +105,15 @@ function submit() {
                 </div>
             </DialogHeader>
 
-            <form class="px-5 py-4 space-y-3.5" @submit.prevent="submit">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <form class="px-6 pb-2 space-y-4" @submit.prevent="submit">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div class="space-y-1">
                         <Label class="text-xs font-medium">Code *</Label>
                         <Input
                             v-model="form.code"
                             required
                             :disabled="isEdit && role.is_system"
-                            class="h-9 font-mono"
+                            class="h-10 rounded-xl font-mono"
                         />
                         <p v-if="form.errors.code" class="text-xs text-destructive">
                             {{ form.errors.code }}
@@ -121,7 +121,7 @@ function submit() {
                     </div>
                     <div class="space-y-1">
                         <Label class="text-xs font-medium">Nama *</Label>
-                        <Input v-model="form.name" required class="h-9" />
+                        <Input v-model="form.name" required class="h-10 rounded-xl" />
                         <p v-if="form.errors.name" class="text-xs text-destructive">
                             {{ form.errors.name }}
                         </p>
@@ -129,39 +129,37 @@ function submit() {
                 </div>
                 <div class="space-y-1">
                     <Label class="text-xs font-medium">Deskripsi</Label>
-                    <Textarea v-model="form.description" rows="2" />
+                    <Textarea v-model="form.description" rows="2" class="rounded-xl" />
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3">
-                    <div
-                        class="flex items-center justify-between rounded-md bg-muted/40 ring-1 ring-foreground/5 px-3.5 py-2.5"
-                    >
-                        <Label class="text-xs font-medium block cursor-pointer">Aktif</Label>
+                <div class="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3.5">
+                    <div class="flex items-center justify-between rounded-2xl bg-muted/40 px-4 py-3">
+                        <Label class="text-xs font-medium block cursor-pointer mb-0">Aktif</Label>
                         <Switch v-model="form.is_active" />
                     </div>
                     <div class="space-y-1">
                         <Label class="text-xs font-medium">Sort order</Label>
-                        <Input v-model="form.sort_order" type="number" min="0" class="h-9" />
+                        <Input v-model="form.sort_order" type="number" min="0" class="h-10 rounded-xl" />
                     </div>
                 </div>
                 <div
                     v-if="isEdit && role.is_system"
-                    class="rounded-md bg-warning-soft ring-1 ring-warning/20 px-3 py-2 text-xs flex items-start gap-2"
+                    class="rounded-2xl bg-muted/40 px-4 py-3 text-xs flex items-start gap-2.5"
                 >
-                    <span class="text-base">🔒</span>
-                    <p class="text-foreground/80 leading-relaxed">
+                    <Shield class="size-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <p class="text-muted-foreground leading-relaxed">
                         System role: code &amp; permission tidak bisa diubah, hanya nama &amp; deskripsi.
                     </p>
                 </div>
             </form>
 
-            <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">
-                <Button type="button" variant="outline" size="default" @click="close">
+            <DialogFooter class="px-6 py-4 gap-2">
+                <Button type="button" variant="outline" size="default" class="rounded-full" @click="close">
                     Batal
                 </Button>
                 <Button
                     type="button"
-                    variant="secondary"
                     size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
                     :disabled="form.processing"
                     @click="submit"
                 >

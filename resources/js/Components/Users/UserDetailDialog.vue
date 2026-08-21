@@ -121,9 +121,9 @@ function destroyUser() {
 
 <template>
     <Dialog :open="open" @update:open="(v) => $emit('update:open', v)">
-        <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden">
-            <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
-                <DialogTitle class="text-base font-bold">Detail User</DialogTitle>
+        <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl gap-0">
+            <DialogHeader class="px-6 pt-6 pb-4">
+                <DialogTitle class="text-base font-semibold">Detail User</DialogTitle>
                 <DialogDescription class="text-xs text-muted-foreground">
                     Info & aksi cepat untuk user ini.
                 </DialogDescription>
@@ -131,31 +131,33 @@ function destroyUser() {
 
             <div v-if="user" class="max-h-[75vh] overflow-y-auto">
                 <!-- Profile card -->
-                <section class="px-5 py-4 space-y-3 border-b border-border/70">
+                <section class="mx-6 mb-4 space-y-3 rounded-2xl bg-muted/40 px-4 py-4">
                     <div class="flex items-center gap-3">
-                        <Avatar class="size-12 ring-1 ring-foreground/10">
-                            <AvatarFallback class="bg-primary/10 text-primary text-sm font-semibold">
+                        <Avatar class="size-12">
+                            <AvatarFallback class="bg-primary text-primary-foreground text-sm font-semibold">
                                 {{ userInitials(user.name) }}
                             </AvatarFallback>
                         </Avatar>
                         <div class="min-w-0 flex-1">
                             <p class="font-semibold text-foreground truncate">{{ user.name }}</p>
                             <p class="text-xs text-muted-foreground font-mono">@{{ user.username }}</p>
-                            <p v-if="user.email" class="text-[11px] text-muted-foreground truncate mt-0.5">
+                            <p v-if="user.email" class="text-[12px] text-muted-foreground truncate mt-0.5">
                                 {{ user.email }}
                             </p>
                         </div>
                     </div>
 
                     <div class="flex flex-wrap gap-1.5">
-                        <Badge variant="secondary" class="capitalize">{{ user.role?.name }}</Badge>
-                        <Badge :variant="user.is_active ? 'default' : 'secondary'">
+                        <Badge variant="secondary" class="capitalize rounded-full">{{ user.role?.name }}</Badge>
+                        <Badge :variant="user.is_active ? 'default' : 'secondary'" class="rounded-full">
                             {{ user.is_active ? 'Aktif' : 'Nonaktif' }}
                         </Badge>
-                        <Badge v-if="user.force_password_change" variant="outline">Wajib ganti pwd</Badge>
+                        <Badge v-if="user.force_password_change" variant="outline" class="rounded-full">
+                            Wajib ganti pwd
+                        </Badge>
                     </div>
 
-                    <dl class="grid grid-cols-1 gap-1.5 text-xs pt-2 border-t border-border/70">
+                    <dl class="grid grid-cols-1 gap-1.5 text-xs pt-3 border-t border-foreground/5">
                         <div class="flex justify-between gap-2">
                             <dt class="text-muted-foreground">Login terakhir</dt>
                             <dd class="text-foreground text-right">{{ formatDate(user.last_login_at) }}</dd>
@@ -177,23 +179,23 @@ function destroyUser() {
 
                 <!-- Quick Actions -->
                 <section>
-                    <header class="px-5 py-2.5 border-b border-border/70 bg-muted/30">
-                        <h3 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <header class="px-6 pb-2">
+                        <h3 class="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                             Quick Actions
                         </h3>
                     </header>
-                    <ul class="divide-y divide-border/70">
+                    <ul class="mx-6 mb-6 divide-y divide-foreground/5 rounded-2xl bg-muted/40 overflow-hidden">
                         <!-- Edit data -->
                         <li v-if="canUpdate">
                             <button
                                 type="button"
-                                class="w-full flex items-center gap-3 px-5 py-3 hover:bg-muted/50 transition-colors text-left"
+                                class="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-foreground/5 transition-colors text-left"
                                 @click="$emit('edit-requested', user); close()"
                             >
                                 <Pencil class="size-4 text-muted-foreground" />
                                 <div class="flex-1">
                                     <p class="text-sm font-medium">Edit data dasar</p>
-                                    <p class="text-[11px] text-muted-foreground">Nama, username, email, role, no HP.</p>
+                                    <p class="text-[12px] text-muted-foreground">Nama, username, email, role, no HP.</p>
                                 </div>
                             </button>
                         </li>
@@ -202,12 +204,12 @@ function destroyUser() {
                         <li v-if="canManageOverrides">
                             <Link
                                 :href="route('users.menu-overrides', user.id)"
-                                class="flex items-center gap-3 px-5 py-3 hover:bg-muted/50 transition-colors"
+                                class="flex items-center gap-3 px-4 py-3.5 hover:bg-foreground/5 transition-colors"
                             >
                                 <ShieldCheck class="size-4 text-muted-foreground" />
                                 <div class="flex-1">
                                     <p class="text-sm font-medium">Menu Override</p>
-                                    <p class="text-[11px] text-muted-foreground">
+                                    <p class="text-[12px] text-muted-foreground">
                                         Atur izin per menu di luar role default.
                                     </p>
                                 </div>
@@ -220,18 +222,18 @@ function destroyUser() {
                                 <DialogTrigger as-child>
                                     <button
                                         type="button"
-                                        class="w-full flex items-center gap-3 px-5 py-3 hover:bg-muted/50 transition-colors text-left"
+                                        class="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-foreground/5 transition-colors text-left"
                                     >
                                         <KeyRound class="size-4 text-muted-foreground" />
                                         <div class="flex-1">
                                             <p class="text-sm font-medium">Reset Password</p>
-                                            <p class="text-[11px] text-muted-foreground">
+                                            <p class="text-[12px] text-muted-foreground">
                                                 Set password sementara, user dipaksa ganti.
                                             </p>
                                         </div>
                                     </button>
                                 </DialogTrigger>
-                                <DialogContent class="sm:max-w-[420px]">
+                                <DialogContent class="sm:max-w-[420px] rounded-3xl">
                                     <DialogHeader>
                                         <DialogTitle>Reset password — {{ user.name }}</DialogTitle>
                                         <DialogDescription>
@@ -248,6 +250,7 @@ function destroyUser() {
                                                 required
                                                 minlength="8"
                                                 placeholder="min. 8 karakter"
+                                                class="h-10 rounded-xl"
                                             />
                                             <p v-if="resetForm.errors.new_password" class="text-xs text-destructive">
                                                 {{ resetForm.errors.new_password }}
@@ -255,10 +258,14 @@ function destroyUser() {
                                         </div>
                                         <div class="space-y-1.5">
                                             <Label>Alasan (opsional)</Label>
-                                            <Textarea v-model="resetForm.reason" rows="2" />
+                                            <Textarea v-model="resetForm.reason" rows="2" class="rounded-xl" />
                                         </div>
                                         <DialogFooter>
-                                            <Button type="submit" :disabled="resetForm.processing">
+                                            <Button
+                                                type="submit"
+                                                class="rounded-full"
+                                                :disabled="resetForm.processing"
+                                            >
                                                 <Loader2 v-if="resetForm.processing" class="size-4 animate-spin" />
                                                 Reset Password
                                             </Button>
@@ -274,12 +281,12 @@ function destroyUser() {
                                 <AlertDialogTrigger as-child>
                                     <button
                                         type="button"
-                                        class="w-full flex items-center gap-3 px-5 py-3 hover:bg-muted/50 transition-colors text-left"
+                                        class="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-foreground/5 transition-colors text-left"
                                     >
                                         <LogOut class="size-4 text-muted-foreground" />
                                         <div class="flex-1">
                                             <p class="text-sm font-medium">Force Logout</p>
-                                            <p class="text-[11px] text-muted-foreground">
+                                            <p class="text-[12px] text-muted-foreground">
                                                 Cabut semua sesi web &amp; token mobile.
                                             </p>
                                         </div>
@@ -307,14 +314,14 @@ function destroyUser() {
                                 <AlertDialogTrigger as-child>
                                     <button
                                         type="button"
-                                        class="w-full flex items-center gap-3 px-5 py-3 hover:bg-muted/50 transition-colors text-left"
+                                        class="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-foreground/5 transition-colors text-left"
                                     >
                                         <UserCheck class="size-4 text-muted-foreground" />
                                         <div class="flex-1">
                                             <p class="text-sm font-medium">
                                                 {{ user.is_active ? 'Nonaktifkan' : 'Aktifkan' }} user
                                             </p>
-                                            <p class="text-[11px] text-muted-foreground">
+                                            <p class="text-[12px] text-muted-foreground">
                                                 {{
                                                     user.is_active
                                                         ? 'User tidak bisa login lagi.'
@@ -352,12 +359,12 @@ function destroyUser() {
                                 <AlertDialogTrigger as-child>
                                     <button
                                         type="button"
-                                        class="w-full flex items-center gap-3 px-5 py-3 hover:bg-destructive/5 transition-colors text-left text-destructive"
+                                        class="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-destructive/5 transition-colors text-left text-destructive"
                                     >
                                         <Trash2 class="size-4" />
                                         <div class="flex-1">
                                             <p class="text-sm font-medium">Hapus User</p>
-                                            <p class="text-[11px] opacity-70">
+                                            <p class="text-[12px] opacity-70">
                                                 Soft-delete; bisa di-restore lewat Trash.
                                             </p>
                                         </div>
@@ -390,8 +397,10 @@ function destroyUser() {
                 </section>
             </div>
 
-            <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">
-                <Button type="button" variant="outline" size="default" @click="close">Tutup</Button>
+            <DialogFooter class="px-6 py-4">
+                <Button type="button" variant="outline" size="default" class="rounded-full" @click="close">
+                    Tutup
+                </Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>

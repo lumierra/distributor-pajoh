@@ -1,0 +1,5 @@
+{
+  "port": 9110,
+  "printerShare": "EPSON310",
+  "allowOrigin": "*"
+}

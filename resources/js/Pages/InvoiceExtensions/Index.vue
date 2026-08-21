@@ -146,7 +146,7 @@ function statusClass(s) {
 
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">Invoice</TableHead>
                         <TableHead>Customer</TableHead>
                         <TableHead>Old Due</TableHead>
@@ -174,14 +174,14 @@ function statusClass(s) {
                         </TableCell>
                         <TableCell>
                             <p class="font-medium">{{ log.invoice?.customer?.name ?? '—' }}</p>
-                            <p class="text-[11px] text-muted-foreground font-mono">{{ log.invoice?.customer?.code }}</p>
+                            <p class="text-[12px] text-muted-foreground font-mono">{{ log.invoice?.customer?.code }}</p>
                         </TableCell>
                         <TableCell class="text-xs">{{ formatDate(log.old_due_date) }}</TableCell>
                         <TableCell class="text-xs font-semibold">{{ formatDate(log.new_due_date_requested) }}</TableCell>
                         <TableCell class="text-xs max-w-xs truncate" :title="log.request_reason">{{ log.request_reason }}</TableCell>
                         <TableCell class="text-xs">{{ log.requester?.name ?? '—' }}</TableCell>
                         <TableCell>
-                            <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ring-1 capitalize', statusClass(log.status)]">
+                            <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[12px] font-medium ring-1 capitalize', statusClass(log.status)]">
                                 {{ log.status }}
                             </span>
                         </TableCell>

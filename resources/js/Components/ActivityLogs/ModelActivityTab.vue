@@ -40,7 +40,7 @@ function fmt(v) {
             <li v-for="log in logs" :key="log.id" class="flex items-start gap-2 py-1 border-b last:border-0">
                 <div class="flex-1">
                     <p class="text-xs font-medium">{{ log.action }}</p>
-                    <p class="text-[11px] text-muted-foreground">
+                    <p class="text-[12px] text-muted-foreground">
                         oleh {{ log.user?.name ?? log.user_name_snapshot ?? '—' }} • {{ fmt(log.created_at) }}
                     </p>
                 </div>

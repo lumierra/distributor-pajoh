@@ -3,10 +3,7 @@
 namespace App\Services\Product;
 
 use App\Models\Product;
-use App\Models\ProductCategory;
-use App\Models\SupplierProduct;
 use App\Models\Unit;
-use App\Services\Numbering\NumberingService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -14,12 +11,14 @@ use InvalidArgumentException;
 /**
  * Orchestrator untuk Product CRUD.
  *
+ * Model: 1 produk = 1 supplier. SKU diinput manual (unik). Produk punya
+ * satuan dinamis (product_units, konversi ke base) + ≥1 paket harga bernama
+ * (product_price_packages), tiap paket berisi baris (satuan → modal + jual).
+ *
  * Flow create:
- *  - SKU auto-generate via NumberingService dgn context kategori
- *  - Insert product → insert N satuan (dinamis, level concept dihapus)
- *  - Tepat 1 satuan harus qty_to_base=1 (jadi base_unit_id)
- *  - Tag supplier(s) ke pivot supplier_products (wajib minimal 1)
- *  - Harga ditentukan setelah create lewat tab Supplier & Harga
+ *  - Insert product (supplier_id + sku manual) → insert N satuan
+ *  - Tepat 1 satuan qty_to_base=1 (jadi base_unit_id)
+ *  - Insert ≥1 paket harga + baris-barisnya (product_unit_id → cost/sell)
  */
 class ProductService
 {
@@ -28,33 +27,28 @@ class ProductService
     public const CACHE_TTL_SECONDS = 600;
 
     public function __construct(
-        private readonly NumberingService $numbering,
         private readonly UomConverter $uom,
     ) {}
 
     /**
-     * @param  array<string, mixed>  $productData
+     * @param  array<string, mixed>  $productData  wajib berisi supplier_id, sku, name.
      * @param  array<int, array{unit_id:int, qty_to_base:int, barcode?:?string}>  $units
      *                                                                                    Minimal 1 satuan, salah satunya wajib qty_to_base=1 (base).
-     * @param  array<int, int>  $supplierIds  minimal 1 supplier wajib (tagging).
+     * @param  array<int, array{name:string, items:array<int, array{unit_index:int, cost_price:float, sell_price:float}>}>  $packages
+     *                                                                                                                                 Minimal 1 paket harga. items[].unit_index menunjuk index di $units.
      */
-    public function create(array $productData, array $units, array $supplierIds): Product
+    public function create(array $productData, array $units, array $packages): Product
     {
         $this->uom->validateHierarchy($units);
+        $this->validatePackages($packages, count($units));
 
-        if (empty($supplierIds)) {
-            throw new InvalidArgumentException('Minimal 1 supplier wajib di-tag ke produk.');
-        }
-
-        return DB::transaction(function () use ($productData, $units, $supplierIds): Product {
-            $categoryCode = $this->resolveCategoryCode($productData['category_id'] ?? null);
-            $productData['sku'] ??= $this->numbering->next('product_sku', ['cat' => $categoryCode]);
+        return DB::transaction(function () use ($productData, $units, $packages): Product {
             $productData['is_active'] = $productData['is_active'] ?? true;
-
-            unset($productData['brand']); // brand di-deprecate, ganti tagging supplier
 
             $product = Product::create($productData);
 
+            // Insert satuan; simpan mapping index → product_unit id untuk paket harga.
+            $unitIdByIndex = [];
             $baseUnitId = null;
             foreach ($units as $i => $u) {
                 $unitMasterName = Unit::query()->where('id', $u['unit_id'])->value('name') ?? 'UNIT';
@@ -65,6 +59,7 @@ class ProductService
                     'barcode' => $u['barcode'] ?? null,
                     'sort_order' => $i,
                 ]);
+                $unitIdByIndex[$i] = $created->id;
 
                 if ((int) $u['qty_to_base'] === 1) {
                     $baseUnitId = $created->id;
@@ -74,35 +69,38 @@ class ProductService
             $product->base_unit_id = $baseUnitId;
             $product->save();
 
-            // Tag suppliers — first one jadi primary
-            $supplierIds = array_values(array_unique(array_map('intval', $supplierIds)));
-            foreach ($supplierIds as $idx => $sid) {
-                SupplierProduct::create([
-                    'supplier_id' => $sid,
-                    'product_id' => $product->id,
-                    'is_primary' => $idx === 0,
-                    'is_active' => true,
-                ]);
-            }
+            $this->syncPackages($product, $packages, $unitIdByIndex);
 
             $this->invalidateCache();
 
-            return $product->fresh(['category', 'baseUnit', 'units', 'supplierProducts.supplier']);
+            return $product->fresh(['supplier', 'category', 'baseUnit', 'units', 'pricePackages.items']);
         });
     }
 
     /**
+     * Update produk. Kalau $units/$packages disertakan, satuan & paket harga
+     * di-replace penuh (hapus lama, insert baru) — dipakai form edit yang
+     * mengirim ulang seluruh struktur. Kalau null, hanya kolom scalar produk
+     * yang diupdate (mis. toggle sederhana).
+     *
      * @param  array<string, mixed>  $data
+     * @param  array<int, array{unit_id:int, qty_to_base:int, barcode?:?string}>|null  $units
+     * @param  array<int, array{name:string, items:array<int, array{unit_index:int, cost_price:float, sell_price:float}>}>|null  $packages
      */
-    public function update(Product $product, array $data): Product
+    public function update(Product $product, array $data, ?array $units = null, ?array $packages = null): Product
     {
-        return DB::transaction(function () use ($product, $data): Product {
-            unset($data['sku']); // SKU read-only setelah create
-            unset($data['brand']); // brand deprecated
+        return DB::transaction(function () use ($product, $data, $units, $packages): Product {
             $product->update($data);
+
+            if ($units !== null && $packages !== null) {
+                $this->uom->validateHierarchy($units);
+                $this->validatePackages($packages, count($units));
+                $this->replaceUnitsAndPackages($product, $units, $packages);
+            }
+
             $this->invalidateCache();
 
-            return $product;
+            return $product->fresh(['supplier', 'category', 'baseUnit', 'units', 'pricePackages.items']);
         });
     }
 
@@ -119,13 +117,98 @@ class ProductService
         Cache::forget(self::CACHE_KEY_ACTIVE);
     }
 
-    private function resolveCategoryCode(?int $categoryId): string
+    /**
+     * Hapus semua satuan + paket lama lalu buat ulang. Aman untuk edit
+     * karena item transaksi (so_items dst) menyimpan snapshot sendiri.
+     *
+     * @param  array<int, array{unit_id:int, qty_to_base:int, barcode?:?string}>  $units
+     * @param  array<int, array{name:string, items:array<int, array{unit_index:int, cost_price:float, sell_price:float}>}>  $packages
+     */
+    private function replaceUnitsAndPackages(Product $product, array $units, array $packages): void
     {
-        if ($categoryId === null) {
-            return 'LNY';
-        }
-        $code = ProductCategory::query()->where('id', $categoryId)->value('code');
+        $product->pricePackages()->each(function ($pkg): void {
+            $pkg->items()->delete();
+            $pkg->delete();
+        });
+        $product->units()->delete();
 
-        return $code ?: 'LNY';
+        $unitIdByIndex = [];
+        $baseUnitId = null;
+        foreach ($units as $i => $u) {
+            $unitMasterName = Unit::query()->where('id', $u['unit_id'])->value('name') ?? 'UNIT';
+            $created = $product->units()->create([
+                'unit_id' => $u['unit_id'],
+                'name' => $unitMasterName,
+                'qty_to_base' => (int) $u['qty_to_base'],
+                'barcode' => $u['barcode'] ?? null,
+                'sort_order' => $i,
+            ]);
+            $unitIdByIndex[$i] = $created->id;
+            if ((int) $u['qty_to_base'] === 1) {
+                $baseUnitId = $created->id;
+            }
+        }
+
+        $product->base_unit_id = $baseUnitId;
+        $product->save();
+
+        $this->syncPackages($product, $packages, $unitIdByIndex);
+    }
+
+    /**
+     * @param  array<int, array{name:string, items:array<int, array{unit_index:int, cost_price:float, sell_price:float}>}>  $packages
+     * @param  array<int, int>  $unitIdByIndex  index satuan (di form) → product_unit id
+     */
+    private function syncPackages(Product $product, array $packages, array $unitIdByIndex): void
+    {
+        foreach ($packages as $pi => $pkg) {
+            $package = $product->pricePackages()->create([
+                'name' => $pkg['name'],
+                'sort_order' => $pi,
+                'is_active' => true,
+            ]);
+
+            foreach ($pkg['items'] as $item) {
+                $unitId = $unitIdByIndex[$item['unit_index']] ?? null;
+                if ($unitId === null) {
+                    throw new InvalidArgumentException('Baris paket harga menunjuk satuan yang tidak ada.');
+                }
+                $package->items()->create([
+                    'product_unit_id' => $unitId,
+                    'cost_price' => (float) $item['cost_price'],
+                    'sell_price' => (float) $item['sell_price'],
+                ]);
+            }
+        }
+    }
+
+    /**
+     * @param  array<int, mixed>  $packages
+     */
+    private function validatePackages(array $packages, int $unitCount): void
+    {
+        if (empty($packages)) {
+            throw new InvalidArgumentException('Minimal 1 paket harga wajib.');
+        }
+
+        foreach ($packages as $pkg) {
+            if (empty($pkg['name'] ?? null)) {
+                throw new InvalidArgumentException('Nama paket harga wajib diisi.');
+            }
+            if (empty($pkg['items'] ?? [])) {
+                throw new InvalidArgumentException('Tiap paket harga wajib punya minimal 1 baris satuan.');
+            }
+            $seen = [];
+            foreach ($pkg['items'] as $item) {
+                $idx = $item['unit_index'] ?? null;
+                if ($idx === null || $idx < 0 || $idx >= $unitCount) {
+                    throw new InvalidArgumentException('Baris paket harga menunjuk satuan yang tidak valid.');
+                }
+                if (in_array($idx, $seen, true)) {
+                    throw new InvalidArgumentException('Satuan duplikat dalam satu paket harga.');
+                }
+                $seen[] = $idx;
+            }
+        }
     }
 }

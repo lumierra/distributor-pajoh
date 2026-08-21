@@ -9,13 +9,14 @@ use App\Http\Requests\SalesOrder\RejectSoRequest;
 use App\Http\Requests\SalesOrder\StoreSoRequest;
 use App\Http\Requests\SalesOrder\UpdateSoRequest;
 use App\Models\Customer;
+use App\Models\Product;
 use App\Models\SalesOrder;
-use App\Models\SupplierProductUnit;
 use App\Models\User;
 use App\Services\Sales\SalesOrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
@@ -95,7 +96,7 @@ class SalesOrderController extends Controller
         ]);
     }
 
-    public function create(): InertiaResponse
+    public function create(Request $request): InertiaResponse
     {
         $this->authorize('create', SalesOrder::class);
 
@@ -110,6 +111,8 @@ class SalesOrderController extends Controller
                 ->where('is_active', true)
                 ->orderBy('name')
                 ->get(['id', 'name']),
+            // Prefill customer dari "Sesuaikan → Tambah barang" di halaman SO.
+            'prefillCustomerId' => $request->filled('customer_id') ? (int) $request->input('customer_id') : null,
         ]);
     }
 
@@ -132,7 +135,6 @@ class SalesOrderController extends Controller
 
         $salesOrder->load([
             'customer:id,code,name,phone,email,address,credit_limit,payment_term_days',
-            'customer.priceTier:id,code,name',
             'sales:id,name',
             'items',
             'approver:id,name',
@@ -140,7 +142,16 @@ class SalesOrderController extends Controller
             'canceller:id,name',
             'creditOverrideApprover:id,name',
             'reservations.batch:id,batch_code,expired_date',
+            'deliveryOrders:id,sales_order_id,do_number,status,do_date',
+            'invoices:id,sales_order_id,invoice_number,status,total,outstanding,invoice_date',
         ]);
+
+        // "Sesuaikan": tersedia begitu barang mulai/telah keluar atau faktur
+        // terbit — koreksi lewat retur/credit note atau SO baru (bukan edit).
+        $canAdjust = in_array($salesOrder->status, [
+            SalesOrder::STATUS_PARTIALLY_DELIVERED,
+            SalesOrder::STATUS_DELIVERED,
+        ], true) || $salesOrder->invoices->isNotEmpty();
 
         return Inertia::render('SalesOrders/Show', [
             'salesOrder' => $salesOrder,
@@ -152,6 +163,7 @@ class SalesOrderController extends Controller
                 && (request()->user()?->isSuperadmin() ?? false),
             'canReject' => $salesOrder->canBeRejected() && (request()->user()?->can('reject', $salesOrder) ?? false),
             'canCancel' => $salesOrder->canBeCancelled() && (request()->user()?->can('cancel', $salesOrder) ?? false),
+            'canAdjust' => $canAdjust,
         ]);
     }
 
@@ -178,18 +190,33 @@ class SalesOrderController extends Controller
         $items = $data['items'];
         unset($data['items']);
 
-        $this->service->updateDraft($salesOrder, $data, $items, $request->user());
+        $wasApproved = $salesOrder->status === SalesOrder::STATUS_APPROVED;
+
+        try {
+            $this->service->updateDraft($salesOrder, $data, $items, $request->user());
+        } catch (ValidationException $e) {
+            // Tampilkan sbg toast error (mis. stok tak cukup saat re-sync), bukan
+            // gagal diam-diam.
+            return back()->with('flash.error', $this->firstError($e));
+        }
 
         return redirect()
             ->route('sales-orders.show', $salesOrder)
-            ->with('flash.success', 'SO draft diperbarui.');
+            ->with('flash.success', $wasApproved
+                ? 'SO diperbarui — stok disesuaikan ulang.'
+                : 'SO diperbarui.');
     }
 
     public function submit(Request $request, SalesOrder $salesOrder): RedirectResponse
     {
         $this->authorize('submit', $salesOrder);
 
-        $this->service->submit($salesOrder, $request->user());
+        try {
+            $this->service->submit($salesOrder, $request->user());
+        } catch (ValidationException $e) {
+            return back()->with('flash.error', $this->firstError($e));
+        }
+
         $salesOrder->refresh();
 
         $msg = $salesOrder->status === SalesOrder::STATUS_PENDING_CREDIT_REVIEW
@@ -203,7 +230,11 @@ class SalesOrderController extends Controller
     {
         $this->authorize('approve', $salesOrder);
 
-        $this->service->approve($salesOrder, $request->user());
+        try {
+            $this->service->approve($salesOrder, $request->user());
+        } catch (ValidationException $e) {
+            return back()->with('flash.error', $this->firstError($e));
+        }
 
         return back()->with('flash.success', "SO {$salesOrder->so_number} disetujui & stok ter-reserve.");
     }
@@ -214,9 +245,29 @@ class SalesOrderController extends Controller
         // (lewat before()).
         $this->authorize('approveOverride', $salesOrder);
 
-        $this->service->approveOverride($salesOrder, $request->validated('reason'), $request->user());
+        try {
+            $this->service->approveOverride($salesOrder, $request->validated('reason'), $request->user());
+        } catch (ValidationException $e) {
+            return back()->with('flash.error', $this->firstError($e));
+        }
 
         return back()->with('flash.success', "SO {$salesOrder->so_number} di-approve dengan credit override.");
+    }
+
+    /**
+     * Ambil pesan error pertama dari ValidationException — untuk ditampilkan
+     * sebagai flash toast (cek stok/credit di service dilempar sbg validation,
+     * tapi halaman detail SO tak punya field form untuk menampungnya).
+     */
+    private function firstError(ValidationException $e): string
+    {
+        foreach ($e->errors() as $messages) {
+            if (! empty($messages)) {
+                return (string) $messages[0];
+            }
+        }
+
+        return 'Aksi gagal — periksa kembali data SO.';
     }
 
     public function reject(RejectSoRequest $request, SalesOrder $salesOrder): RedirectResponse
@@ -234,47 +285,64 @@ class SalesOrderController extends Controller
     }
 
     /**
-     * AJAX: katalog produk untuk SO. Tiap produk punya opsi
-     * (supplier × satuan) dengan cost & sell price dari supplier_product_units.
-     * Tidak customer-specific lagi sejak penghapusan tier.
+     * AJAX: katalog produk untuk SO. Tiap produk punya opsi per satuan
+     * (harga dari paket harga default produk). 1 produk = 1 supplier, jadi
+     * supplier ikut otomatis dari produk (bukan dipilih sales).
+     *
+     * Struktur options dijaga kompatibel dgn SoForm.vue: tetap menyertakan
+     * supplier_id/supplier_name (nilai supplier bawaan produk). Harga jual
+     * final saat SO disimpan diresolve ulang di server berdasar paket harga
+     * yang di-assign ke sales lewat Product Group.
      */
-    public function productPrices(): JsonResponse
+    public function productPrices(Request $request): JsonResponse
     {
         $this->authorize('create', SalesOrder::class);
 
-        // Semua kombinasi (produk × satuan × supplier) yang aktif.
-        $rows = SupplierProductUnit::query()
+        // Harga jual diselesaikan dengan resolver yang SAMA seperti saat SO
+        // disimpan (paket per-customer → sales-group → paket pertama), agar
+        // preview di form konsisten dengan harga tersimpan.
+        $customerId = $request->filled('customer_id') ? (int) $request->input('customer_id') : null;
+        $salesId = $request->filled('sales_id') ? (int) $request->input('sales_id') : null;
+
+        $products = Product::query()
             ->where('is_active', true)
             ->with([
-                'product:id,sku,name,is_active',
-                'productUnit:id,product_id,level,name,qty_to_base',
                 'supplier:id,code,name',
+                'units:id,product_id,name,qty_to_base',
+                'pricePackages' => fn ($q) => $q->orderBy('sort_order')->with('items:id,price_package_id,product_unit_id,cost_price,sell_price'),
             ])
-            ->whereHas('product', fn ($q) => $q->where('is_active', true))
-            ->get();
+            ->orderBy('name')
+            ->get(['id', 'sku', 'name', 'supplier_id']);
 
-        $grouped = $rows->groupBy('product_id')->map(function ($r) {
-            $first = $r->first();
+        $catalog = $products->map(function (Product $product) use ($customerId, $salesId) {
+            // Cost per satuan diambil dari paket pertama (referensi margin);
+            // sell price diselesaikan per-customer lewat service.
+            $defaultPackage = $product->pricePackages->first();
+            $costByUnit = [];
+            if ($defaultPackage) {
+                foreach ($defaultPackage->items as $item) {
+                    $costByUnit[$item->product_unit_id] = (float) $item->cost_price;
+                }
+            }
 
             return [
-                'product_id' => $first->product->id,
-                'sku' => $first->product->sku,
-                'name' => $first->product->name,
-                'options' => $r->map(fn ($row) => [
-                    'supplier_id' => $row->supplier_id,
-                    'supplier_name' => $row->supplier->name,
-                    'product_unit_id' => $row->product_unit_id,
-                    'unit_level' => $row->productUnit->level,
-                    'unit_name' => $row->productUnit->name,
-                    'qty_to_base' => (int) $row->productUnit->qty_to_base,
-                    'cost_price' => (float) $row->cost_price,
-                    'sell_price' => (float) $row->sell_price,
+                'product_id' => $product->id,
+                'sku' => $product->sku,
+                'name' => $product->name,
+                'options' => $product->units->map(fn ($u) => [
+                    'supplier_id' => $product->supplier_id,
+                    'supplier_name' => $product->supplier?->name,
+                    'product_unit_id' => $u->id,
+                    'unit_name' => $u->name,
+                    'qty_to_base' => (int) $u->qty_to_base,
+                    'cost_price' => $costByUnit[$u->id] ?? 0.0,
+                    'sell_price' => $this->service->resolveSellPrice($product, $u->id, $salesId, $customerId),
                 ])->values(),
             ];
         })->values();
 
         return response()->json([
-            'products' => $grouped,
+            'products' => $catalog,
         ]);
     }
 }

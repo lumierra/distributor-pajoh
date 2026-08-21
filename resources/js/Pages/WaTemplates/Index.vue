@@ -42,16 +42,16 @@ function startEdit(t) {
 
                 <div v-if="editing[t.id]" class="space-y-2">
                     <div>
-                        <Label class="text-[10px]">Body</Label>
+                        <Label class="text-[11px]">Body</Label>
                         <Textarea v-model="editing[t.id].body" rows="5" />
                     </div>
                     <div>
-                        <Label class="text-[10px]">Description</Label>
+                        <Label class="text-[11px]">Description</Label>
                         <Input v-model="editing[t.id].description" />
                     </div>
                     <div class="flex items-center gap-2">
                         <input v-model="editing[t.id].is_active" type="checkbox" :id="`active-${t.id}`" />
-                        <Label :for="`active-${t.id}`" class="text-xs">Active</Label>
+                        <Label :for="`active-${t.id}`" class="text-xs mb-0">Active</Label>
                     </div>
                     <div class="flex gap-2">
                         <Button size="sm" @click="save(t.id)">Save</Button>
@@ -59,7 +59,7 @@ function startEdit(t) {
                     </div>
                 </div>
                 <pre v-else class="text-sm bg-muted/30 p-3 rounded whitespace-pre-wrap font-sans">{{ t.body }}</pre>
-                <p v-if="t.available_placeholders?.length" class="text-[11px] text-muted-foreground mt-2">
+                <p v-if="t.available_placeholders?.length" class="text-[12px] text-muted-foreground mt-2">
                     Placeholders: {{ t.available_placeholders.join(', ') }}
                 </p>
             </div>

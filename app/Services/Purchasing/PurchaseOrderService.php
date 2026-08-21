@@ -10,6 +10,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Numbering\NumberingService;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -34,7 +35,7 @@ class PurchaseOrderService
 
             $poDate = $headerData['po_date'] instanceof CarbonInterface
                 ? $headerData['po_date']
-                : \Illuminate\Support\Carbon::parse($headerData['po_date']);
+                : Carbon::parse($headerData['po_date']);
 
             $po = new PurchaseOrder([
                 'supplier_id' => $supplier->id,
@@ -75,7 +76,7 @@ class PurchaseOrderService
         return DB::transaction(function () use ($po, $headerData, $itemsData, $by): PurchaseOrder {
             $poDate = $headerData['po_date'] instanceof CarbonInterface
                 ? $headerData['po_date']
-                : \Illuminate\Support\Carbon::parse($headerData['po_date']);
+                : Carbon::parse($headerData['po_date']);
 
             $po->fill([
                 'supplier_id' => $headerData['supplier_id'],
@@ -124,7 +125,10 @@ class PurchaseOrderService
             throw ValidationException::withMessages(['status' => 'PO tidak bisa di-cancel pada status saat ini.']);
         }
 
-        if ($po->items()->where('qty_received', '>', 0)->orWhere('bonus_qty_received', '>', 0)->exists()) {
+        $hasReceived = $po->items()
+            ->where(fn ($q) => $q->where('qty_received', '>', 0)->orWhere('bonus_qty_received', '>', 0))
+            ->exists();
+        if ($hasReceived) {
             throw ValidationException::withMessages(['status' => 'PO sudah ada penerimaan (GRN posted). Tidak bisa di-cancel.']);
         }
 

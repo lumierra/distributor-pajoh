@@ -47,9 +47,14 @@ class HandleInertiaRequests extends Middleware
             'company' => [
                 'name' => fn () => setting('company.name', 'Pajoh Distributor'),
             ],
+            // pull() (bukan get()) supaya flash langsung hilang dari session begitu
+            // dibaca — mencegah toast dobel ketika halaman memanggil router.reload()
+            // tepat setelah create/update, karena session flash Laravel normalnya
+            // masih "nempel" satu request tambahan (reflash) sebelum age-out.
             'flash' => [
-                'success' => fn () => $request->session()->get('flash.success'),
-                'error' => fn () => $request->session()->get('flash.error'),
+                'success' => fn () => $request->session()->pull('flash.success'),
+                'error' => fn () => $request->session()->pull('flash.error'),
+                'warning' => fn () => $request->session()->pull('flash.warning'),
             ],
             'csrf_token' => fn () => csrf_token(),
         ];

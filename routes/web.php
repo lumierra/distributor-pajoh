@@ -4,29 +4,35 @@ use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Web\ActivityLogController;
+use App\Http\Controllers\Web\AdjustmentController;
+use App\Http\Controllers\Web\CompanyBankAccountController;
+use App\Http\Controllers\Web\CompanySettingController;
 use App\Http\Controllers\Web\CreditNoteController;
 use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\CustomerCreditLimitController;
 use App\Http\Controllers\Web\CustomerGeoController;
 use App\Http\Controllers\Web\CustomerImportController;
 use App\Http\Controllers\Web\CustomerPhotoController;
+use App\Http\Controllers\Web\CustomerPricePackageController;
 use App\Http\Controllers\Web\CustomerReturnController;
 use App\Http\Controllers\Web\CustomerTypeController;
+use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\DeliveryOrderController;
 use App\Http\Controllers\Web\DriverController;
 use App\Http\Controllers\Web\GoodsReceiptController;
+use App\Http\Controllers\Web\GrnAttachmentController;
 use App\Http\Controllers\Web\InventoryController;
 use App\Http\Controllers\Web\InvoiceController;
 use App\Http\Controllers\Web\InvoiceExtensionController;
 use App\Http\Controllers\Web\LoginHistoryController;
 use App\Http\Controllers\Web\MenuController;
+use App\Http\Controllers\Web\OpeningController;
+use App\Http\Controllers\Web\OpnameController;
 use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\PaymentRequestController;
 use App\Http\Controllers\Web\ProductCategoryController;
 use App\Http\Controllers\Web\ProductController;
 use App\Http\Controllers\Web\ProductGroupController;
-use App\Http\Controllers\Web\ProductSupplierController;
-use App\Http\Controllers\Web\ProductUnitController;
 use App\Http\Controllers\Web\ProfileController;
 use App\Http\Controllers\Web\PurchaseOrderController;
 use App\Http\Controllers\Web\Reports\ReportController;
@@ -36,12 +42,12 @@ use App\Http\Controllers\Web\SalesScheduleController;
 use App\Http\Controllers\Web\SalesUserController;
 use App\Http\Controllers\Web\SalesVisitBypassRequestController;
 use App\Http\Controllers\Web\SalesVisitController;
+use App\Http\Controllers\Web\SettingsController;
 use App\Http\Controllers\Web\StockLedgerController;
 use App\Http\Controllers\Web\SupplierBankAccountController;
 use App\Http\Controllers\Web\SupplierCategoryController;
 use App\Http\Controllers\Web\SupplierController;
 use App\Http\Controllers\Web\SupplierDocumentController;
-use App\Http\Controllers\Web\SupplierProductUnitController;
 use App\Http\Controllers\Web\SupplierReturnController;
 use App\Http\Controllers\Web\TrashController;
 use App\Http\Controllers\Web\UnitController;
@@ -50,9 +56,7 @@ use App\Http\Controllers\Web\UserDeviceController;
 use App\Http\Controllers\Web\VehicleController;
 use App\Http\Controllers\Web\WaNotificationController;
 use App\Http\Controllers\Web\YearEndClosingController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -75,13 +79,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/profile/change-password', [ChangePasswordController::class, 'store'])
         ->name('password.change.store');
 
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard', [
-            'appName' => config('app.name'),
-            'laravelVersion' => Application::VERSION,
-            'phpVersion' => PHP_VERSION,
-        ]);
-    })->name('dashboard');
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     // ── Profile (self) ────────────────────────────────────────────────
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
@@ -107,6 +105,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('sales-users', [SalesUserController::class, 'index'])->name('sales-users.index');
         Route::post('sales-users', [SalesUserController::class, 'store'])->name('sales-users.store');
         Route::put('sales-users/{user}', [SalesUserController::class, 'update'])->name('sales-users.update');
+        Route::delete('sales-users/{user}', [SalesUserController::class, 'destroy'])->name('sales-users.destroy');
     });
 
     // ── Roles ─────────────────────────────────────────────────────────
@@ -174,28 +173,8 @@ Route::middleware('auth')->group(function (): void {
             ->name('products.toggle-active');
         Route::get('products/{product}/details', [ProductController::class, 'details'])
             ->name('products.details');
-
-        // Product Units (nested)
-        Route::post('products/{product}/units', [ProductUnitController::class, 'store'])
-            ->name('products.units.store');
-        Route::delete('product-units/{unit}', [ProductUnitController::class, 'destroy'])
-            ->name('product-units.destroy');
-
-        // Supplier × Unit × Price (pivot supplier_product_units)
-        Route::post('products/{product}/supplier-units', [SupplierProductUnitController::class, 'store'])
-            ->name('products.supplier-units.store');
-        Route::put('supplier-product-units/{supplierProductUnit}', [SupplierProductUnitController::class, 'update'])
-            ->name('supplier-product-units.update');
-        Route::delete('supplier-product-units/{supplierProductUnit}', [SupplierProductUnitController::class, 'destroy'])
-            ->name('supplier-product-units.destroy');
-
-        // Product ↔ Supplier (M2M)
-        Route::post('products/{product}/suppliers', [ProductSupplierController::class, 'store'])
-            ->name('products.suppliers.store');
-        Route::put('supplier-products/{supplierProduct}', [ProductSupplierController::class, 'update'])
-            ->name('supplier-products.update');
-        Route::delete('supplier-products/{supplierProduct}', [ProductSupplierController::class, 'destroy'])
-            ->name('supplier-products.destroy');
+        // Satuan & paket harga produk dikelola langsung lewat form produk
+        // (store/update), bukan endpoint granular terpisah lagi.
 
         // Product Categories
         Route::get('product-categories', [ProductCategoryController::class, 'index'])
@@ -249,6 +228,14 @@ Route::middleware('auth')->group(function (): void {
             ->name('customers.credit-limits.index');
         Route::put('customers/{customer}/credit-limits', [CustomerCreditLimitController::class, 'sync'])
             ->name('customers.credit-limits.sync');
+
+        // Paket Harga per Produk
+        Route::get('customers/{customer}/price-packages', [CustomerPricePackageController::class, 'index'])
+            ->name('customers.price-packages.index');
+        Route::get('customers/{customer}/price-packages/search', [CustomerPricePackageController::class, 'search'])
+            ->name('customers.price-packages.search');
+        Route::put('customers/{customer}/price-packages', [CustomerPricePackageController::class, 'sync'])
+            ->name('customers.price-packages.sync');
 
         // Bulk Import via Excel
         Route::get('customers/import/template', [CustomerImportController::class, 'downloadTemplate'])
@@ -312,6 +299,43 @@ Route::middleware('auth')->group(function (): void {
         Route::get('stock-ledger', [StockLedgerController::class, 'index'])->name('stock-ledger.index');
     });
 
+    // ── Stock Adjustment (penyesuaian stok manual) ────────────────────
+    Route::middleware('menu:inventory.adjustment')->group(function (): void {
+        Route::get('adjustments/stock-products', [AdjustmentController::class, 'stockProducts'])
+            ->name('adjustments.stock-products');
+    });
+
+    // ── Stok Awal (opening balance) ───────────────────────────────────
+    Route::middleware('menu:inventory.opening')->group(function (): void {
+        Route::get('openings/picker-products', [OpeningController::class, 'pickerProducts'])
+            ->name('openings.picker-products');
+        Route::resource('openings', OpeningController::class)
+            ->parameters(['openings' => 'opening'])
+            ->except(['destroy']);
+        Route::post('openings/{opening}/post', [OpeningController::class, 'post'])
+            ->name('openings.post');
+        Route::post('openings/{opening}/cancel', [OpeningController::class, 'cancel'])
+            ->name('openings.cancel');
+        Route::resource('adjustments', AdjustmentController::class)
+            ->parameters(['adjustments' => 'adjustment'])
+            ->except(['destroy']);
+        Route::post('adjustments/{adjustment}/post', [AdjustmentController::class, 'post'])
+            ->name('adjustments.post');
+        Route::post('adjustments/{adjustment}/cancel', [AdjustmentController::class, 'cancel'])
+            ->name('adjustments.cancel');
+    });
+
+    // ── Stock Opname (perhitungan fisik) ──────────────────────────────
+    Route::middleware('menu:inventory.opname')->group(function (): void {
+        Route::resource('opnames', OpnameController::class)
+            ->parameters(['opnames' => 'opname'])
+            ->except(['destroy']);
+        Route::post('opnames/{opname}/post', [OpnameController::class, 'post'])
+            ->name('opnames.post');
+        Route::post('opnames/{opname}/cancel', [OpnameController::class, 'cancel'])
+            ->name('opnames.cancel');
+    });
+
     // ── Purchase Order ────────────────────────────────────────────────
     Route::middleware('menu:purchasing.po')->group(function (): void {
         Route::get('purchase-orders/suppliers/{supplier}/products', [PurchaseOrderController::class, 'productsForSupplier'])
@@ -333,6 +357,8 @@ Route::middleware('auth')->group(function (): void {
     Route::middleware('menu:purchasing.grn')->group(function (): void {
         Route::get('grns/po/{purchase_order}/details', [GoodsReceiptController::class, 'poDetails'])
             ->name('grns.po-details');
+        Route::get('grns/suppliers/{supplier}/products', [GoodsReceiptController::class, 'supplierProducts'])
+            ->name('grns.supplier-products');
         Route::resource('grns', GoodsReceiptController::class)
             ->parameters(['grns' => 'goods_receipt']);
         Route::post('grns/{goods_receipt}/submit', [GoodsReceiptController::class, 'submit'])
@@ -343,8 +369,20 @@ Route::middleware('auth')->group(function (): void {
             ->name('grns.reject');
         Route::post('grns/{goods_receipt}/post', [GoodsReceiptController::class, 'post'])
             ->name('grns.post');
+        Route::post('grn-items/{grnItem}/settle-pending', [GoodsReceiptController::class, 'settleItemPending'])
+            ->name('grn-items.settle-pending');
+        Route::post('grn-items/{grnItem}/unsettle-pending', [GoodsReceiptController::class, 'unsettleItemPending'])
+            ->name('grn-items.unsettle-pending');
         Route::get('grns/{goods_receipt}/pdf', [GoodsReceiptController::class, 'downloadPdf'])
             ->name('grns.pdf');
+
+        // Lampiran surat penerimaan (multi-file).
+        Route::post('grns/{goods_receipt}/attachments', [GrnAttachmentController::class, 'store'])
+            ->name('grns.attachments.store');
+        Route::get('grn-attachments/{grnAttachment}', [GrnAttachmentController::class, 'show'])
+            ->name('grn-attachments.show');
+        Route::delete('grn-attachments/{grnAttachment}', [GrnAttachmentController::class, 'destroy'])
+            ->name('grn-attachments.destroy');
     });
 
     // ── Sales Order ───────────────────────────────────────────────────
@@ -383,6 +421,8 @@ Route::middleware('auth')->group(function (): void {
             ->name('delivery-orders.cancel');
         Route::get('delivery-orders/{delivery_order}/pdf', [DeliveryOrderController::class, 'downloadPdf'])
             ->name('delivery-orders.pdf');
+        Route::get('delivery-orders/{delivery_order}/escp', [DeliveryOrderController::class, 'printEscp'])
+            ->name('delivery-orders.escp');
     });
 
     // ── Invoice (Faktur) ──────────────────────────────────────────────
@@ -485,6 +525,33 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('trash', [TrashController::class, 'index'])->name('trash.index');
     Route::post('trash/{type}/{id}/restore', [TrashController::class, 'restore'])->name('trash.restore');
+
+    // ── Setting: Profil Perusahaan (T01) ──────────────────────────────
+    Route::prefix('settings')->name('settings.')->group(function (): void {
+        Route::get('company', [CompanySettingController::class, 'edit'])->name('company');
+        Route::post('company/profile', [CompanySettingController::class, 'updateProfile'])->name('company.profile.update');
+        Route::post('company/invoice-text', [CompanySettingController::class, 'updateInvoiceText'])->name('company.invoice-text.update');
+        Route::post('company/assets', [CompanySettingController::class, 'updateAssets'])->name('company.assets.update');
+
+        // Pengaturan berbasis-key (schema-driven).
+        Route::get('numbering', [SettingsController::class, 'numbering'])->name('numbering');
+        Route::post('numbering', [SettingsController::class, 'updateNumbering']);
+        Route::get('sales', [SettingsController::class, 'sales'])->name('sales');
+        Route::post('sales', [SettingsController::class, 'updateSales']);
+        Route::get('inventory', [SettingsController::class, 'inventory'])->name('inventory');
+        Route::post('inventory', [SettingsController::class, 'updateInventory']);
+        Route::get('system', [SettingsController::class, 'system'])->name('system');
+        Route::post('system', [SettingsController::class, 'updateSystem']);
+
+        // Log Sensitif (filter dari activity_logs).
+        Route::get('sensitive-log', [SettingsController::class, 'sensitiveLog'])->name('sensitive-log');
+
+        // Rekening Bank Perusahaan (CRUD).
+        Route::get('bank-accounts', [CompanyBankAccountController::class, 'index'])->name('bank-accounts.index');
+        Route::post('bank-accounts', [CompanyBankAccountController::class, 'store'])->name('bank-accounts.store');
+        Route::put('bank-accounts/{bankAccount}', [CompanyBankAccountController::class, 'update'])->name('bank-accounts.update');
+        Route::delete('bank-accounts/{bankAccount}', [CompanyBankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
+    });
 
     // ── WhatsApp Notifications (T18) ──────────────────────────────────
     Route::prefix('wa')->name('wa.')->group(function (): void {

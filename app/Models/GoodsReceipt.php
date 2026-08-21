@@ -91,6 +91,11 @@ class GoodsReceipt extends Model
         return $this->hasMany(GrnItem::class)->orderBy('sort_order');
     }
 
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(GrnAttachment::class)->latest();
+    }
+
     public function receiver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'received_by');
@@ -116,6 +121,23 @@ class GoodsReceipt extends Model
         return in_array($this->status, [self::STATUS_DRAFT, self::STATUS_REJECTED], true);
     }
 
+    /**
+     * GRN penerimaan langsung posted yang punya minimal 1 item dengan pending
+     * surat jalan belum ditandai selesai. Dipakai untuk gate settle per-item.
+     */
+    public function hasAnyUnsettledPending(): bool
+    {
+        if ($this->purchase_order_id !== null || $this->status !== self::STATUS_POSTED) {
+            return false;
+        }
+
+        return $this->items()
+            ->whereNull('po_item_id')
+            ->whereNull('pending_settled_at')
+            ->whereColumn('qty_delivery_note', '>', 'qty_reguler')
+            ->exists();
+    }
+
     public function canBeSubmitted(): bool
     {
         return $this->canBeEdited() && $this->items()->exists();
@@ -137,12 +159,30 @@ class GoodsReceipt extends Model
     }
 
     /**
+     * Lampiran surat penerimaan boleh ditambah/dihapus selama GRN belum final
+     * (posted) & belum dibatalkan — jadi termasuk saat submitted (menunggu
+     * review admin), beda dgn canBeEdited() yang menolak submitted.
+     */
+    public function canManageAttachments(): bool
+    {
+        return in_array($this->status, [
+            self::STATUS_DRAFT,
+            self::STATUS_SUBMITTED,
+            self::STATUS_REJECTED,
+        ], true);
+    }
+
+    /**
      * Cek apakah ada item yang qty_reguler-nya melebihi sisa qty_ordered di po_item.
      */
     public function hasOverReceive(): bool
     {
         $this->loadMissing('items.poItem');
         foreach ($this->items as $item) {
+            // GRN tanpa PO (penerimaan langsung) tidak punya konsep over-receive.
+            if ($item->poItem === null) {
+                continue;
+            }
             $newCumulative = (int) $item->poItem->qty_received + (int) $item->qty_reguler;
             if ($newCumulative > (int) $item->poItem->qty_ordered) {
                 return true;

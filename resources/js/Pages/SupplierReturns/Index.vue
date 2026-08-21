@@ -152,7 +152,7 @@ function fmtRp(v) {
 
             <Table>
                 <TableHeader>
-                    <TableRow class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
+                    <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5">
                         <TableHead class="pl-4">No. Retur</TableHead>
                         <TableHead>Supplier</TableHead>
                         <TableHead>Reason</TableHead>
@@ -180,7 +180,7 @@ function fmtRp(v) {
                         </TableCell>
                         <TableCell>
                             <p class="font-medium">{{ sr.supplier?.name ?? '—' }}</p>
-                            <p class="text-[11px] text-muted-foreground font-mono">{{ sr.supplier?.code }}</p>
+                            <p class="text-[12px] text-muted-foreground font-mono">{{ sr.supplier?.code }}</p>
                         </TableCell>
                         <TableCell class="text-xs">{{ sr.reason_code ?? '—' }}</TableCell>
                         <TableCell class="text-right font-mono">{{ fmtRp(sr.claim_amount) }}</TableCell>

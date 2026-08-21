@@ -50,7 +50,7 @@ class MenuSeeder extends Seeder
             ['code' => 'purchasing', 'label' => 'Pembelian', 'icon' => 'ShoppingCart', 'route' => null],
             ['code' => 'inventory', 'label' => 'Inventory', 'icon' => 'Boxes', 'route' => null],
             ['code' => 'sales', 'label' => 'Penjualan', 'icon' => 'ShoppingBag', 'route' => null],
-            ['code' => 'finance', 'label' => 'Keuangan', 'icon' => 'CreditCard', 'route' => null],
+            ['code' => 'finance', 'label' => 'Pembayaran', 'icon' => 'CreditCard', 'route' => null],
             ['code' => 'returns', 'label' => 'Retur', 'icon' => 'Undo2', 'route' => null],
             ['code' => 'reports', 'label' => 'Laporan', 'icon' => 'FileBarChart', 'route' => null],
             ['code' => 'settings', 'label' => 'Pengaturan', 'icon' => 'Settings', 'route' => null],
@@ -84,8 +84,9 @@ class MenuSeeder extends Seeder
             // inventory
             ['parent' => 'inventory', 'code' => 'inventory.stock', 'label' => 'Stok per Produk', 'icon' => 'Package', 'route' => 'stocks.index', 'order' => 1],
             ['parent' => 'inventory', 'code' => 'inventory.ledger', 'label' => 'Stock Ledger', 'icon' => 'BookOpen', 'route' => 'stock-ledger.index', 'order' => 2],
-            ['parent' => 'inventory', 'code' => 'inventory.adjustment', 'label' => 'Adjustment', 'icon' => 'Settings2', 'route' => 'adjustments.index', 'order' => 3],
-            ['parent' => 'inventory', 'code' => 'inventory.opname', 'label' => 'Stock Opname', 'icon' => 'ClipboardList', 'route' => 'opnames.index', 'order' => 4],
+            ['parent' => 'inventory', 'code' => 'inventory.opening', 'label' => 'Stok Awal', 'icon' => 'PackagePlus', 'route' => 'openings.index', 'order' => 3],
+            ['parent' => 'inventory', 'code' => 'inventory.adjustment', 'label' => 'Adjustment', 'icon' => 'Settings2', 'route' => 'adjustments.index', 'order' => 4],
+            ['parent' => 'inventory', 'code' => 'inventory.opname', 'label' => 'Stock Opname', 'icon' => 'ClipboardList', 'route' => 'opnames.index', 'order' => 5],
 
             // sales
             ['parent' => 'sales', 'code' => 'sales.schedule', 'label' => 'Jadwal Kunjungan', 'icon' => 'CalendarDays', 'route' => 'sales-schedules.index', 'order' => 1],
@@ -116,7 +117,7 @@ class MenuSeeder extends Seeder
             ['parent' => 'settings', 'code' => 'settings.bank', 'label' => 'Rekening Bank', 'icon' => 'Landmark', 'route' => 'settings.bank-accounts.index', 'order' => 2],
             ['parent' => 'settings', 'code' => 'settings.numbering', 'label' => 'Penomoran Dokumen', 'icon' => 'Hash', 'route' => 'settings.numbering', 'order' => 3],
             ['parent' => 'settings', 'code' => 'settings.sales', 'label' => 'Sales & Mobile', 'icon' => 'Smartphone', 'route' => 'settings.sales', 'order' => 4],
-            ['parent' => 'settings', 'code' => 'settings.notif', 'label' => 'Notifikasi WhatsApp', 'icon' => 'MessageCircle', 'route' => 'settings.notifications', 'order' => 5],
+            ['parent' => 'settings', 'code' => 'settings.notif', 'label' => 'Notifikasi WhatsApp', 'icon' => 'MessageCircle', 'route' => 'wa.notifications.index', 'order' => 5],
             ['parent' => 'settings', 'code' => 'settings.inventory', 'label' => 'Inventory & Customer', 'icon' => 'Sliders', 'route' => 'settings.inventory', 'order' => 6],
             ['parent' => 'settings', 'code' => 'settings.system', 'label' => 'Sistem & Backup', 'icon' => 'Cog', 'route' => 'settings.system', 'order' => 7],
             ['parent' => 'settings', 'code' => 'settings.sensitive_log', 'label' => 'Log Sensitif', 'icon' => 'Lock', 'route' => 'settings.sensitive-log', 'order' => 8],

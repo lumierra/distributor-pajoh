@@ -181,11 +181,11 @@ body {
     * {
         @apply border-border outline-ring/50;
     }
-    /* Base font 13.5px — compact admin app feel.
-       Tailwind utility `text-base` (1rem) tetap mengacu 16px,
-       jadi explicit text-* class tetap proportional. */
+    /* Base font 15.5px — compact admin app feel, tapi tetap nyaman dibaca.
+       Semua utility berbasis rem (text-*, p-*, gap-*, size-*) ikut skala ini,
+       jadi `text-base` = 15.5px dan `text-xs` = 11.6px, bukan 16px/12px. */
     html {
-        font-size: 14.5px;
+        font-size: 15.5px;
     }
     body {
         @apply bg-background text-foreground;

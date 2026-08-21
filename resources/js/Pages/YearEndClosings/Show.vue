@@ -83,10 +83,10 @@ function fmt(v) {
         <section v-if="closing.carry_over_summary" class="mt-4 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4">
             <h3 class="text-sm font-semibold mb-2">Carry-Over Summary</h3>
             <dl class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
-                <div><dt class="text-[11px] uppercase text-muted-foreground">PO</dt><dd>{{ closing.carry_over_summary.po_count ?? 0 }}</dd></div>
-                <div><dt class="text-[11px] uppercase text-muted-foreground">SO</dt><dd>{{ closing.carry_over_summary.so_count ?? 0 }}</dd></div>
-                <div><dt class="text-[11px] uppercase text-muted-foreground">Invoice</dt><dd>{{ closing.carry_over_summary.invoice_count ?? 0 }}</dd></div>
-                <div><dt class="text-[11px] uppercase text-muted-foreground">CN</dt><dd>{{ closing.carry_over_summary.cn_count ?? 0 }}</dd></div>
+                <div><dt class="text-[12px] uppercase text-muted-foreground">PO</dt><dd>{{ closing.carry_over_summary.po_count ?? 0 }}</dd></div>
+                <div><dt class="text-[12px] uppercase text-muted-foreground">SO</dt><dd>{{ closing.carry_over_summary.so_count ?? 0 }}</dd></div>
+                <div><dt class="text-[12px] uppercase text-muted-foreground">Invoice</dt><dd>{{ closing.carry_over_summary.invoice_count ?? 0 }}</dd></div>
+                <div><dt class="text-[12px] uppercase text-muted-foreground">CN</dt><dd>{{ closing.carry_over_summary.cn_count ?? 0 }}</dd></div>
             </dl>
         </section>
 

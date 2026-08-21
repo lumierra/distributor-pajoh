@@ -9,10 +9,10 @@ use App\Services\Billing\InvoicePdfRenderer;
 use App\Services\Billing\InvoiceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class InvoiceController extends Controller
 {
@@ -111,7 +111,7 @@ class InvoiceController extends Controller
         ]);
     }
 
-    public function downloadPdf(Invoice $invoice): Response
+    public function downloadPdf(Invoice $invoice): BinaryFileResponse
     {
         $this->authorize('downloadPdf', $invoice);
 

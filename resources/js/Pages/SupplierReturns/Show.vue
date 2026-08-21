@@ -136,27 +136,27 @@ function formatDateTime(v) {
                 </div>
                 <dl class="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Supplier</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Supplier</dt>
                         <dd class="font-medium">{{ supplierReturn.supplier?.name }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Tgl Retur</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Tgl Retur</dt>
                         <dd>{{ formatDate(supplierReturn.return_date) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Reason</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Reason</dt>
                         <dd>{{ supplierReturn.reason_code ?? '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Claim</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Claim</dt>
                         <dd class="font-mono font-semibold">{{ fmtRp(supplierReturn.claim_amount) }}</dd>
                     </div>
                     <div v-if="supplierReturn.settled_amount !== null">
-                        <dt class="text-[11px] uppercase text-muted-foreground">Settled Amount</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Settled Amount</dt>
                         <dd class="font-mono">{{ fmtRp(supplierReturn.settled_amount) }}</dd>
                     </div>
                     <div v-if="supplierReturn.sent_date">
-                        <dt class="text-[11px] uppercase text-muted-foreground">Tgl Kirim</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Tgl Kirim</dt>
                         <dd>{{ formatDate(supplierReturn.sent_date) }}</dd>
                     </div>
                 </dl>
@@ -195,7 +195,7 @@ function formatDateTime(v) {
                 <h3 class="text-sm font-semibold mb-2">Items</h3>
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="text-[10px] uppercase text-muted-foreground border-b">
+                        <tr class="text-[11px] uppercase text-muted-foreground border-b">
                             <th class="text-left py-2">Source</th>
                             <th class="text-left">Ref</th>
                             <th class="text-left">Produk</th>
@@ -207,7 +207,7 @@ function formatDateTime(v) {
                     </thead>
                     <tbody>
                         <tr v-for="item in supplierReturn.items" :key="item.id" class="border-b">
-                            <td class="py-2 text-[10px] uppercase font-semibold">{{ item.source_type }}</td>
+                            <td class="py-2 text-[11px] uppercase font-semibold">{{ item.source_type }}</td>
                             <td class="font-mono text-xs">
                                 <span v-if="item.source_type === 'grn_damaged'">{{ item.grn_item?.goods_receipt?.grn_number ?? '—' }}</span>
                                 <span v-else-if="item.source_type === 'customer_return_bs'">{{ item.customer_return_item?.customer_return?.return_number ?? '—' }}</span>

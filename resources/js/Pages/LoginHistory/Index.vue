@@ -89,7 +89,7 @@ function formatDate(v) {
             <!-- Filter toolbar -->
             <div class="border-b border-border/70 px-5 py-3.5 grid grid-cols-1 md:grid-cols-6 gap-3">
                 <div class="space-y-1.5 md:col-span-2">
-                    <Label class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Label class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Cari
                     </Label>
                     <div class="relative">
@@ -104,7 +104,7 @@ function formatDate(v) {
                     </div>
                 </div>
                 <div class="space-y-1.5">
-                    <Label class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Label class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         User
                     </Label>
                     <Select v-model="filters.user_id">
@@ -122,7 +122,7 @@ function formatDate(v) {
                     </Select>
                 </div>
                 <div class="space-y-1.5">
-                    <Label class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Label class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Channel
                     </Label>
                     <Select v-model="filters.channel">
@@ -135,7 +135,7 @@ function formatDate(v) {
                     </Select>
                 </div>
                 <div class="space-y-1.5">
-                    <Label class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Label class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Status
                     </Label>
                     <Select v-model="filters.status">
@@ -148,7 +148,7 @@ function formatDate(v) {
                     </Select>
                 </div>
                 <div class="space-y-1.5">
-                    <Label class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    <Label class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Tanggal
                     </Label>
                     <div class="flex gap-1">
@@ -163,7 +163,7 @@ function formatDate(v) {
                 <Table>
                     <TableHeader>
                         <TableRow
-                            class="[&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground bg-muted/30"
+                            class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground bg-muted/30"
                         >
                             <TableHead class="pl-5">Waktu</TableHead>
                             <TableHead>User</TableHead>

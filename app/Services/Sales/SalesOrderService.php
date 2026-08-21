@@ -9,7 +9,6 @@ use App\Models\ProductUnit;
 use App\Models\Role;
 use App\Models\SalesOrder;
 use App\Models\SoItem;
-use App\Models\SupplierProductUnit;
 use App\Models\User;
 use App\Services\Customer\CustomerCreditLimitService;
 use App\Services\Customer\CustomerOutstandingService;
@@ -64,6 +63,7 @@ class SalesOrderService
                 'fiscal_year' => (int) $soDate->format('Y'),
                 'header_discount_type' => $headerData['header_discount_type'] ?? null,
                 'header_discount_value' => $headerData['header_discount_value'] ?? 0,
+                'cashback' => $headerData['cashback'] ?? 0,
                 'notes' => $headerData['notes'] ?? null,
                 'created_by' => $by->id,
             ]);
@@ -84,13 +84,29 @@ class SalesOrderService
      * @param  array<string, mixed>  $headerData
      * @param  array<int, array<string, mixed>>  $itemsData
      */
+    /**
+     * Edit SO. Fleksibel sesuai status (lihat SalesOrder::canBeEdited):
+     *  - draft / submitted / pending_credit_review: cukup tulis ulang item &
+     *    total. Stok belum dipotong, jadi tak ada penyesuaian stok.
+     *  - approved (belum ada DO): stok fisik SUDAH dipotong saat approve. Maka:
+     *    kembalikan dulu stok item lama (returnForSo), tulis ulang item, lalu
+     *    potong ulang sesuai item baru (consumeForSo). Status TETAP approved.
+     *
+     * Nama tetap `updateDraft` demi kompat pemanggil; efektif "update SO".
+     */
     public function updateDraft(SalesOrder $so, array $headerData, array $itemsData, User $by): SalesOrder
     {
         if (! $so->canBeEdited()) {
-            throw ValidationException::withMessages(['status' => 'SO sudah tidak bisa diedit.']);
+            throw ValidationException::withMessages([
+                'status' => $so->status === SalesOrder::STATUS_APPROVED
+                    ? 'SO sudah punya Surat Jalan / sebagian terkirim. Sesuaikan lewat retur / credit note.'
+                    : 'SO sudah tidak bisa diedit pada status ini.',
+            ]);
         }
 
-        return DB::transaction(function () use ($so, $headerData, $itemsData, $by): SalesOrder {
+        $isApproved = $so->status === SalesOrder::STATUS_APPROVED;
+
+        return DB::transaction(function () use ($so, $headerData, $itemsData, $by, $isApproved): SalesOrder {
             /** @var Customer $customer */
             $customer = Customer::query()->findOrFail($headerData['customer_id']);
             $this->assertCustomerOk($customer);
@@ -102,6 +118,13 @@ class SalesOrderService
             $paymentTerm = $headerData['payment_term_days'] ?? (int) $customer->payment_term_days;
             $dueDate = $soDate->copy()->addDays((int) $paymentTerm);
 
+            // Untuk SO approved: kembalikan dulu stok yang sudah dipotong (item
+            // lama) sebelum item ditulis ulang. Aman karena belum ada DO
+            // (dijamin canBeEdited) → semua catatan batch consumed_by_do_id null.
+            if ($isApproved) {
+                $this->reservation->returnForSo($so, 'Edit SO approved: reset stok sebelum re-sync.', $by);
+            }
+
             $so->fill([
                 'customer_id' => $customer->id,
                 'so_date' => $soDate,
@@ -110,6 +133,7 @@ class SalesOrderService
                 'due_date' => $dueDate,
                 'header_discount_type' => $headerData['header_discount_type'] ?? null,
                 'header_discount_value' => $headerData['header_discount_value'] ?? 0,
+                'cashback' => $headerData['cashback'] ?? 0,
                 'notes' => $headerData['notes'] ?? null,
                 'fiscal_year' => (int) $soDate->format('Y'),
                 'updated_by' => $by->id,
@@ -119,6 +143,22 @@ class SalesOrderService
             $this->syncItems($so, $customer, $itemsData);
             $this->recomputeTotals($so);
             $this->assertSalesProductGroupRules($so->fresh());
+
+            // Untuk SO approved: potong ulang stok sesuai item baru. Cek stok
+            // dulu supaya kalau tak cukup → rollback (termasuk return di atas).
+            if ($isApproved) {
+                $allowNegative = (bool) $this->settings->get('inventory.allow_negative_stock', false);
+                if (! $allowNegative) {
+                    try {
+                        $this->reservation->assertStockAvailable($so->refresh());
+                    } catch (InsufficientStockException $e) {
+                        throw ValidationException::withMessages([
+                            'stock' => "Stok tidak cukup untuk item baru. Produk #{$e->productId}: minta {$e->requested}, tersedia {$e->available}.",
+                        ]);
+                    }
+                }
+                $this->reservation->consumeForSo($so->refresh(), $by);
+            }
 
             return $so->refresh();
         });
@@ -234,8 +274,10 @@ class SalesOrderService
 
             $so->update($update);
 
-            // Reservation
-            $this->reservation->reserveForSo($so->refresh());
+            // Potong stok fisik SEKARANG (model baru: stok keluar saat approve,
+            // bukan saat DO delivered). Menulis sale_out per batch & mencatat
+            // batch di so_reservations untuk penyusunan DO.
+            $this->reservation->consumeForSo($so->refresh(), $by);
 
             return $so->refresh();
         });
@@ -263,10 +305,23 @@ class SalesOrderService
             throw ValidationException::withMessages(['status' => 'SO tidak bisa di-cancel pada status saat ini.']);
         }
 
+        // Blokir kalau ada faktur SO ini yang sudah ada pembayaran (sebagian/
+        // lunas). Harus lewat retur / credit note, bukan cancel SO.
+        $hasPaidInvoice = DB::table('invoices')
+            ->where('sales_order_id', $so->id)
+            ->where('paid_amount', '>', 0)
+            ->exists();
+        if ($hasPaidInvoice) {
+            throw ValidationException::withMessages([
+                'status' => 'SO tidak bisa dibatalkan karena fakturnya sudah menerima pembayaran. Gunakan retur / credit note.',
+            ]);
+        }
+
         return DB::transaction(function () use ($so, $reason, $by): SalesOrder {
-            // Kalau sudah approved, release reservations
+            // Kalau sudah approved, stok fisik sudah dipotong saat approve →
+            // kembalikan stok untuk batch yang BELUM dikirim lewat DO.
             if ($so->status === SalesOrder::STATUS_APPROVED) {
-                $this->reservation->releaseForSo($so, "SO cancelled: {$reason}");
+                $this->reservation->returnForSo($so, "SO cancelled: {$reason}", $by);
             }
 
             $so->update([
@@ -323,10 +378,18 @@ class SalesOrderService
             $headerDiscAmount = round($subtotal * (float) $so->header_discount_value / 100, 2);
         }
 
+        // Cashback: potongan rupiah tingkat SO, di luar header discount. Dibatasi
+        // agar total tidak negatif.
+        $cashback = min(
+            max(0.0, (float) $so->cashback),
+            max(0.0, $subtotal - $headerDiscAmount),
+        );
+
         $so->update([
             'subtotal' => $subtotal,
             'header_discount_amount' => $headerDiscAmount,
-            'total' => max(0, $subtotal - $headerDiscAmount),
+            'cashback' => $cashback,
+            'total' => max(0, $subtotal - $headerDiscAmount - $cashback),
         ]);
     }
 
@@ -366,32 +429,22 @@ class SalesOrderService
             /** @var ProductUnit $unit */
             $unit = ProductUnit::query()->where('product_id', $product->id)->findOrFail($row['product_unit_id']);
 
-            // Supplier wajib di-pilih oleh sales untuk tiap line — sumber
-            // kebenaran harga (cost + sell) ada di supplier_product_units.
-            $supplierId = (int) ($row['supplier_id'] ?? 0);
-            if ($supplierId <= 0) {
-                throw ValidationException::withMessages([
-                    "items.{$idx}.supplier_id" => 'Supplier wajib dipilih untuk tiap line item.',
-                ]);
-            }
-
-            // Supplier wajib ada di tagging produk (supplier_products M2M).
-            $isLinked = $product->supplierProducts()
-                ->where('supplier_id', $supplierId)
-                ->where('is_active', true)
-                ->exists();
-            if (! $isLinked) {
-                throw ValidationException::withMessages([
-                    "items.{$idx}.supplier_id" => "Supplier yang dipilih tidak ter-link ke produk '{$product->name}'.",
-                ]);
-            }
+            // 1 produk = 1 supplier: supplier line diambil otomatis dari produk,
+            // bukan dipilih sales.
+            $supplierId = (int) $product->supplier_id;
 
             $isBonus = (bool) ($row['is_bonus'] ?? false);
-            $unitPrice = $isBonus ? 0.0 : $this->resolveSellPrice($product->id, $unit->id, $supplierId);
+            $unitPrice = $isBonus ? 0.0 : $this->resolveSellPrice($product, $unit->id, $so->sales_id, $customer->id);
 
-            $z1 = (float) ($row['discount_z1_pct'] ?? 0);
-            $z2 = (float) ($row['discount_z2_pct'] ?? 0);
-            $netPrice = SoItem::computeUnitNetPrice($unitPrice, $z1, $z2, $isBonus);
+            // Diskon per-item: tipe percent|rp, value per unit. Bonus → tanpa diskon.
+            $discountType = $isBonus ? null : ($row['discount_type'] ?? null);
+            $discountValue = $isBonus ? 0.0 : (float) ($row['discount_value'] ?? 0);
+            if (! in_array($discountType, SoItem::DISCOUNT_TYPES, true)) {
+                $discountType = null;
+                $discountValue = 0.0;
+            }
+
+            $netPrice = SoItem::computeUnitNetPrice($unitPrice, $discountType, $discountValue, $isBonus);
 
             SoItem::create([
                 'sales_order_id' => $so->id,
@@ -403,8 +456,10 @@ class SalesOrderService
                 'product_unit_name_snapshot' => $unit->name,
                 'qty' => (int) $row['qty'],
                 'unit_price' => $unitPrice,
-                'discount_z1_pct' => $z1,
-                'discount_z2_pct' => $z2,
+                'discount_z1_pct' => 0,
+                'discount_z2_pct' => 0,
+                'discount_type' => $discountType,
+                'discount_value' => $discountValue,
                 'unit_net_price' => $netPrice,
                 'line_subtotal' => round($netPrice * (int) $row['qty'], 2),
                 'is_bonus' => $isBonus,
@@ -415,19 +470,66 @@ class SalesOrderService
     }
 
     /**
-     * Sell price = supplier_product_units.sell_price untuk kombinasi
-     * (produk × satuan × supplier). Fallback ke 0 kalau belum ter-set.
+     * Sell price untuk (produk × satuan). Paket harga dipilih dengan urutan
+     * prioritas (yang di-atas menang):
+     *  1. Paket yang di-assign ke customer ini untuk produk ini (per-produk).
+     *  2. Paket dari Product Group aktif milik sales yang memuat produk ini
+     *     (pivot product_group_items.price_package_id).
+     *  3. Paket pertama produk (urut sort_order).
+     * Ambil sell_price baris paket untuk satuan tsb; fallback 0.
+     *
+     * Publik agar controller bisa memakai resolver yang SAMA saat menampilkan
+     * harga di form create (preview) supaya konsisten dengan harga tersimpan.
      */
-    private function resolveSellPrice(int $productId, int $unitId, int $supplierId): float
+    public function resolveSellPrice(Product $product, int $unitId, ?int $salesId, ?int $customerId = null): float
     {
-        $price = SupplierProductUnit::query()
-            ->where('product_id', $productId)
-            ->where('product_unit_id', $unitId)
-            ->where('supplier_id', $supplierId)
-            ->where('is_active', true)
-            ->value('sell_price');
+        // Kumpulkan kandidat paket sesuai prioritas, coba satu per satu:
+        // paket pertama yang PUNYA harga untuk satuan ini yang dipakai.
+        $candidates = [];
 
-        return (float) ($price ?? 0);
+        if ($customerId) {
+            // (1) assignment per-produk untuk customer ini.
+            $customerPackageId = DB::table('customer_product_price_packages')
+                ->where('customer_id', $customerId)
+                ->where('product_id', $product->id)
+                ->value('price_package_id');
+            if ($customerPackageId !== null) {
+                $candidates[] = (int) $customerPackageId;
+            }
+        }
+
+        // (2) paket dari sales group.
+        if ($salesId) {
+            $groupPackageId = DB::table('product_group_items')
+                ->join('sales_product_groups', 'sales_product_groups.product_group_id', '=', 'product_group_items.product_group_id')
+                ->join('product_groups', 'product_groups.id', '=', 'product_group_items.product_group_id')
+                ->where('sales_product_groups.user_id', $salesId)
+                ->where('product_group_items.product_id', $product->id)
+                ->where('product_groups.is_active', true)
+                ->whereNull('product_groups.deleted_at')
+                ->whereNotNull('product_group_items.price_package_id')
+                ->value('product_group_items.price_package_id');
+            if ($groupPackageId !== null) {
+                $candidates[] = (int) $groupPackageId;
+            }
+        }
+
+        // (3) paket pertama produk.
+        if ($firstPackageId = $product->pricePackages()->orderBy('sort_order')->value('id')) {
+            $candidates[] = (int) $firstPackageId;
+        }
+
+        foreach ($candidates as $packageId) {
+            $price = DB::table('product_price_package_items')
+                ->where('price_package_id', $packageId)
+                ->where('product_unit_id', $unitId)
+                ->value('sell_price');
+            if ($price !== null) {
+                return (float) $price;
+            }
+        }
+
+        return 0.0;
     }
 
     private function assertCustomerOk(Customer $customer): void

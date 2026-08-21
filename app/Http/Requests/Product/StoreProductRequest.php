@@ -15,15 +15,17 @@ class StoreProductRequest extends FormRequest
 
     /**
      * Payload shape:
-     *  - product: name, category_id, description, notes, is_active
+     *  - product: supplier_id, sku, name, category_id, description, notes, is_active
      *  - units: [{unit_id, qty_to_base, barcode?}, ...] — minimal 1; tepat 1 dgn qty_to_base=1 (base unit)
-     *  - supplier_ids: [int, ...] — minimal 1 supplier wajib di-tag.
+     *  - packages: [{name, items:[{unit_index, cost_price, sell_price}]}, ...] — minimal 1 paket harga
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
+            'supplier_id' => ['required', 'integer', 'exists:suppliers,id'],
+            'sku' => ['required', 'string', 'max:64', 'unique:products,sku'],
             'name' => ['required', 'string', 'max:255'],
             'category_id' => ['nullable', 'integer', 'exists:product_categories,id'],
             'description' => ['nullable', 'string'],
@@ -35,8 +37,12 @@ class StoreProductRequest extends FormRequest
             'units.*.qty_to_base' => ['required', 'integer', 'min:1'],
             'units.*.barcode' => ['nullable', 'string', 'max:64', 'unique:product_units,barcode'],
 
-            'supplier_ids' => ['required', 'array', 'min:1'],
-            'supplier_ids.*' => ['integer', 'exists:suppliers,id'],
+            'packages' => ['required', 'array', 'min:1'],
+            'packages.*.name' => ['required', 'string', 'max:128'],
+            'packages.*.items' => ['required', 'array', 'min:1'],
+            'packages.*.items.*.unit_index' => ['required', 'integer', 'min:0'],
+            'packages.*.items.*.cost_price' => ['required', 'numeric', 'min:0'],
+            'packages.*.items.*.sell_price' => ['required', 'numeric', 'min:0'],
         ];
     }
 
@@ -44,6 +50,7 @@ class StoreProductRequest extends FormRequest
     {
         $validator->after(function ($validator): void {
             $units = collect($this->input('units', []));
+            $unitCount = $units->count();
 
             // Tepat 1 base unit (qty_to_base=1)
             $baseCount = $units->filter(fn ($u) => (int) ($u['qty_to_base'] ?? 0) === 1)->count();
@@ -61,6 +68,21 @@ class StoreProductRequest extends FormRequest
                 ->filter(fn ($c) => $c > 1);
             if ($duplicateUnitIds->isNotEmpty()) {
                 $validator->errors()->add('units', 'Tiap satuan master hanya boleh dipakai sekali per produk.');
+            }
+
+            // Tiap paket: unit_index valid & tidak duplikat dalam paket
+            foreach ($this->input('packages', []) as $pi => $pkg) {
+                $seen = [];
+                foreach ($pkg['items'] ?? [] as $ii => $item) {
+                    $idx = $item['unit_index'] ?? null;
+                    if ($idx === null || $idx >= $unitCount) {
+                        $validator->errors()->add("packages.{$pi}.items.{$ii}.unit_index", 'Satuan tidak valid.');
+                    } elseif (in_array($idx, $seen, true)) {
+                        $validator->errors()->add("packages.{$pi}.items.{$ii}.unit_index", 'Satuan duplikat dalam paket.');
+                    } else {
+                        $seen[] = $idx;
+                    }
+                }
             }
         });
     }

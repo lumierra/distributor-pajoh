@@ -68,14 +68,6 @@
                             <td>{{ $grn->supplier_delivery_no ?: '—' }}</td>
                         </tr>
                         <tr>
-                            <td class="label">Kendaraan</td>
-                            <td>{{ $grn->supplier_vehicle_info ?: '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="label">Supir</td>
-                            <td>{{ $grn->supplier_driver_name ?: '—' }}</td>
-                        </tr>
-                        <tr>
                             <td class="label">Status</td>
                             <td><strong>{{ strtoupper(str_replace('_', ' ', $grn->status)) }}</strong></td>
                         </tr>
@@ -102,8 +94,8 @@
                 <th style="width:9%;">Expired</th>
                 <th style="width:7%;">Reg</th>
                 <th style="width:6%;">Bonus</th>
-                <th style="width:7%;">Damage</th>
-                <th style="width:8%;">Cond.</th>
+                <th style="width:7%;">Rusak</th>
+                <th style="width:8%;">Kondisi</th>
             </tr>
         </thead>
         <tbody>
@@ -128,7 +120,7 @@
                     <td class="num">{{ number_format($item->qty_reguler, 0, ',', '.') }}</td>
                     <td class="num">{{ $item->qty_bonus > 0 ? number_format($item->qty_bonus, 0, ',', '.') : '—' }}</td>
                     <td class="num">{{ $item->qty_damaged > 0 ? number_format($item->qty_damaged, 0, ',', '.') : '—' }}</td>
-                    <td style="text-align:center;">{{ ucfirst($item->condition) }}</td>
+                    <td style="text-align:center;">{{ ['good' => 'Baik', 'damaged' => 'Rusak', 'mixed' => 'Campuran'][$item->condition] ?? ucfirst($item->condition) }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -153,7 +145,7 @@
         </div>
         <div class="sig">
             <div class="line">Disetujui (Supplier)</div>
-            <strong>{{ $grn->supplier_driver_name ?: 'Supplier' }}</strong>
+            <strong>{{ $grn->supplier?->name ?: 'Supplier' }}</strong>
         </div>
     </div>
 </body>

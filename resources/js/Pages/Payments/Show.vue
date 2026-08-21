@@ -109,44 +109,44 @@ function formatDateTime(v) {
                 </div>
                 <dl class="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Customer</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Customer</dt>
                         <dd class="font-medium">{{ payment.customer?.name }}</dd>
                         <dd class="text-xs text-muted-foreground font-mono">{{ payment.customer?.code }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Sales</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Sales</dt>
                         <dd>{{ payment.payment_request?.sales?.name ?? '—' }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Method</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Method</dt>
                         <dd class="uppercase font-semibold text-xs">{{ payment.method }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Tanggal Bayar</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Tanggal Bayar</dt>
                         <dd>{{ formatDate(payment.paid_at) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Amount</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Amount</dt>
                         <dd class="font-mono font-semibold">{{ fmtRp(payment.amount) }}</dd>
                     </div>
                     <div>
-                        <dt class="text-[11px] uppercase text-muted-foreground">Applied to Invoice</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Applied to Invoice</dt>
                         <dd class="font-mono">{{ fmtRp(payment.applied_amount) }}</dd>
                     </div>
                     <div v-if="payment.overpayment_amount > 0">
-                        <dt class="text-[11px] uppercase text-muted-foreground">Overpayment</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Overpayment</dt>
                         <dd class="font-mono text-amber-700">{{ fmtRp(payment.overpayment_amount) }}</dd>
                     </div>
                     <div v-if="payment.reference_no">
-                        <dt class="text-[11px] uppercase text-muted-foreground">Referensi</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Referensi</dt>
                         <dd class="font-mono text-xs">{{ payment.reference_no }}</dd>
                     </div>
                     <div v-if="payment.bank_name">
-                        <dt class="text-[11px] uppercase text-muted-foreground">Bank</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Bank</dt>
                         <dd>{{ payment.bank_name }}</dd>
                     </div>
                     <div v-if="payment.giro_due_date">
-                        <dt class="text-[11px] uppercase text-muted-foreground">Giro Due Date</dt>
+                        <dt class="text-[12px] uppercase text-muted-foreground">Giro Due Date</dt>
                         <dd>{{ formatDate(payment.giro_due_date) }}</dd>
                     </div>
                 </dl>

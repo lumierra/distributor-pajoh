@@ -62,14 +62,14 @@ function submit() {
 
 <template>
     <Dialog :open="open" @update:open="(v) => $emit('update:open', v)">
-        <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden">
-            <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
-                <div class="flex items-start gap-3">
-                    <div class="size-10 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 ring-1 ring-emerald-200">
+        <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl gap-0">
+            <DialogHeader class="px-6 pt-6 pb-4">
+                <div class="flex items-start gap-3.5">
+                    <div class="size-11 rounded-full bg-brand-light/70 text-brand flex items-center justify-center shrink-0">
                         <Camera class="size-5" />
                     </div>
-                    <div>
-                        <DialogTitle class="text-base font-bold tracking-tight">
+                    <div class="pt-0.5">
+                        <DialogTitle class="text-base font-semibold tracking-tight">
                             Upload Foto Outlet
                         </DialogTitle>
                         <DialogDescription class="text-xs text-muted-foreground mt-0.5">
@@ -79,11 +79,11 @@ function submit() {
                 </div>
             </DialogHeader>
 
-            <form class="px-5 py-4 space-y-3.5" @submit.prevent="submit">
+            <form class="px-6 pb-2 space-y-3.5" @submit.prevent="submit">
                 <div class="space-y-1">
                     <Label class="text-xs font-medium">Tipe *</Label>
                     <Select v-model="form.type">
-                        <SelectTrigger class="h-9">
+                        <SelectTrigger class="h-10 w-full rounded-xl">
                             <SelectValue placeholder="Pilih tipe" />
                         </SelectTrigger>
                         <SelectContent>
@@ -96,26 +96,26 @@ function submit() {
                 </div>
                 <div class="space-y-1">
                     <Label class="text-xs font-medium">File *</Label>
-                    <Input type="file" accept="image/jpeg,image/png" class="h-9" @change="onFileChange" />
+                    <Input type="file" accept="image/jpeg,image/png" class="h-10 rounded-xl" @change="onFileChange" />
                     <p v-if="form.errors.file" class="text-xs text-destructive">{{ form.errors.file }}</p>
                 </div>
                 <div class="space-y-1">
                     <Label class="text-xs font-medium">Caption (opsional)</Label>
-                    <Input v-model="form.caption" class="h-9" />
+                    <Input v-model="form.caption" class="h-10 rounded-xl" />
                 </div>
                 <div v-if="form.progress" class="text-xs text-muted-foreground">
                     Uploading {{ form.progress.percentage }}%
                 </div>
             </form>
 
-            <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">
-                <Button type="button" variant="outline" size="default" @click="$emit('update:open', false)">
+            <DialogFooter class="px-6 py-4 gap-2">
+                <Button type="button" variant="outline" size="default" class="rounded-full" @click="$emit('update:open', false)">
                     Batal
                 </Button>
                 <Button
                     type="button"
-                    variant="secondary"
                     size="default"
+                    class="rounded-full bg-brand text-white hover:bg-brand-dark"
                     :disabled="form.processing || !form.file"
                     @click="submit"
                 >

@@ -14,7 +14,7 @@ const config = computed(() => ({
 </script>
 
 <template>
-    <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium ring-1', config.class]">
+    <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[12px] font-medium ring-1', config.class]">
         {{ config.label }}
     </span>
 </template>
