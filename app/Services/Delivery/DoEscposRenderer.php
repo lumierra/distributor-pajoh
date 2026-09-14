@@ -20,12 +20,9 @@ class DoEscposRenderer
 
     private const COND_ON = "\x0F";              // SI = condensed (17 CPI)
 
-    // Kualitas SEDANG: mode Draft (cepat) + Bold (tebal) → cepat tapi tetap
-    // jelas terbaca, tidak berbayang seperti draft polos, dan jauh lebih cepat
-    // daripada NLQ (yang menyapu 2x per baris).
-    private const DRAFT_ON = self::ESC.'x0';     // Draft quality (cepat)
-
-    private const BOLD_ON = self::ESC.'E';       // Emphasized/bold ON
+    // Mode TERCEPAT: Draft quality, 1x sapuan per baris (tanpa bold yang
+    // menyapu 2x, tanpa NLQ yang resolusi tinggi). Prioritas kecepatan cetak.
+    private const DRAFT_ON = self::ESC.'x0';     // Draft quality (1x sapuan)
 
     private const FORM_FEED = "\x0C";            // maju ke lembar berikut
 
@@ -86,8 +83,7 @@ class DoEscposRenderer
 
         // ── Susun output ───────────────────────────────────────────────────
         $out = self::INIT;
-        $out .= self::DRAFT_ON;   // cepat
-        $out .= self::BOLD_ON;    // tebal → tetap jelas
+        $out .= self::DRAFT_ON;   // draft = tercepat (1x sapuan)
         $out .= self::COND_ON;
 
         $out .= $this->center(strtoupper($companyName))."\n";
