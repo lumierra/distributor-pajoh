@@ -38,14 +38,20 @@ class DoPdfRenderer
             ],
         ]);
 
-        // Dot-matrix continuous form: lebar tetap (~13" = 936pt), TINGGI mengikuti
-        // konten (mepet ke bawah, tanpa ruang kosong). DomPDF butuh ukuran kertas,
-        // jadi tinggi dihitung dari jumlah item — pendek untuk faktur singkat, dan
-        // bertambah kalau item banyak (tanpa memaksa 1 halaman F4 penuh).
-        $rowCount = $do->items->count();
-        $baseHeight = 430;              // header + total + blok tanda tangan
-        $paperHeight = $baseHeight + ($rowCount * 16);
-        $pdf->setPaper([0, 0, 936, $paperHeight]);
+        // Continuous form: ukuran halaman TETAP (lebar ~13" = 936pt, tinggi
+        // ~13.94cm = 395pt). Kalau item banyak, DomPDF otomatis pecah ke
+        // halaman berikutnya dan judul kolom tabel (<thead>) diulang tiap
+        // halaman. Total & tanda tangan mengalir di halaman terakhir.
+        $pdf->setPaper([0, 0, 936, 395]);
+
+        // "Hal x / y" akurat di pojok kanan BAWAH tiap halaman (footer, biar
+        // tak menabrak judul kolom tabel yang diulang di halaman lanjutan).
+        // Dihitung DomPDF setelah layout, jadi tahu jumlah halaman sebenarnya.
+        $pdf->render();
+        $pdf->getDomPDF()->getCanvas()->page_text(
+            810, 382, 'Hal: {PAGE_NUM} / {PAGE_COUNT}',
+            null, 8, [0, 0, 0],
+        );
 
         $year = $do->fiscal_year;
         $relPath = "delivery_orders/{$year}/{$do->do_number}.pdf";

@@ -3,6 +3,7 @@
 namespace App\Services\Delivery;
 
 use App\Models\DeliveryOrder;
+use App\Models\SalesOrder;
 use App\Services\Setting\SettingManager;
 
 /**
@@ -28,6 +29,9 @@ class DoEscposRenderer
 
     // Lebar cetak (kolom karakter) untuk condensed continuous form 13".
     private const WIDTH = 136;
+
+    // Maks baris item per halaman (sisanya lanjut halaman berikut, header diulang).
+    private const ROWS_PER_PAGE = 15;
 
     public function __construct(private readonly SettingManager $settings) {}
 
@@ -82,12 +86,121 @@ class DoEscposRenderer
             : 'TUNAI';
 
         // ── Susun output ───────────────────────────────────────────────────
-        $out = self::INIT;
-        $out .= self::DRAFT_ON;   // draft = tercepat (1x sapuan)
-        $out .= self::COND_ON;
+        $rp = fn ($v) => number_format((float) $v, 0, ',', '.');
 
-        $out .= $this->center(strtoupper($companyName))."\n";
-        // Alamat + Telp digabung satu baris (hemat ruang).
+        // ── Susun semua baris item (reg + bonus) jadi satu daftar ──────────
+        $cols = [3, 16, 48, 6, 6, 14, 9, 6, 16];
+        $align = ['R', 'L', 'L', 'C', 'C', 'R', 'C', 'C', 'R'];
+        $itemRows = [];
+        foreach ($regItems as $it) {
+            $soi = $it->soItem;
+            $harga = (float) ($soi->unit_price ?? 0);
+            $disc = ($soi && $soi->discount_type)
+                ? ($soi->discount_type === 'percent'
+                    ? rtrim(rtrim(number_format((float) $soi->discount_value, 2, ',', '.'), '0'), ',').'%'
+                    : $rp($soi->discount_value))
+                : '-';
+            $lineTotal = (float) ($soi->unit_net_price ?? 0) * (int) $it->qty_planned;
+            $itemRows[] = [
+                $it->product_sku_snapshot, $it->product_name_snapshot,
+                $it->product_unit_name_snapshot, number_format($it->qty_planned, 0, ',', '.'),
+                $rp($harga), $disc, '-', $rp($lineTotal),
+            ];
+        }
+        foreach ($bonusItems as $it) {
+            $itemRows[] = [
+                $it->product_sku_snapshot, $it->product_name_snapshot,
+                $it->product_unit_name_snapshot, number_format($it->qty_planned, 0, ',', '.'),
+                '-', '-', 'BONUS', '-',
+            ];
+        }
+
+        // ── Paginasi: pecah item per halaman; header diulang tiap halaman ──
+        $pages = array_chunk($itemRows, self::ROWS_PER_PAGE) ?: [[]];
+        $totalPages = count($pages);
+        $paymentLineHeader = $paymentLine;
+
+        $header = fn (int $page): string => $this->pageHeader(
+            $companyName, $company, $do, $so, $custName, $custAddr, $custCity, $custWa,
+            $driver, $vehicle, $paymentLineHeader, $page, $totalPages, $cols, $align,
+        );
+
+        $out = self::INIT.self::DRAFT_ON.self::COND_ON;
+        $no = 1;
+
+        foreach ($pages as $pageIndex => $rows) {
+            $pageNum = $pageIndex + 1;
+            $out .= $header($pageNum);
+
+            foreach ($rows as $r) {
+                $out .= $this->row(array_merge([$no++], $r), $cols, $align)."\n";
+            }
+            $out .= str_repeat('-', self::WIDTH)."\n";
+
+            $isLast = $pageNum === $totalPages;
+            if (! $isLast) {
+                // Halaman lanjutan: tanda bersambung, lalu form feed.
+                $out .= $this->pad('...bersambung ke halaman '.($pageNum + 1).'...', self::WIDTH, 'R')."\n";
+                $out .= self::FORM_FEED;
+
+                continue;
+            }
+
+            // ── Halaman TERAKHIR: ringkasan qty + totals + tanda tangan ────
+            $totalUnits = (int) $do->items->sum('qty_planned');
+            $perUnit = [];
+            foreach ($do->items as $it) {
+                $u = $it->product_unit_name_snapshot ?: '-';
+                $perUnit[$u] = ($perUnit[$u] ?? 0) + (int) $it->qty_planned;
+            }
+            $rincian = [];
+            foreach ($perUnit as $u => $q) {
+                $rincian[] = number_format($q, 0, ',', '.').' '.$u;
+            }
+            $out .= 'Jumlah Barang  = '.number_format($totalUnits, 0, ',', '.')."\n";
+            $out .= 'Rincian Satuan = '.(implode(' / ', $rincian) ?: '-')."\n";
+
+            $out .= $this->totalLine('Subtotal', $rp($subtotalKotor));
+            if ($discItem > 0) {
+                $out .= $this->totalLine('Diskon', '- '.$rp($discItem));
+            }
+            if ($headerDisc > 0) {
+                $out .= $this->totalLine('Diskon Header', '- '.$rp($headerDisc));
+            }
+            $out .= $this->totalLine('Total', $rp($subtotalNet - $headerDisc));
+            if ($cashback > 0) {
+                $out .= $this->totalLine('Cashback', '- '.$rp($cashback));
+            }
+            $out .= $this->totalLine('GRAND TOTAL', 'Rp '.$rp($grandTotal));
+
+            $out .= "\n";
+            $out .= $this->twoCol(
+                ['Hormat kami,', '', '', '(............................)', 'Admin'],
+                ['Penerima,', '', '', '(............................)', strtoupper($custName)],
+            );
+            $out .= self::FORM_FEED;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Blok header satu halaman (nama CV, info dokumen, judul kolom tabel).
+     * Diulang di tiap halaman; nomor halaman "Hal : N / M" akurat.
+     *
+     * @param  array<string, string>  $company
+     * @param  array<string, mixed>  $driver
+     * @param  array<string, mixed>  $vehicle
+     * @param  array<int, int>  $cols
+     * @param  array<int, string>  $align
+     */
+    private function pageHeader(
+        string $companyName, array $company, DeliveryOrder $do, ?SalesOrder $so,
+        string $custName, string $custAddr, string $custCity, string $custWa,
+        array $driver, array $vehicle, string $paymentLine, int $page, int $totalPages,
+        array $cols, array $align,
+    ): string {
+        $out = $this->center(strtoupper($companyName))."\n";
         $addrLine = $company['address'] ?: '';
         if ($company['phone']) {
             $addrLine .= ($addrLine !== '' ? ' - Telp: ' : 'Telp: ').$company['phone'];
@@ -98,7 +211,6 @@ class DoEscposRenderer
         $out .= $this->center('FAKTUR PENJUALAN')."\n";
         $out .= str_repeat('=', self::WIDTH)."\n";
 
-        // Header 2 kolom (kiri: dokumen/pengiriman + bayar, kanan: customer).
         $left = [
             'No Fak : '.$do->do_number.'   SO: '.($so?->so_number ?? '-'),
             'Supir  : '.($driver['name'] ?? '-'),
@@ -111,83 +223,14 @@ class DoEscposRenderer
             'Customer : '.strtoupper($custName),
             'Alamat   : '.trim($custAddr.($custCity ? ', '.$custCity : ''), ', '),
             'No. HP   : '.$custWa,
-            'Hal      : 1 / 1',
+            'Hal      : '.$page.' / '.$totalPages,
         ];
         $out .= $this->twoCol($left, $right);
         $out .= str_repeat('-', self::WIDTH)."\n";
 
-        // ── Tabel item ─────────────────────────────────────────────────────
-        // Kolom: No(3) Kode(16) Nama(48) Unit(6) Qty(6) Harga(14) Diskon(9) Bonus(6) Total(16)
-        $cols = [3, 16, 48, 6, 6, 14, 9, 6, 16];
-        $out .= $this->row(['No', 'Kode', 'Nama Barang', 'Unit', 'Qty', 'Harga', 'Diskon', 'Bonus', 'Total'], $cols,
-            ['R', 'L', 'L', 'C', 'C', 'R', 'C', 'C', 'R'])."\n";
+        // Judul kolom tabel
+        $out .= $this->row(['No', 'Kode', 'Nama Barang', 'Unit', 'Qty', 'Harga', 'Diskon', 'Bonus', 'Total'], $cols, $align)."\n";
         $out .= str_repeat('-', self::WIDTH)."\n";
-
-        $rp = fn ($v) => number_format((float) $v, 0, ',', '.');
-        $no = 1;
-
-        foreach ($regItems as $it) {
-            $soi = $it->soItem;
-            $harga = (float) ($soi->unit_price ?? 0);
-            $disc = ($soi && $soi->discount_type)
-                ? ($soi->discount_type === 'percent'
-                    ? rtrim(rtrim(number_format((float) $soi->discount_value, 2, ',', '.'), '0'), ',').'%'
-                    : $rp($soi->discount_value))
-                : '-';
-            $lineTotal = (float) ($soi->unit_net_price ?? 0) * (int) $it->qty_planned;
-            $out .= $this->row([
-                $no++, $it->product_sku_snapshot, $it->product_name_snapshot,
-                $it->product_unit_name_snapshot, number_format($it->qty_planned, 0, ',', '.'),
-                $rp($harga), $disc, '-', $rp($lineTotal),
-            ], $cols, ['R', 'L', 'L', 'C', 'C', 'R', 'C', 'C', 'R'])."\n";
-        }
-        foreach ($bonusItems as $it) {
-            $out .= $this->row([
-                $no++, $it->product_sku_snapshot, $it->product_name_snapshot,
-                $it->product_unit_name_snapshot, number_format($it->qty_planned, 0, ',', '.'),
-                '-', '-', 'BONUS', '-',
-            ], $cols, ['R', 'L', 'L', 'C', 'C', 'R', 'C', 'C', 'R'])."\n";
-        }
-
-        $out .= str_repeat('-', self::WIDTH)."\n";
-
-        // ── Ringkasan qty (kiri) — mirror PDF: Jumlah Barang & Rincian Satuan.
-        $totalUnits = (int) $do->items->sum('qty_planned');
-        $perUnit = [];
-        foreach ($do->items as $it) {
-            $u = $it->product_unit_name_snapshot ?: '-';
-            $perUnit[$u] = ($perUnit[$u] ?? 0) + (int) $it->qty_planned;
-        }
-        $rincian = [];
-        foreach ($perUnit as $u => $q) {
-            $rincian[] = number_format($q, 0, ',', '.').' '.$u;
-        }
-        $out .= 'Jumlah Barang  = '.number_format($totalUnits, 0, ',', '.')."\n";
-        $out .= 'Rincian Satuan = '.(implode(' / ', $rincian) ?: '-')."\n";
-
-        // ── Totals (rata kanan) ────────────────────────────────────────────
-        $out .= $this->totalLine('Subtotal', $rp($subtotalKotor));
-        if ($discItem > 0) {
-            $out .= $this->totalLine('Diskon', '- '.$rp($discItem));
-        }
-        if ($headerDisc > 0) {
-            $out .= $this->totalLine('Diskon Header', '- '.$rp($headerDisc));
-        }
-        $out .= $this->totalLine('Total', $rp($subtotalNet - $headerDisc));
-        if ($cashback > 0) {
-            $out .= $this->totalLine('Cashback', '- '.$rp($cashback));
-        }
-        $out .= $this->totalLine('GRAND TOTAL', 'Rp '.$rp($grandTotal));
-
-        // ── Tanda tangan ───────────────────────────────────────────────────
-        $out .= "\n";
-        $out .= $this->twoCol(
-            ['Hormat kami,', '', '', '(............................)', 'Admin'],
-            ['Penerima,', '', '', '(............................)', strtoupper($custName)],
-        );
-
-        // Form feed → kertas maju ke lembar berikut (continuous form).
-        $out .= self::FORM_FEED;
 
         return $out;
     }

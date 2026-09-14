@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Faktur Penjualan {{ $do->do_number }}</title>
     <style>
-        @page { margin: 8mm 8mm; }
+        @page { margin: 6mm 8mm; }
         body { font-family: 'Courier New', monospace; font-size: 9.5pt; color: #000; line-height: 1.25; }
         .bold { font-weight: bold; }
         .center { text-align: center; }
@@ -17,8 +17,10 @@
         .lbl { display: inline-block; width: 78px; }
         .lbl-r { display: inline-block; width: 92px; }
 
-        /* Tabel item */
+        /* Tabel item — thead diulang tiap halaman (multi-halaman kalau item banyak) */
         table.items { width: 100%; border-collapse: collapse; margin-top: 6px; }
+        table.items thead { display: table-header-group; }
+        table.items tr { page-break-inside: avoid; }
         table.items th, table.items td { border: 1px solid #000; padding: 2px 5px; font-size: 9pt; }
         table.items th { font-weight: bold; text-align: center; }
         table.items td.num { text-align: right; }
@@ -121,7 +123,6 @@
                 @if($custNpwp)
                     <div><span class="lbl-r">NPWP</span>: {{ $custNpwp }}</div>
                 @endif
-                <div><span class="lbl-r">Hal</span>: 1 / 1</div>
             </td>
         </tr>
     </table>
