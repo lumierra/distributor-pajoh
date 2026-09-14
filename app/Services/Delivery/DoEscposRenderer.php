@@ -30,7 +30,13 @@ class DoEscposRenderer
     // Lebar cetak (kolom karakter) untuk condensed continuous form 13".
     private const WIDTH = 136;
 
-    // Maks baris item per halaman (sisanya lanjut halaman berikut, header diulang).
+    // Tinggi 1 lembar faktur (continuous form) = 13.94 cm ≈ 5.49" × 6 LPI ≈ 33
+    // baris. Set page length ini via `ESC C n` supaya FORM FEED berhenti PAS di
+    // batas kertas / sobekan, tidak lewat ke lembar berikut.
+    private const PAGE_LINES = 33;
+
+    // Maks baris item per halaman. Muat dalam PAGE_LINES bersama header (~11)
+    // & (di halaman terakhir) total + tanda tangan (~10).
     private const ROWS_PER_PAGE = 15;
 
     public function __construct(private readonly SettingManager $settings) {}
@@ -103,14 +109,14 @@ class DoEscposRenderer
             $lineTotal = (float) ($soi->unit_net_price ?? 0) * (int) $it->qty_planned;
             $itemRows[] = [
                 $it->product_sku_snapshot, $it->product_name_snapshot,
-                $it->product_unit_name_snapshot, number_format($it->qty_planned, 0, ',', '.'),
+                number_format($it->qty_planned, 0, ',', '.'), $it->product_unit_name_snapshot,
                 $rp($harga), $disc, '-', $rp($lineTotal),
             ];
         }
         foreach ($bonusItems as $it) {
             $itemRows[] = [
                 $it->product_sku_snapshot, $it->product_name_snapshot,
-                $it->product_unit_name_snapshot, number_format($it->qty_planned, 0, ',', '.'),
+                number_format($it->qty_planned, 0, ',', '.'), $it->product_unit_name_snapshot,
                 '-', '-', 'BONUS', '-',
             ];
         }
@@ -125,7 +131,10 @@ class DoEscposRenderer
             $driver, $vehicle, $paymentLineHeader, $page, $totalPages, $cols, $align,
         );
 
-        $out = self::INIT.self::DRAFT_ON.self::COND_ON;
+        // ESC C n → set panjang halaman = PAGE_LINES baris, supaya FORM FEED
+        // berhenti PAS di batas kertas faktur (13.94cm), tidak lewat.
+        $setPageLen = self::ESC.'C'.chr(self::PAGE_LINES);
+        $out = self::INIT.$setPageLen.self::DRAFT_ON.self::COND_ON;
         $no = 1;
 
         foreach ($pages as $pageIndex => $rows) {
@@ -229,7 +238,7 @@ class DoEscposRenderer
         $out .= str_repeat('-', self::WIDTH)."\n";
 
         // Judul kolom tabel
-        $out .= $this->row(['No', 'Kode', 'Nama Barang', 'Unit', 'Qty', 'Harga', 'Diskon', 'Bonus', 'Total'], $cols, $align)."\n";
+        $out .= $this->row(['No', 'Kode', 'Nama Barang', 'Qty', 'Unit', 'Harga', 'Diskon', 'Bonus', 'Total'], $cols, $align)."\n";
         $out .= str_repeat('-', self::WIDTH)."\n";
 
         return $out;

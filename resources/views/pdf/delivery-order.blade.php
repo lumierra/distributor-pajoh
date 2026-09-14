@@ -133,8 +133,8 @@
                 <th style="width:3%;">No</th>
                 <th style="width:13%;">Kode</th>
                 <th style="text-align:left;">Nama Barang</th>
-                <th style="width:7%;">Unit</th>
                 <th style="width:5%;">Qty</th>
+                <th style="width:7%;">Unit</th>
                 <th style="width:10%;">Harga</th>
                 <th style="width:7%;">Diskon</th>
                 <th style="width:7%;">Bonus</th>
@@ -158,8 +158,8 @@
                     <td class="c">{{ $no++ }}</td>
                     <td class="c">{{ $item->product_sku_snapshot }}</td>
                     <td>{{ $item->product_name_snapshot }}</td>
-                    <td class="c">{{ $item->product_unit_name_snapshot }}</td>
                     <td class="c">{{ number_format($item->qty_planned, 0, ',', '.') }}</td>
+                    <td class="c">{{ $item->product_unit_name_snapshot }}</td>
                     <td class="num">{{ $rp($harga) }}</td>
                     <td class="num">{{ $disc }}</td>
                     <td class="c">-</td>
@@ -171,8 +171,8 @@
                     <td class="c">{{ $no++ }}</td>
                     <td class="c">{{ $item->product_sku_snapshot }}</td>
                     <td>{{ $item->product_name_snapshot }}</td>
-                    <td class="c">{{ $item->product_unit_name_snapshot }}</td>
                     <td class="c">{{ number_format($item->qty_planned, 0, ',', '.') }}</td>
+                    <td class="c">{{ $item->product_unit_name_snapshot }}</td>
                     <td class="num">-</td>
                     <td class="num">-</td>
                     <td class="c bold">BONUS</td>
