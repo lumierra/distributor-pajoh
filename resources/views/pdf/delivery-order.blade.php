@@ -82,32 +82,31 @@
     @endphp
 </head>
 <body>
-    <div class="title">FAKTUR PENJUALAN</div>
+    @php
+        $companyName = trim($company['name'] ?: 'PERUSAHAAN');
+        // Prefix legal form (CV/PT) hanya kalau nama belum diawali dengannya.
+        if ($company['legal_form'] && stripos($companyName, $company['legal_form']) !== 0) {
+            $companyName = $company['legal_form'].' '.$companyName;
+        }
+    @endphp
+
+    {{-- Identitas perusahaan + judul: rata tengah, sama urutan dgn cetak ESC/P. --}}
+    <div class="center bold" style="font-size:11pt;">{{ strtoupper($companyName) }}</div>
+    @if($company['address'])
+        <div class="center">{{ $company['address'] }}</div>
+    @endif
+    @if($company['phone'])
+        <div class="center">Telp: {{ $company['phone'] }}</div>
+    @endif
+    <div class="title center">FAKTUR PENJUALAN</div>
 
     <table class="head">
         <tr>
             <td style="width:58%;">
-                @php
-                    $companyName = trim($company['name'] ?: 'PERUSAHAAN');
-                    // Prefix legal form (CV/PT) hanya kalau nama belum diawali dengannya.
-                    if ($company['legal_form'] && stripos($companyName, $company['legal_form']) !== 0) {
-                        $companyName = $company['legal_form'].' '.$companyName;
-                    }
-                @endphp
-                <div class="bold">{{ strtoupper($companyName) }}</div>
-                <div>{{ $company['address'] ?: '' }}</div>
-                <div>Telp: {{ $company['phone'] ?: '-' }}</div>
-                <div style="margin-top:4px;"><span class="lbl">No Faktur</span>: {{ $do->do_number }} <span style="margin-left:12px;">SO: {{ $so?->so_number ?? '-' }}</span></div>
+                <div><span class="lbl">No Faktur</span>: {{ $do->do_number }} <span style="margin-left:12px;">SO: {{ $so?->so_number ?? '-' }}</span></div>
                 <div><span class="lbl">Supir</span>: {{ $driver['name'] ?? '-' }}</div>
                 <div><span class="lbl">Angkutan</span>: {{ $vehicle['plate'] ?? '-' }}{{ ($vehicle['type'] ?? null) ? ' ('.$vehicle['type'].')' : '' }}</div>
                 <div><span class="lbl">Sales</span>: {{ $so?->sales?->name ?? '-' }}</div>
-                <div><span class="lbl">Bayar</span>:
-                    @if(($so?->payment_term_days ?? 0) > 0)
-                        HUTANG, {{ $so->payment_term_days }} Hari{{ $so->due_date ? ' / '.$so->due_date->format('d-m-Y') : '' }}
-                    @else
-                        TUNAI
-                    @endif
-                </div>
             </td>
             <td style="width:42%;">
                 <div><span class="lbl-r">Tanggal</span>: {{ ($do->delivered_at ?? $do->do_date)?->format('d-m-Y') }}</div>
@@ -118,6 +117,13 @@
                     <div><span class="lbl-r">NPWP</span>: {{ $custNpwp }}</div>
                 @endif
                 <div><span class="lbl-r">Hal</span>: 1 / 1</div>
+                <div><span class="lbl-r">Bayar</span>:
+                    @if(($so?->payment_term_days ?? 0) > 0)
+                        HUTANG, {{ $so->payment_term_days }} Hari{{ $so->due_date ? ' / '.$so->due_date->format('d-m-Y') : '' }}
+                    @else
+                        TUNAI
+                    @endif
+                </div>
             </td>
         </tr>
     </table>

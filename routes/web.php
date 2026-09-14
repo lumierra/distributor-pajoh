@@ -168,6 +168,8 @@ Route::middleware('auth')->group(function (): void {
 
     // ── Product ───────────────────────────────────────────────────────
     Route::middleware('menu:master.product')->group(function (): void {
+        Route::post('products/bulk-destroy', [ProductController::class, 'bulkDestroy'])
+            ->name('products.bulk-destroy');
         Route::resource('products', ProductController::class)->except(['create', 'edit', 'show']);
         Route::post('products/{product}/toggle-active', [ProductController::class, 'toggleActive'])
             ->name('products.toggle-active');

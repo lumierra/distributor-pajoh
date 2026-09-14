@@ -20,6 +20,7 @@ import Pagination from '@/Components/Shared/Pagination.vue';
 import { confirm } from '@/Composables/useConfirm';
 import ProductFormDialog from '@/Components/Products/ProductFormDialog.vue';
 import { Button } from '@/Components/ui/button';
+import { Checkbox } from '@/Components/ui/checkbox';
 import { Input } from '@/Components/ui/input';
 import {
     Select,
@@ -87,6 +88,57 @@ function reset() {
     filters.q = '';
     filters.category = ALL;
     filters.active = ALL;
+}
+
+// ── Pilih-banyak untuk hapus massal ─────────────────────────────────────
+// Array biasa (bukan Set) — reaktivitas Vue lebih predictable utk array.
+const selectedIds = ref([]);
+
+const allSelected = computed(
+    () => props.products.data.length > 0 && props.products.data.every((p) => selectedIds.value.includes(p.id)),
+);
+const someSelected = computed(() => selectedIds.value.length > 0 && !allSelected.value);
+
+function isSelected(id) {
+    return selectedIds.value.includes(id);
+}
+
+function toggleSelectAll() {
+    if (allSelected.value) {
+        selectedIds.value = [];
+    } else {
+        selectedIds.value = props.products.data.map((p) => p.id);
+    }
+}
+
+function toggleSelectOne(id) {
+    if (selectedIds.value.includes(id)) {
+        selectedIds.value = selectedIds.value.filter((x) => x !== id);
+    } else {
+        selectedIds.value = [...selectedIds.value, id];
+    }
+}
+
+function clearSelection() {
+    selectedIds.value = [];
+}
+
+// Reset seleksi tiap kali data halaman berganti (filter/paginasi/reload).
+watch(() => props.products.data, () => clearSelection());
+
+async function bulkDestroy() {
+    const ids = selectedIds.value;
+    if (ids.length === 0) return;
+    if (!(await confirm({
+        title: `Hapus ${ids.length} produk terpilih?`,
+        description: 'Produk yang dihapus bisa dipulihkan lewat menu Trash.',
+        destructive: true,
+    }))) return;
+
+    useForm({ ids }).post(route('products.bulk-destroy'), {
+        preserveScroll: true,
+        onSuccess: () => clearSelection(),
+    });
 }
 
 const modalOpen = ref(false);
@@ -231,10 +283,41 @@ const statTiles = computed(() => {
                 </div>
             </div>
 
+            <!-- Toolbar aksi massal — muncul saat ada produk terpilih -->
+            <div
+                v-if="selectedIds.length > 0"
+                class="px-4 py-2.5 flex items-center justify-between gap-2 bg-brand-light/40 border-t border-foreground/5"
+            >
+                <p class="text-sm font-medium text-brand-dark">
+                    {{ selectedIds.length }} produk dipilih
+                </p>
+                <div class="flex items-center gap-2">
+                    <Button type="button" variant="ghost" size="sm" class="rounded-full" @click="clearSelection">
+                        Batal
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        class="rounded-full"
+                        @click="bulkDestroy"
+                    >
+                        <Trash2 class="size-3.5" />
+                        Hapus Terpilih
+                    </Button>
+                </div>
+            </div>
+
             <Table class="border-t border-foreground/5">
                 <TableHeader>
                     <TableRow class="[&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted-foreground [&>th]:py-2.5 hover:bg-transparent">
-                        <TableHead class="pl-4">Produk</TableHead>
+                        <TableHead class="pl-4 w-10">
+                            <Checkbox
+                                :model-value="allSelected ? true : (someSelected ? 'indeterminate' : false)"
+                                @update:model-value="toggleSelectAll"
+                            />
+                        </TableHead>
+                        <TableHead>Produk</TableHead>
                         <TableHead>Kategori</TableHead>
                         <TableHead>Base</TableHead>
                         <TableHead>Status</TableHead>
@@ -244,7 +327,7 @@ const statTiles = computed(() => {
                 </TableHeader>
                 <TableBody class="text-sm">
                     <TableRow v-if="products.data.length === 0">
-                        <TableCell colspan="6" class="text-center py-16">
+                        <TableCell colspan="7" class="text-center py-16">
                             <div class="flex flex-col items-center gap-2 text-muted-foreground">
                                 <Package class="size-7 opacity-40" />
                                 <p class="text-sm">Belum ada produk.</p>
@@ -254,9 +337,15 @@ const statTiles = computed(() => {
                     <TableRow
                         v-for="p in products.data"
                         :key="p.id"
-                        class="hover:bg-foreground/2.5 transition-colors border-foreground/5"
+                        :class="[
+                            'hover:bg-foreground/2.5 transition-colors border-foreground/5',
+                            isSelected(p.id) ? 'bg-brand-light/20' : '',
+                        ]"
                     >
                         <TableCell class="pl-4 py-2.5">
+                            <Checkbox :model-value="isSelected(p.id)" @update:model-value="() => toggleSelectOne(p.id)" />
+                        </TableCell>
+                        <TableCell class="py-2.5">
                             <div class="flex items-center gap-3">
                                 <div class="size-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
                                     <Package class="size-4" />

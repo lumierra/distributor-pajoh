@@ -94,23 +94,25 @@ class DoEscposRenderer
         if ($company['address']) {
             $out .= $this->center($company['address'])."\n";
         }
+        if ($company['phone']) {
+            $out .= $this->center('Telp: '.$company['phone'])."\n";
+        }
         $out .= $this->center('FAKTUR PENJUALAN')."\n";
         $out .= str_repeat('=', self::WIDTH)."\n";
 
-        // Header 2 kolom (kiri: perusahaan/dokumen, kanan: customer).
+        // Header 2 kolom (kiri: dokumen/pengiriman, kanan: customer + bayar).
         $left = [
-            'Telp   : '.($company['phone'] ?: '-'),
             'No Fak : '.$do->do_number.'   SO: '.($so?->so_number ?? '-'),
             'Supir  : '.($driver['name'] ?? '-'),
             'Angkut : '.($vehicle['plate'] ?? '-').(($vehicle['type'] ?? null) ? ' ('.$vehicle['type'].')' : ''),
             'Sales  : '.($so?->sales?->name ?? '-'),
-            'Bayar  : '.$paymentLine,
         ];
         $right = [
             'Tanggal  : '.(($do->delivered_at ?? $do->do_date)?->format('d-m-Y') ?? '-'),
             'Customer : '.strtoupper($custName),
             'Alamat   : '.trim($custAddr.($custCity ? ', '.$custCity : ''), ', '),
             'No. HP   : '.$custWa,
+            'Bayar    : '.$paymentLine,
         ];
         $out .= $this->twoCol($left, $right);
         $out .= str_repeat('-', self::WIDTH)."\n";

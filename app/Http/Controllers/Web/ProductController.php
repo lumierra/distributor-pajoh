@@ -124,6 +124,38 @@ class ProductController extends Controller
             ->with('flash.success', "Produk {$product->name} dihapus.");
     }
 
+    /**
+     * Hapus banyak produk sekaligus (soft delete). Dipakai fitur pilih-banyak
+     * di halaman daftar produk.
+     */
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'exists:products,id'],
+        ]);
+
+        $products = Product::query()->whereIn('id', $data['ids'])->get();
+
+        $deleted = 0;
+        foreach ($products as $product) {
+            if ($request->user()?->can('delete', $product)) {
+                $product->delete();
+                $deleted++;
+            }
+        }
+
+        $skipped = $products->count() - $deleted;
+        $message = "{$deleted} produk dihapus.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} produk dilewati (tidak punya izin).";
+        }
+
+        return redirect()
+            ->route('products.index')
+            ->with($deleted > 0 ? 'flash.success' : 'flash.error', $message);
+    }
+
     public function toggleActive(Product $product): RedirectResponse
     {
         $this->authorize('toggleActive', $product);
