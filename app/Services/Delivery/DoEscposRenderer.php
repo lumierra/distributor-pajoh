@@ -91,28 +91,31 @@ class DoEscposRenderer
         $out .= self::COND_ON;
 
         $out .= $this->center(strtoupper($companyName))."\n";
-        if ($company['address']) {
-            $out .= $this->center($company['address'])."\n";
-        }
+        // Alamat + Telp digabung satu baris (hemat ruang).
+        $addrLine = $company['address'] ?: '';
         if ($company['phone']) {
-            $out .= $this->center('Telp: '.$company['phone'])."\n";
+            $addrLine .= ($addrLine !== '' ? ' - Telp: ' : 'Telp: ').$company['phone'];
+        }
+        if ($addrLine !== '') {
+            $out .= $this->center($addrLine)."\n";
         }
         $out .= $this->center('FAKTUR PENJUALAN')."\n";
         $out .= str_repeat('=', self::WIDTH)."\n";
 
-        // Header 2 kolom (kiri: dokumen/pengiriman, kanan: customer + bayar).
+        // Header 2 kolom (kiri: dokumen/pengiriman + bayar, kanan: customer).
         $left = [
             'No Fak : '.$do->do_number.'   SO: '.($so?->so_number ?? '-'),
             'Supir  : '.($driver['name'] ?? '-'),
             'Angkut : '.($vehicle['plate'] ?? '-').(($vehicle['type'] ?? null) ? ' ('.$vehicle['type'].')' : ''),
             'Sales  : '.($so?->sales?->name ?? '-'),
+            'Bayar  : '.$paymentLine,
         ];
         $right = [
             'Tanggal  : '.(($do->delivered_at ?? $do->do_date)?->format('d-m-Y') ?? '-'),
             'Customer : '.strtoupper($custName),
             'Alamat   : '.trim($custAddr.($custCity ? ', '.$custCity : ''), ', '),
             'No. HP   : '.$custWa,
-            'Bayar    : '.$paymentLine,
+            'Hal      : 1 / 1',
         ];
         $out .= $this->twoCol($left, $right);
         $out .= str_repeat('-', self::WIDTH)."\n";
@@ -151,6 +154,20 @@ class DoEscposRenderer
         }
 
         $out .= str_repeat('-', self::WIDTH)."\n";
+
+        // ── Ringkasan qty (kiri) — mirror PDF: Jumlah Barang & Rincian Satuan.
+        $totalUnits = (int) $do->items->sum('qty_planned');
+        $perUnit = [];
+        foreach ($do->items as $it) {
+            $u = $it->product_unit_name_snapshot ?: '-';
+            $perUnit[$u] = ($perUnit[$u] ?? 0) + (int) $it->qty_planned;
+        }
+        $rincian = [];
+        foreach ($perUnit as $u => $q) {
+            $rincian[] = number_format($q, 0, ',', '.').' '.$u;
+        }
+        $out .= 'Jumlah Barang  = '.number_format($totalUnits, 0, ',', '.')."\n";
+        $out .= 'Rincian Satuan = '.(implode(' / ', $rincian) ?: '-')."\n";
 
         // ── Totals (rata kanan) ────────────────────────────────────────────
         $out .= $this->totalLine('Subtotal', $rp($subtotalKotor));
