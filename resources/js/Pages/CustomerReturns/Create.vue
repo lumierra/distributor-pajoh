@@ -81,7 +81,7 @@ function submit() {
     <AppLayout>
         <PageHeader title="Buat Retur Customer" :icon="PackagePlus">
             <template #actions>
-                <Button as-child variant="outline" size="default">
+                <Button as-child variant="outline" size="default" class="rounded-full">
                     <Link :href="route('customer-returns.index')">
                         <ArrowLeft class="size-4" /> Kembali
                     </Link>
@@ -90,7 +90,7 @@ function submit() {
         </PageHeader>
 
         <form class="grid grid-cols-1 lg:grid-cols-3 gap-4" @submit.prevent="submit">
-            <section class="lg:col-span-2 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-3">
+            <section class="lg:col-span-2 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 space-y-3">
                 <h3 class="text-sm font-semibold">Header</h3>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -158,21 +158,21 @@ function submit() {
                 </div>
             </section>
 
-            <aside class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 h-fit">
+            <aside class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 h-fit">
                 <h3 class="text-sm font-semibold mb-2">Submit</h3>
                 <p class="text-xs text-muted-foreground mb-3">Retur akan disimpan sebagai draft. Sortir BAIK/BS dilakukan setelahnya oleh operator.</p>
-                <Button type="submit" :disabled="form.processing" class="w-full">Simpan Draft</Button>
+                <Button type="submit" :disabled="form.processing" class="w-full rounded-full bg-brand text-white hover:bg-brand-dark">Simpan Draft</Button>
             </aside>
 
-            <section class="lg:col-span-3 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4">
+            <section class="lg:col-span-3 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4">
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="text-sm font-semibold">Item Retur</h3>
-                    <Button type="button" size="sm" variant="outline" @click="addItem">
+                    <Button type="button" size="sm" variant="outline" class="rounded-full" @click="addItem">
                         <Plus class="size-3.5" /> Tambah Item
                     </Button>
                 </div>
                 <div class="space-y-2">
-                    <div v-for="(item, idx) in form.items" :key="idx" class="grid grid-cols-12 gap-2 items-end p-2 rounded ring-1 ring-border/60">
+                    <div v-for="(item, idx) in form.items" :key="idx" class="grid grid-cols-12 gap-2 items-end p-2 rounded-2xl ring-1 ring-foreground/8">
                         <div class="col-span-3">
                             <Label class="text-[11px]">Produk</Label>
                             <Select v-model="item.product_id" @update:model-value="loadProductUnits($event, idx)">

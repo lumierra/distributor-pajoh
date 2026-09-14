@@ -15,7 +15,7 @@ import ActionGroup from '@/Components/Shared/ActionGroup.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import PaymentStatusBadge from '@/Components/Payments/PaymentStatusBadge.vue';
-import StatCard from '@/Components/Shared/StatCard.vue';
+import StatTile from '@/Components/Shared/StatTile.vue';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import {
@@ -91,32 +91,22 @@ function fmtRp(v) {
         <PageHeader title="Payments" description="Pembayaran customer yang sudah terverifikasi & ter-apply ke invoice." :icon="Banknote" />
 
         <section v-if="stats" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
-            <StatCard label="Total" :value="stats.total ?? 0" tone="brand">
-                <template #icon><Banknote class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Posted" :value="stats.posted ?? 0" tone="brand">
-                <template #icon><CheckCircle2 class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Pending Clearing" :value="stats.pending_clearing ?? 0" tone="brand-orange">
-                <template #icon><Clock class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Cleared" :value="stats.cleared ?? 0" tone="brand">
-                <template #icon><CheckCircle2 class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Bounced" :value="stats.bounced ?? 0" tone="brand">
-                <template #icon><X class="size-5" /></template>
-            </StatCard>
+            <StatTile label="Total" :value="stats.total ?? 0" :icon="Banknote" />
+            <StatTile label="Posted" :value="stats.posted ?? 0" :icon="CheckCircle2" />
+            <StatTile label="Pending Clearing" :value="stats.pending_clearing ?? 0" :icon="Clock" tone="warn" />
+            <StatTile label="Cleared" :value="stats.cleared ?? 0" :icon="CheckCircle2" />
+            <StatTile label="Bounced" :value="stats.bounced ?? 0" :icon="X" />
         </section>
 
-        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <div class="border-b border-border/70 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+        <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <div class="border-b border-foreground/5 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
                 <div class="relative flex-1">
                     <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                    <Input v-model="filters.q" placeholder="Cari no payment, invoice, customer…" class="pl-8 h-9 rounded-md" />
+                    <Input v-model="filters.q" placeholder="Cari no payment, invoice, customer…" class="pl-8 h-9 rounded-full bg-muted/50 border-transparent focus-visible:bg-card" />
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <Select v-model="filters.status">
-                        <SelectTrigger class="w-[150px] h-9 rounded-md"><SelectValue placeholder="Status" /></SelectTrigger>
+                        <SelectTrigger class="w-[150px] h-9 rounded-full bg-muted/50 border-transparent"><SelectValue placeholder="Status" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem :value="ALL">Semua Status</SelectItem>
                             <SelectItem value="posted">Posted</SelectItem>
@@ -126,7 +116,7 @@ function fmtRp(v) {
                         </SelectContent>
                     </Select>
                     <Select v-model="filters.method">
-                        <SelectTrigger class="w-[130px] h-9 rounded-md"><SelectValue placeholder="Metode" /></SelectTrigger>
+                        <SelectTrigger class="w-[130px] h-9 rounded-full bg-muted/50 border-transparent"><SelectValue placeholder="Metode" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem :value="ALL">Semua Metode</SelectItem>
                             <SelectItem value="cash">Cash</SelectItem>
@@ -135,7 +125,7 @@ function fmtRp(v) {
                         </SelectContent>
                     </Select>
                     <Select v-model="filters.customer_id">
-                        <SelectTrigger class="w-[180px] h-9 rounded-md"><SelectValue placeholder="Customer" /></SelectTrigger>
+                        <SelectTrigger class="w-[180px] h-9 rounded-full bg-muted/50 border-transparent"><SelectValue placeholder="Customer" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem :value="ALL">Semua Customer</SelectItem>
                             <SelectItem v-for="c in customers" :key="c.id" :value="String(c.id)">
@@ -143,7 +133,7 @@ function fmtRp(v) {
                             </SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button type="button" variant="outline" size="default" @click="reset">
+                    <Button type="button" variant="ghost" size="default" class="rounded-full" @click="reset">
                         <RotateCcw class="size-3.5" /> Reset
                     </Button>
                 </div>
@@ -172,7 +162,7 @@ function fmtRp(v) {
                             </div>
                         </TableCell>
                     </TableRow>
-                    <TableRow v-for="p in payments.data" :key="p.id" class="hover:bg-muted/30 transition-colors">
+                    <TableRow v-for="p in payments.data" :key="p.id" class="hover:bg-foreground/2.5 border-foreground/5 transition-colors">
                         <TableCell class="pl-4 py-2.5 font-mono text-xs">
                             <Link :href="route('payments.show', p.id)" class="hover:text-primary">
                                 {{ p.payment_number }}
@@ -207,7 +197,7 @@ function fmtRp(v) {
                 </TableBody>
             </Table>
 
-            <div v-if="payments.data.length > 0" class="border-t border-border/70 px-4 py-2.5">
+            <div v-if="payments.data.length > 0" class="border-t border-foreground/5 px-4 py-2.5">
                 <Pagination :meta="payments" />
             </div>
         </section>

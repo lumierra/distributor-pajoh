@@ -103,7 +103,7 @@ function fmtRp(v) {
     <AppLayout>
         <PageHeader title="Buat Retur Supplier" :icon="PackageOpen">
             <template #actions>
-                <Button as-child variant="outline" size="default">
+                <Button as-child variant="outline" size="default" class="rounded-full">
                     <Link :href="route('supplier-returns.index')">
                         <ArrowLeft class="size-4" /> Kembali
                     </Link>
@@ -112,7 +112,7 @@ function fmtRp(v) {
         </PageHeader>
 
         <form class="grid grid-cols-1 lg:grid-cols-3 gap-4" @submit.prevent="submit">
-            <section class="lg:col-span-2 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-3">
+            <section class="lg:col-span-2 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 space-y-3">
                 <h3 class="text-sm font-semibold">Header</h3>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -157,36 +157,36 @@ function fmtRp(v) {
                 </div>
             </section>
 
-            <aside class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 h-fit">
+            <aside class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 h-fit">
                 <h3 class="text-sm font-semibold mb-2">Submit</h3>
-                <Button type="submit" :disabled="form.processing || form.items.length === 0" class="w-full">
+                <Button type="submit" :disabled="form.processing || form.items.length === 0" class="w-full rounded-full bg-brand text-white hover:bg-brand-dark">
                     Simpan Draft
                 </Button>
                 <p v-if="form.items.length === 0" class="text-xs text-muted-foreground mt-2">Pilih minimal 1 item dari sources di bawah.</p>
             </aside>
 
-            <section class="lg:col-span-3 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4">
+            <section class="lg:col-span-3 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4">
                 <h3 class="text-sm font-semibold mb-2">Sources Tersedia</h3>
                 <p v-if="!form.supplier_id" class="text-xs text-muted-foreground">Pilih supplier dulu untuk melihat sources.</p>
                 <div v-else-if="allSources.length === 0" class="text-xs text-muted-foreground">Tidak ada item yang available untuk supplier ini.</div>
                 <ul v-else class="space-y-1 text-sm max-h-64 overflow-y-auto">
-                    <li v-for="(src, idx) in allSources" :key="idx" class="flex items-center justify-between p-2 rounded ring-1 ring-border/60 hover:bg-muted/30">
+                    <li v-for="(src, idx) in allSources" :key="idx" class="flex items-center justify-between p-2 rounded-2xl ring-1 ring-foreground/8 hover:bg-foreground/2.5 border-foreground/5">
                         <div>
                             <span class="text-[11px] font-semibold uppercase text-muted-foreground mr-2">{{ src.source_type }}</span>
                             <span>{{ src._label }}</span>
                             <span v-if="src.cost_price" class="text-xs text-muted-foreground ml-2">cost: {{ fmtRp(src.cost_price) }}</span>
                         </div>
-                        <Button type="button" size="sm" variant="outline" @click="pickSource(src)">
+                        <Button type="button" size="sm" variant="outline" class="rounded-full" @click="pickSource(src)">
                             <Plus class="size-3.5" /> Pilih
                         </Button>
                     </li>
                 </ul>
             </section>
 
-            <section v-if="form.items.length > 0" class="lg:col-span-3 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4">
+            <section v-if="form.items.length > 0" class="lg:col-span-3 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4">
                 <h3 class="text-sm font-semibold mb-2">Items Retur</h3>
                 <div class="space-y-2">
-                    <div v-for="(item, idx) in form.items" :key="idx" class="grid grid-cols-12 gap-2 items-end p-2 rounded ring-1 ring-border/60">
+                    <div v-for="(item, idx) in form.items" :key="idx" class="grid grid-cols-12 gap-2 items-end p-2 rounded-2xl ring-1 ring-foreground/8">
                         <div class="col-span-4">
                             <Label class="text-[11px]">Source</Label>
                             <p class="text-xs">{{ item.source_type }}</p>
@@ -205,7 +205,7 @@ function fmtRp(v) {
                             <Input v-model.number="item.cost_price" type="number" min="0" step="0.01" />
                         </div>
                         <div class="col-span-1 flex justify-end">
-                            <Button type="button" variant="ghost" size="sm" @click="removeItem(idx)">
+                            <Button type="button" variant="ghost" size="sm" class="rounded-full" @click="removeItem(idx)">
                                 <Trash2 class="size-4 text-red-600" />
                             </Button>
                         </div>

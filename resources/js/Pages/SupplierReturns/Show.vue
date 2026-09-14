@@ -107,12 +107,12 @@ function formatDateTime(v) {
     <AppLayout>
         <PageHeader :title="supplierReturn.return_number" :description="supplierReturn.supplier?.name" :icon="PackageOpen">
             <template #actions>
-                <Button as-child variant="outline" size="default">
+                <Button as-child variant="outline" size="default" class="rounded-full">
                     <Link :href="route('supplier-returns.index')">
                         <ArrowLeft class="size-4" /> Kembali
                     </Link>
                 </Button>
-                <Button v-if="canEdit" as-child variant="outline" size="default">
+                <Button v-if="canEdit" as-child variant="outline" size="default" class="rounded-full">
                     <Link :href="route('supplier-returns.edit', supplierReturn.id)">
                         <Edit class="size-4" /> Edit
                     </Link>
@@ -120,7 +120,7 @@ function formatDateTime(v) {
             </template>
         </PageHeader>
 
-        <div v-if="supplierReturn.status === 'cancelled'" class="mb-4 rounded-md ring-1 ring-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800 flex items-start gap-2">
+        <div v-if="supplierReturn.status === 'cancelled'" class="mb-4 rounded-2xl ring-1 ring-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800 flex items-start gap-2">
             <AlertTriangle class="size-4 mt-0.5 shrink-0" />
             <div>
                 <p class="font-semibold">SR dibatalkan</p>
@@ -129,7 +129,7 @@ function formatDateTime(v) {
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <section class="lg:col-span-2 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-4">
+            <section class="lg:col-span-2 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 space-y-4">
                 <div class="flex items-center justify-between">
                     <h3 class="text-sm font-semibold">Header</h3>
                     <SrStatusBadge :status="supplierReturn.status" />
@@ -167,23 +167,23 @@ function formatDateTime(v) {
             </section>
 
             <aside class="space-y-3">
-                <section v-if="canApprove || canMarkSent || canSettle || canCancel" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-2">
+                <section v-if="canApprove || canMarkSent || canSettle || canCancel" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 space-y-2">
                     <h3 class="text-sm font-semibold">Aksi</h3>
-                    <Button v-if="canApprove" class="w-full" :disabled="processing" @click="approve">
+                    <Button v-if="canApprove" class="w-full rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="processing" @click="approve">
                         <CheckCircle2 class="size-4" /> Approve
                     </Button>
-                    <Button v-if="canMarkSent" class="w-full" :disabled="processing" @click="sentOpen = true">
+                    <Button v-if="canMarkSent" class="w-full rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="processing" @click="sentOpen = true">
                         <Send class="size-4" /> Mark Sent
                     </Button>
-                    <Button v-if="canSettle" class="w-full" :disabled="processing" @click="settleOpen = true">
+                    <Button v-if="canSettle" class="w-full rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="processing" @click="settleOpen = true">
                         <Wallet class="size-4" /> Settle
                     </Button>
-                    <Button v-if="canCancel" variant="outline" class="w-full text-red-700" @click="cancelOpen = true">
+                    <Button v-if="canCancel" variant="outline" class="w-full rounded-full text-red-700" @click="cancelOpen = true">
                         <XCircle class="size-4" /> Cancel
                     </Button>
                 </section>
 
-                <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 text-xs space-y-1">
+                <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 text-xs space-y-1">
                     <h3 class="text-sm font-semibold mb-1">Riwayat</h3>
                     <p v-if="supplierReturn.approver"><span class="text-muted-foreground">Approved oleh</span> {{ supplierReturn.approver.name }} • {{ formatDateTime(supplierReturn.approved_at) }}</p>
                     <p v-if="supplierReturn.sender"><span class="text-muted-foreground">Dikirim oleh</span> {{ supplierReturn.sender.name }} • {{ formatDateTime(supplierReturn.sent_at) }}</p>
@@ -191,11 +191,11 @@ function formatDateTime(v) {
                 </section>
             </aside>
 
-            <section class="lg:col-span-3 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4">
+            <section class="lg:col-span-3 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4">
                 <h3 class="text-sm font-semibold mb-2">Items</h3>
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="text-[11px] uppercase text-muted-foreground border-b">
+                        <tr class="text-[11px] uppercase tracking-wider text-muted-foreground border-b border-foreground/5">
                             <th class="text-left py-2">Source</th>
                             <th class="text-left">Ref</th>
                             <th class="text-left">Produk</th>
@@ -206,7 +206,7 @@ function formatDateTime(v) {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="item in supplierReturn.items" :key="item.id" class="border-b">
+                        <tr v-for="item in supplierReturn.items" :key="item.id" class="border-b border-foreground/5 hover:bg-foreground/2.5 transition-colors">
                             <td class="py-2 text-[11px] uppercase font-semibold">{{ item.source_type }}</td>
                             <td class="font-mono text-xs">
                                 <span v-if="item.source_type === 'grn_damaged'">{{ item.grn_item?.goods_receipt?.grn_number ?? '—' }}</span>
@@ -225,7 +225,7 @@ function formatDateTime(v) {
         </div>
 
         <Dialog v-model:open="sentOpen">
-            <DialogContent>
+            <DialogContent class="rounded-3xl gap-0">
                 <DialogHeader>
                     <DialogTitle>Mark Sent</DialogTitle>
                     <DialogDescription>Stok akan di-update untuk item source 'stock'.</DialogDescription>
@@ -235,14 +235,14 @@ function formatDateTime(v) {
                     <Input v-model="sentDate" type="date" />
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" @click="sentOpen = false">Batal</Button>
-                    <Button :disabled="processing" @click="submitMarkSent">Mark Sent</Button>
+                    <Button variant="outline" class="rounded-full" @click="sentOpen = false">Batal</Button>
+                    <Button class="rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="processing" @click="submitMarkSent">Mark Sent</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
 
         <Dialog v-model:open="settleOpen">
-            <DialogContent>
+            <DialogContent class="rounded-3xl gap-0">
                 <DialogHeader>
                     <DialogTitle>Settle Retur</DialogTitle>
                     <DialogDescription>Supplier kasih kredit. Boleh partial.</DialogDescription>
@@ -258,14 +258,14 @@ function formatDateTime(v) {
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" @click="settleOpen = false">Batal</Button>
-                    <Button :disabled="processing || settledAmount < 0" @click="submitSettle">Settle</Button>
+                    <Button variant="outline" class="rounded-full" @click="settleOpen = false">Batal</Button>
+                    <Button class="rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="processing || settledAmount < 0" @click="submitSettle">Settle</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
 
         <Dialog v-model:open="cancelOpen">
-            <DialogContent>
+            <DialogContent class="rounded-3xl gap-0">
                 <DialogHeader>
                     <DialogTitle>Cancel Retur</DialogTitle>
                     <DialogDescription>Source tracking akan di-revert kalau sudah approved.</DialogDescription>
@@ -275,8 +275,8 @@ function formatDateTime(v) {
                     <Textarea v-model="cancelReason" rows="3" required />
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" @click="cancelOpen = false">Batal</Button>
-                    <Button variant="destructive" :disabled="processing || !cancelReason.trim()" @click="submitCancel">Cancel</Button>
+                    <Button variant="outline" class="rounded-full" @click="cancelOpen = false">Batal</Button>
+                    <Button variant="destructive" class="rounded-full" :disabled="processing || !cancelReason.trim()" @click="submitCancel">Cancel</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

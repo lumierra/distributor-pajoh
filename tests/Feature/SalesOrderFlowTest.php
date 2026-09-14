@@ -557,7 +557,7 @@ test('endpoint ESC/P DO mengembalikan payload dot-matrix dengan kode kontrol', f
 
     // Kode kontrol ESC/P: reset (1B40) + NLQ (1B7831) + condensed (0F) di awal,
     // form feed (0C) di akhir.
-    expect(str_starts_with($body, "\x1B@\x1Bx1\x0F"))->toBeTrue();
+    expect(str_starts_with($body, "\x1B@\x1Bx0\x1BE\x0F"))->toBeTrue();
     expect(str_ends_with($body, "\x0C"))->toBeTrue();
     // Data DO ikut tercetak.
     expect($body)->toContain($do->do_number);

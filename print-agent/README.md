@@ -16,10 +16,19 @@ file download (tidak ada penanda ZoneTransfer).
 
 ## Menjalankan
 
-- Klik dua kali **`start-agent.bat`** (atau `node agent.js` di folder ini).
-- Biarkan jendela terbuka. Agent dengar di `http://localhost:9110`.
-- Agar jalan otomatis saat PC nyala: buat shortcut `start-agent.bat` ke folder
-  Startup (`Win+R` → `shell:startup`).
+- **Testing / lihat log**: klik dua kali **`start-agent.bat`** (jendela terbuka).
+- **Pemakaian harian (tanpa jendela)**: klik dua kali **`start-agent-hidden.vbs`**
+  — agent jalan diam-diam di background.
+- Agent dengar di `http://localhost:9110`.
+
+### Auto-start saat PC nyala
+
+1. `Win + R` → ketik `shell:startup` → Enter (folder Startup terbuka).
+2. Buat **shortcut** dari **`start-agent-hidden.vbs`** (klik kanan → Send to →
+   Desktop → lalu pindahkan shortcut ke folder Startup).
+3. Selesai — tiap PC dinyalakan, agent jalan otomatis tanpa jendela.
+
+> Untuk menghentikan agent: Task Manager → cari **node.exe** → End task.
 
 ## Cek agent hidup
 

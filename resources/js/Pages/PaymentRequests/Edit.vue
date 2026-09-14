@@ -60,7 +60,7 @@ function fmtRp(v) {
     <AppLayout>
         <PageHeader :title="`Edit Payment Request #${paymentRequest.id}`" :description="`Invoice: ${paymentRequest.invoice?.invoice_number}`" :icon="Inbox">
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('payment-requests.show', paymentRequest.id)">
                         <ArrowLeft class="size-4" /> Kembali ke Detail
                     </Link>
@@ -69,7 +69,7 @@ function fmtRp(v) {
         </PageHeader>
 
         <form @submit.prevent="submit">
-            <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5 mb-4">
+            <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-5 mb-4">
                 <p class="text-xs text-muted-foreground mb-3">
                     Invoice: <strong>{{ paymentRequest.invoice?.invoice_number }}</strong>
                     · Sisa: <span class="font-mono">{{ fmtRp(paymentRequest.invoice?.outstanding) }}</span>
@@ -118,10 +118,10 @@ function fmtRp(v) {
             </section>
 
             <div class="flex justify-end gap-2">
-                <Button as-child type="button" variant="outline" size="default">
+                <Button as-child type="button" variant="outline" size="default" class="rounded-full">
                     <Link :href="route('payment-requests.show', paymentRequest.id)">Batal</Link>
                 </Button>
-                <Button type="submit" variant="secondary" size="default" :disabled="form.processing">
+                <Button type="submit" size="default" class="rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="form.processing">
                     <Loader2 v-if="form.processing" class="size-4 animate-spin" />
                     Simpan
                 </Button>

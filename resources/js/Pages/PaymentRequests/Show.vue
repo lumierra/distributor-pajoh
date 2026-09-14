@@ -97,37 +97,37 @@ function fmtRp(v) {
             :icon="Inbox"
         >
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('payment-requests.index')">
                         <ArrowLeft class="size-4" /> Daftar Request
                     </Link>
                 </Button>
-                <Button v-if="canEdit" as-child size="default" variant="outline">
+                <Button v-if="canEdit" as-child size="default" variant="outline" class="rounded-full">
                     <Link :href="route('payment-requests.edit', paymentRequest.id)">
                         <Pencil class="size-4" /> Edit
                     </Link>
                 </Button>
-                <Button v-if="canSubmit" size="default" variant="secondary" @click="doSubmit">
+                <Button v-if="canSubmit" size="default" class="rounded-full bg-brand text-white hover:bg-brand-dark" @click="doSubmit">
                     <Send class="size-4" /> Submit
                 </Button>
-                <Button v-if="canVerify" size="default" variant="secondary" @click="doVerify">
+                <Button v-if="canVerify" size="default" class="rounded-full bg-brand text-white hover:bg-brand-dark" @click="doVerify">
                     <CheckCircle2 class="size-4" /> Verify
                 </Button>
-                <Button v-if="canReject" size="default" variant="outline" @click="rejectOpen = true">
+                <Button v-if="canReject" size="default" variant="outline" class="rounded-full" @click="rejectOpen = true">
                     <X class="size-4" /> Reject
                 </Button>
-                <Button v-if="canCancel" size="default" variant="outline" @click="doCancel">
+                <Button v-if="canCancel" size="default" variant="outline" class="rounded-full" @click="doCancel">
                     <Ban class="size-4" /> Cancel
                 </Button>
             </template>
         </PageHeader>
 
-        <section v-if="paymentRequest.status === 'rejected'" class="rounded-lg bg-amber-50 ring-1 ring-amber-200 p-4 mb-4 text-sm">
+        <section v-if="paymentRequest.status === 'rejected'" class="rounded-2xl bg-amber-50 ring-1 ring-amber-200 p-4 mb-4 text-sm">
             <p class="text-amber-900"><strong>Ditolak.</strong> {{ paymentRequest.rejection_reason }}</p>
             <p class="text-xs text-amber-800 mt-1">Edit & submit ulang setelah revisi.</p>
         </section>
 
-        <section v-if="paymentRequest.payment" class="rounded-lg bg-emerald-50 ring-1 ring-emerald-200 p-4 mb-4 text-sm">
+        <section v-if="paymentRequest.payment" class="rounded-2xl bg-emerald-50 ring-1 ring-emerald-200 p-4 mb-4 text-sm">
             <p class="text-emerald-900">
                 <strong>Verified.</strong> Payment ter-create:
                 <Link :href="route('payments.show', paymentRequest.payment.id)" class="font-mono hover:underline">
@@ -139,8 +139,8 @@ function fmtRp(v) {
         </section>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 flex items-start gap-4 lg:col-span-2">
-                <div class="size-12 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 flex items-start gap-4 lg:col-span-2">
+                <div class="size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
                     <Inbox class="size-6" />
                 </div>
                 <div class="flex-1 min-w-0">
@@ -156,8 +156,8 @@ function fmtRp(v) {
                 <PaymentRequestStatusBadge :status="paymentRequest.status" />
             </div>
 
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-                <header class="border-b border-border/70 px-5 py-3 flex items-center gap-2">
+            <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+                <header class="border-b border-foreground/5 px-5 py-3 flex items-center gap-2">
                     <Receipt class="size-4 text-muted-foreground" />
                     <h3 class="text-sm font-semibold">Invoice</h3>
                 </header>
@@ -175,8 +175,8 @@ function fmtRp(v) {
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-                <header class="border-b border-border/70 px-5 py-3">
+            <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+                <header class="border-b border-foreground/5 px-5 py-3">
                     <h3 class="text-sm font-semibold">Detail Pembayaran</h3>
                 </header>
                 <dl class="px-5 py-3 grid grid-cols-2 gap-3 text-sm">
@@ -199,8 +199,8 @@ function fmtRp(v) {
                 </dl>
             </div>
 
-            <div v-if="paymentRequest.proof_image_path" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm">
-                <header class="border-b border-border/70 px-5 py-3">
+            <div v-if="paymentRequest.proof_image_path" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm">
+                <header class="border-b border-foreground/5 px-5 py-3">
                     <h3 class="text-sm font-semibold">Bukti Pembayaran</h3>
                 </header>
                 <div class="px-5 py-3">
@@ -211,12 +211,12 @@ function fmtRp(v) {
             </div>
         </div>
 
-        <div v-if="paymentRequest.notes" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5 mb-4">
+        <div v-if="paymentRequest.notes" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-5 mb-4">
             <p class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">Catatan</p>
             <p class="text-sm whitespace-pre-line">{{ paymentRequest.notes }}</p>
         </div>
 
-        <div class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5">
+        <div class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-5">
             <p class="text-[12px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Riwayat</p>
             <ul class="text-xs space-y-1">
                 <li>Dibuat <strong>{{ formatDateTime(paymentRequest.created_at) }}</strong></li>
@@ -236,10 +236,10 @@ function fmtRp(v) {
         </div>
 
         <Dialog v-model:open="rejectOpen">
-            <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden">
-                <DialogHeader class="px-5 pt-5 pb-3 border-b border-border/70">
+            <DialogContent class="sm:max-w-[480px] p-0 overflow-hidden rounded-3xl gap-0">
+                <DialogHeader class="px-5 pt-5 pb-3 border-b border-foreground/5">
                     <div class="flex items-start gap-3">
-                        <div class="size-10 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 ring-1 ring-amber-200">
+                        <div class="size-10 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 ring-1 ring-amber-200">
                             <X class="size-5" />
                         </div>
                         <div>
@@ -255,9 +255,9 @@ function fmtRp(v) {
                     <Textarea v-model="rejectForm.rejection_reason" rows="3" required class="mt-1" />
                     <p v-if="rejectForm.errors.rejection_reason" class="text-xs text-destructive mt-1">{{ rejectForm.errors.rejection_reason }}</p>
                 </form>
-                <DialogFooter class="px-5 py-3 border-t border-border/70 bg-muted/30">
-                    <Button type="button" variant="outline" @click="rejectOpen = false">Batal</Button>
-                    <Button type="button" variant="destructive" :disabled="rejectForm.processing" @click="doReject">Reject</Button>
+                <DialogFooter class="px-5 py-3 border-t border-foreground/5 bg-muted/30">
+                    <Button type="button" variant="outline" class="rounded-full" @click="rejectOpen = false">Batal</Button>
+                    <Button type="button" variant="destructive" class="rounded-full" :disabled="rejectForm.processing" @click="doReject">Reject</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

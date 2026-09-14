@@ -92,12 +92,12 @@ function formatDate(v) {
     <AppLayout>
         <PageHeader :title="customerReturn.return_number" :description="customerReturn.customer?.name" :icon="PackageX">
             <template #actions>
-                <Button as-child variant="outline" size="default">
+                <Button as-child variant="outline" size="default" class="rounded-full">
                     <Link :href="route('customer-returns.index')">
                         <ArrowLeft class="size-4" /> Kembali
                     </Link>
                 </Button>
-                <Button v-if="canEdit" as-child variant="outline" size="default">
+                <Button v-if="canEdit" as-child variant="outline" size="default" class="rounded-full">
                     <Link :href="route('customer-returns.edit', customerReturn.id)">
                         <Edit class="size-4" /> Edit
                     </Link>
@@ -105,7 +105,7 @@ function formatDate(v) {
             </template>
         </PageHeader>
 
-        <div v-if="customerReturn.status === 'cancelled'" class="mb-4 rounded-md ring-1 ring-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800 flex items-start gap-2">
+        <div v-if="customerReturn.status === 'cancelled'" class="mb-4 rounded-2xl ring-1 ring-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800 flex items-start gap-2">
             <AlertTriangle class="size-4 mt-0.5 shrink-0" />
             <div>
                 <p class="font-semibold">CR dibatalkan</p>
@@ -114,7 +114,7 @@ function formatDate(v) {
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <section class="lg:col-span-2 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-4">
+            <section class="lg:col-span-2 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 space-y-4">
                 <div class="flex items-center justify-between">
                     <h3 class="text-sm font-semibold">Header</h3>
                     <CrStatusBadge :status="customerReturn.status" />
@@ -156,7 +156,7 @@ function formatDate(v) {
             </section>
 
             <aside class="space-y-3">
-                <section v-if="customerReturn.credit_note" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 text-sm space-y-1">
+                <section v-if="customerReturn.credit_note" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 text-sm space-y-1">
                     <h3 class="text-sm font-semibold mb-1">Credit Note</h3>
                     <p class="font-mono text-xs">
                         <Link :href="route('credit-notes.show', customerReturn.credit_note.id)" class="hover:text-primary">
@@ -167,27 +167,27 @@ function formatDate(v) {
                     <p class="text-xs"><span class="text-muted-foreground">Remaining:</span> {{ fmtRp(customerReturn.credit_note.remaining_amount) }}</p>
                 </section>
 
-                <section v-if="canPost || canCancel" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-2">
+                <section v-if="canPost || canCancel" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 space-y-2">
                     <h3 class="text-sm font-semibold mb-1">Aksi</h3>
-                    <Button v-if="canPost" class="w-full" :disabled="processing" @click="post">
+                    <Button v-if="canPost" class="w-full rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="processing" @click="post">
                         <CheckCircle2 class="size-4" /> Posting
                     </Button>
-                    <Button v-if="canCancel" variant="outline" class="w-full text-red-700" @click="cancelOpen = true">
+                    <Button v-if="canCancel" variant="outline" class="w-full rounded-full text-red-700" @click="cancelOpen = true">
                         <XCircle class="size-4" /> Cancel
                     </Button>
                 </section>
             </aside>
 
-            <section class="lg:col-span-3 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4">
+            <section class="lg:col-span-3 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4">
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="text-sm font-semibold">Item & Sortir</h3>
-                    <Button v-if="canSort" size="sm" :disabled="processing" @click="saveSort">
+                    <Button v-if="canSort" size="sm" class="rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="processing" @click="saveSort">
                         <Save class="size-3.5" /> Simpan Sortir
                     </Button>
                 </div>
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="text-[11px] uppercase text-muted-foreground border-b">
+                        <tr class="text-[11px] uppercase tracking-wider text-muted-foreground border-b">
                             <th class="text-left py-2">Produk</th>
                             <th class="text-right">Qty Total</th>
                             <th class="text-right">Qty BAIK</th>
@@ -195,7 +195,7 @@ function formatDate(v) {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="row in sortRows" :key="row.id" class="border-b">
+                        <tr v-for="row in sortRows" :key="row.id" class="border-b hover:bg-foreground/2.5 transition-colors">
                             <td class="py-2">{{ row.product_name }}</td>
                             <td class="text-right font-mono">{{ row.qty_total }}</td>
                             <td class="text-right">
@@ -214,7 +214,7 @@ function formatDate(v) {
         </div>
 
         <Dialog v-model:open="cancelOpen">
-            <DialogContent>
+            <DialogContent class="rounded-3xl gap-0">
                 <DialogHeader>
                     <DialogTitle>Cancel Retur</DialogTitle>
                     <DialogDescription>Berikan alasan pembatalan.</DialogDescription>
@@ -224,8 +224,8 @@ function formatDate(v) {
                     <Textarea id="cancel_reason" v-model="cancelReason" rows="3" required />
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" @click="cancelOpen = false">Batal</Button>
-                    <Button variant="destructive" :disabled="processing || !cancelReason.trim()" @click="submitCancel">Cancel CR</Button>
+                    <Button variant="outline" class="rounded-full" @click="cancelOpen = false">Batal</Button>
+                    <Button variant="destructive" class="rounded-full" :disabled="processing || !cancelReason.trim()" @click="submitCancel">Cancel CR</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

@@ -1,11 +1,13 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Eye, FileMinus, RotateCcw, Search } from '@lucide/vue';
+import { Coins, Eye, FileMinus, RotateCcw, Search, Wallet } from '@lucide/vue';
 import { reactive, watch } from 'vue';
 import CnStatusBadge from '@/Components/CreditNotes/CnStatusBadge.vue';
+import ActionButton from '@/Components/Shared/ActionButton.vue';
+import ActionGroup from '@/Components/Shared/ActionGroup.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
-import StatCard from '@/Components/Shared/StatCard.vue';
+import StatTile from '@/Components/Shared/StatTile.vue';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import {
@@ -74,22 +76,20 @@ function fmtRp(v) {
         <PageHeader title="Credit Notes" description="Credit Note hasil retur customer. Multi-apply ke invoice." :icon="FileMinus" />
 
         <section v-if="stats" class="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-            <StatCard label="Total CN" :value="stats.total ?? 0" tone="brand">
-                <template #icon><FileMinus class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Total Amount" :value="fmtRp(stats.total_amount)" tone="brand" />
-            <StatCard label="Total Remaining" :value="fmtRp(stats.total_remaining)" tone="brand-orange" />
+            <StatTile label="Total CN" :value="stats.total ?? 0" :icon="FileMinus" />
+            <StatTile label="Total Amount" :value="fmtRp(stats.total_amount)" :icon="Coins" />
+            <StatTile label="Total Remaining" :value="fmtRp(stats.total_remaining)" :icon="Wallet" tone="warn" />
         </section>
 
-        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <div class="border-b border-border/70 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+        <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <div class="border-b border-foreground/5 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
                 <div class="relative flex-1">
                     <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                    <Input v-model="filters.q" placeholder="Cari no CN, customer…" class="pl-8 h-9 rounded-md" />
+                    <Input v-model="filters.q" placeholder="Cari no CN, customer…" class="pl-8 h-9 rounded-full bg-muted/50 border-transparent focus-visible:bg-card" />
                 </div>
                 <div class="flex items-center gap-2">
                     <Select v-model="filters.status">
-                        <SelectTrigger class="w-[160px] h-9 rounded-md"><SelectValue placeholder="Status" /></SelectTrigger>
+                        <SelectTrigger class="w-[160px] h-9 rounded-full bg-muted/50 border-transparent"><SelectValue placeholder="Status" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem :value="ALL">Semua</SelectItem>
                             <SelectItem value="open">Open</SelectItem>
@@ -97,7 +97,7 @@ function fmtRp(v) {
                             <SelectItem value="closed">Closed</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button type="button" variant="outline" size="default" @click="reset">
+                    <Button type="button" variant="ghost" size="default" class="rounded-full" @click="reset">
                         <RotateCcw class="size-3.5" /> Reset
                     </Button>
                 </div>
@@ -126,7 +126,7 @@ function fmtRp(v) {
                             </div>
                         </TableCell>
                     </TableRow>
-                    <TableRow v-for="cn in creditNotes.data" :key="cn.id" class="hover:bg-muted/30 transition-colors">
+                    <TableRow v-for="cn in creditNotes.data" :key="cn.id" class="hover:bg-foreground/2.5 border-foreground/5 transition-colors">
                         <TableCell class="pl-4 py-2.5 font-mono text-xs">
                             <Link :href="route('credit-notes.show', cn.id)" class="hover:text-primary">
                                 {{ cn.cn_number }}
@@ -145,17 +145,21 @@ function fmtRp(v) {
                             <CnStatusBadge :status="cn.status" />
                         </TableCell>
                         <TableCell class="py-3 px-4 text-right whitespace-nowrap">
-                            <Button as-child size="sm" variant="outline" class="h-7 px-2">
-                                <Link :href="route('credit-notes.show', cn.id)">
-                                    <Eye class="w-3.5 h-3.5" />
-                                </Link>
-                            </Button>
+                            <div class="flex justify-end">
+                                <ActionGroup class="rounded-full">
+                                    <ActionButton :icon="Eye" label="Detail" as-child tone="brand">
+                                        <Link :href="route('credit-notes.show', cn.id)">
+                                            <Eye class="w-4 h-4" />
+                                        </Link>
+                                    </ActionButton>
+                                </ActionGroup>
+                            </div>
                         </TableCell>
                     </TableRow>
                 </TableBody>
             </Table>
 
-            <div v-if="creditNotes.data.length > 0" class="border-t border-border/70 px-4 py-2.5">
+            <div v-if="creditNotes.data.length > 0" class="border-t border-foreground/5 px-4 py-2.5">
                 <Pagination :meta="creditNotes" />
             </div>
         </section>

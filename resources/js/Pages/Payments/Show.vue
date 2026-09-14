@@ -77,7 +77,7 @@ function formatDateTime(v) {
     <AppLayout>
         <PageHeader :title="`Payment ${payment.payment_number}`" :description="`Invoice ${payment.invoice?.invoice_number ?? '—'}`" :icon="Banknote">
             <template #actions>
-                <Button as-child variant="outline" size="default">
+                <Button as-child variant="outline" size="default" class="rounded-full">
                     <Link :href="route('payments.index')">
                         <ArrowLeft class="size-4" /> Kembali
                     </Link>
@@ -85,7 +85,7 @@ function formatDateTime(v) {
             </template>
         </PageHeader>
 
-        <div v-if="payment.status === 'bounced'" class="mb-4 rounded-md ring-1 ring-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800 flex items-start gap-2">
+        <div v-if="payment.status === 'bounced'" class="mb-4 rounded-2xl ring-1 ring-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800 flex items-start gap-2">
             <AlertTriangle class="size-4 mt-0.5 shrink-0" />
             <div>
                 <p class="font-semibold">Giro Bounced</p>
@@ -93,7 +93,7 @@ function formatDateTime(v) {
             </div>
         </div>
 
-        <div v-if="payment.status === 'pending_clearing'" class="mb-4 rounded-md ring-1 ring-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 flex items-start gap-2">
+        <div v-if="payment.status === 'pending_clearing'" class="mb-4 rounded-2xl ring-1 ring-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 flex items-start gap-2">
             <AlertTriangle class="size-4 mt-0.5 shrink-0" />
             <div>
                 <p class="font-semibold">Menunggu pencairan giro</p>
@@ -102,7 +102,7 @@ function formatDateTime(v) {
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <section class="lg:col-span-2 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-4">
+            <section class="lg:col-span-2 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 space-y-4">
                 <div class="flex items-center justify-between">
                     <h3 class="text-sm font-semibold">Detail Pembayaran</h3>
                     <PaymentStatusBadge :status="payment.status" />
@@ -153,9 +153,9 @@ function formatDateTime(v) {
             </section>
 
             <aside class="space-y-4">
-                <section v-if="canClear || canBounce" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-2">
+                <section v-if="canClear || canBounce" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 space-y-2">
                     <h3 class="text-sm font-semibold mb-1">Aksi Giro</h3>
-                    <Button v-if="canClear" class="w-full" :disabled="processing" @click="clearGiro">
+                    <Button v-if="canClear" class="w-full rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="processing" @click="clearGiro">
                         <CheckCircle2 class="size-4" /> Cairkan Giro
                     </Button>
                     <Button v-if="canBounce" variant="destructive" class="w-full" :disabled="processing" @click="bounceOpen = true">
@@ -163,14 +163,14 @@ function formatDateTime(v) {
                     </Button>
                 </section>
 
-                <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-2 text-xs">
+                <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 space-y-2 text-xs">
                     <h3 class="text-sm font-semibold mb-2">Riwayat</h3>
                     <p v-if="payment.recorder"><span class="text-muted-foreground">Direkam oleh</span> {{ payment.recorder.name }} • {{ formatDateTime(payment.created_at) }}</p>
                     <p v-if="payment.cleared_at"><span class="text-muted-foreground">Dicairkan oleh</span> {{ payment.clearer?.name }} • {{ formatDateTime(payment.cleared_at) }}</p>
                     <p v-if="payment.bounced_at"><span class="text-muted-foreground">Di-bounce oleh</span> {{ payment.bouncer?.name }} • {{ formatDateTime(payment.bounced_at) }}</p>
                 </section>
 
-                <section v-if="payment.invoice" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-2 text-sm">
+                <section v-if="payment.invoice" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 space-y-2 text-sm">
                     <h3 class="text-sm font-semibold mb-1">Invoice Terkait</h3>
                     <p class="font-mono text-xs">
                         <Link :href="route('invoices.show', payment.invoice.id)" class="hover:text-primary">
@@ -184,7 +184,7 @@ function formatDateTime(v) {
         </div>
 
         <Dialog v-model:open="bounceOpen">
-            <DialogContent>
+            <DialogContent class="rounded-3xl gap-0">
                 <DialogHeader>
                     <DialogTitle>Bounce Giro</DialogTitle>
                     <DialogDescription>Pembayaran akan dibatalkan & invoice di-restore outstanding-nya.</DialogDescription>
@@ -194,7 +194,7 @@ function formatDateTime(v) {
                     <Textarea id="bounce_reason" v-model="bounceReason" rows="3" required />
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" @click="bounceOpen = false">Batal</Button>
+                    <Button variant="outline" class="rounded-full" @click="bounceOpen = false">Batal</Button>
                     <Button variant="destructive" :disabled="processing || !bounceReason.trim()" @click="submitBounce">Bounce</Button>
                 </DialogFooter>
             </DialogContent>

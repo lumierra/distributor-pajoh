@@ -113,11 +113,20 @@ function formatDate(v) {
 
 function statusClass(s) {
     return {
-        pending: 'bg-amber-50 text-amber-800 ring-amber-200',
-        approved: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-        rejected: 'bg-red-50 text-red-700 ring-red-200',
-        cancelled: 'bg-muted text-muted-foreground ring-border',
+        pending: 'bg-amber-50 text-amber-800',
+        approved: 'bg-emerald-50 text-emerald-700',
+        rejected: 'bg-red-50 text-red-700',
+        cancelled: 'bg-muted text-muted-foreground',
     }[s] ?? 'bg-muted text-muted-foreground';
+}
+
+function statusDotClass(s) {
+    return {
+        pending: 'bg-amber-500',
+        approved: 'bg-emerald-500',
+        rejected: 'bg-red-500',
+        cancelled: 'bg-muted-foreground/50',
+    }[s] ?? 'bg-muted-foreground/50';
 }
 </script>
 
@@ -127,10 +136,10 @@ function statusClass(s) {
     <AppLayout>
         <PageHeader title="Invoice Extensions" description="Permintaan perpanjangan jatuh tempo invoice." :icon="CalendarClock" />
 
-        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <div class="border-b border-border/70 px-3 py-2.5 flex items-center gap-2 flex-wrap">
+        <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <div class="border-b border-foreground/5 px-3 py-2.5 flex items-center gap-2 flex-wrap">
                 <Select v-model="filters.status">
-                    <SelectTrigger class="w-[160px] h-9 rounded-md"><SelectValue placeholder="Status" /></SelectTrigger>
+                    <SelectTrigger class="w-[160px] h-9 rounded-full bg-muted/50 border-transparent"><SelectValue placeholder="Status" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem :value="ALL">Semua Status</SelectItem>
                         <SelectItem value="pending">Pending</SelectItem>
@@ -139,7 +148,7 @@ function statusClass(s) {
                         <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
                 </Select>
-                <Button type="button" variant="outline" size="default" @click="reset">
+                <Button type="button" variant="ghost" size="default" class="rounded-full" @click="reset">
                     <RotateCcw class="size-3.5" /> Reset
                 </Button>
             </div>
@@ -166,7 +175,7 @@ function statusClass(s) {
                             </div>
                         </TableCell>
                     </TableRow>
-                    <TableRow v-for="log in extensions.data" :key="log.id" class="hover:bg-muted/30 transition-colors">
+                    <TableRow v-for="log in extensions.data" :key="log.id" class="hover:bg-foreground/2.5 border-foreground/5 transition-colors">
                         <TableCell class="pl-4 py-2.5 font-mono text-xs">
                             <Link :href="route('invoices.show', log.invoice_id)" class="hover:text-primary">
                                 {{ log.invoice?.invoice_number }}
@@ -181,16 +190,17 @@ function statusClass(s) {
                         <TableCell class="text-xs max-w-xs truncate" :title="log.request_reason">{{ log.request_reason }}</TableCell>
                         <TableCell class="text-xs">{{ log.requester?.name ?? '—' }}</TableCell>
                         <TableCell>
-                            <span :class="['inline-flex items-center px-2 py-0.5 rounded-md text-[12px] font-medium ring-1 capitalize', statusClass(log.status)]">
+                            <span :class="['inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium capitalize', statusClass(log.status)]">
+                                <span :class="['size-1.5 rounded-full', statusDotClass(log.status)]" />
                                 {{ log.status }}
                             </span>
                         </TableCell>
                         <TableCell class="py-3 px-4 text-right whitespace-nowrap">
                             <div v-if="log.status === 'pending'" class="flex gap-1 justify-end">
-                                <Button size="sm" variant="outline" class="h-7 px-2 text-xs" @click="openApprove(log)">
+                                <Button size="sm" variant="outline" class="h-7 px-2 text-xs rounded-full" @click="openApprove(log)">
                                     <CheckCircle2 class="size-3" /> Approve
                                 </Button>
-                                <Button size="sm" variant="outline" class="h-7 px-2 text-xs text-red-700 hover:bg-red-50" @click="openReject(log)">
+                                <Button size="sm" variant="outline" class="h-7 px-2 text-xs rounded-full text-red-700 hover:bg-red-50" @click="openReject(log)">
                                     <X class="size-3" /> Reject
                                 </Button>
                             </div>
@@ -200,13 +210,13 @@ function statusClass(s) {
                 </TableBody>
             </Table>
 
-            <div v-if="extensions.data.length > 0" class="border-t border-border/70 px-4 py-2.5">
+            <div v-if="extensions.data.length > 0" class="border-t border-foreground/5 px-4 py-2.5">
                 <Pagination :meta="extensions" />
             </div>
         </section>
 
         <Dialog v-model:open="approveOpen">
-            <DialogContent>
+            <DialogContent class="rounded-3xl gap-0">
                 <DialogHeader>
                     <DialogTitle>Approve Extension</DialogTitle>
                     <DialogDescription>Set tanggal jatuh tempo baru untuk invoice ini.</DialogDescription>
@@ -216,14 +226,14 @@ function statusClass(s) {
                     <Input id="approved_date" v-model="approvedDate" type="date" />
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" @click="approveOpen = false">Batal</Button>
-                    <Button :disabled="processing || !approvedDate" @click="submitApprove">Approve</Button>
+                    <Button variant="outline" class="rounded-full" @click="approveOpen = false">Batal</Button>
+                    <Button class="rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="processing || !approvedDate" @click="submitApprove">Approve</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
 
         <Dialog v-model:open="rejectOpen">
-            <DialogContent>
+            <DialogContent class="rounded-3xl gap-0">
                 <DialogHeader>
                     <DialogTitle>Reject Extension</DialogTitle>
                     <DialogDescription>Berikan alasan penolakan.</DialogDescription>
@@ -233,8 +243,8 @@ function statusClass(s) {
                     <Textarea id="rejection_reason" v-model="rejectionReason" rows="3" required />
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" @click="rejectOpen = false">Batal</Button>
-                    <Button variant="destructive" :disabled="processing || !rejectionReason.trim()" @click="submitReject">Reject</Button>
+                    <Button variant="outline" class="rounded-full" @click="rejectOpen = false">Batal</Button>
+                    <Button variant="destructive" class="rounded-full" :disabled="processing || !rejectionReason.trim()" @click="submitReject">Reject</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

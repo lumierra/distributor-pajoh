@@ -16,7 +16,7 @@ import ActionGroup from '@/Components/Shared/ActionGroup.vue';
 import PageHeader from '@/Components/Shared/PageHeader.vue';
 import Pagination from '@/Components/Shared/Pagination.vue';
 import SrStatusBadge from '@/Components/SupplierReturns/SrStatusBadge.vue';
-import StatCard from '@/Components/Shared/StatCard.vue';
+import StatTile from '@/Components/Shared/StatTile.vue';
 import { Button } from '@/Components/ui/button';
 import { Input } from '@/Components/ui/input';
 import {
@@ -93,7 +93,7 @@ function fmtRp(v) {
     <AppLayout>
         <PageHeader title="Retur Supplier" description="Klaim barang rusak ke supplier — workflow: draft → approved → sent → settled." :icon="PackageOpen">
             <template #actions>
-                <Button v-if="canCreate" as-child size="default" variant="secondary">
+                <Button v-if="canCreate" as-child size="default" class="rounded-full bg-brand text-white hover:bg-brand-dark">
                     <Link :href="route('supplier-returns.create')">
                         <Plus class="size-4" /> Buat Retur
                     </Link>
@@ -102,32 +102,22 @@ function fmtRp(v) {
         </PageHeader>
 
         <section v-if="stats" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
-            <StatCard label="Total" :value="stats.total ?? 0" tone="brand">
-                <template #icon><Inbox class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Draft" :value="stats.draft ?? 0" tone="brand">
-                <template #icon><Inbox class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Approved" :value="stats.approved ?? 0" tone="brand-orange">
-                <template #icon><CheckCircle2 class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Sent" :value="stats.sent ?? 0" tone="brand-orange">
-                <template #icon><Send class="size-5" /></template>
-            </StatCard>
-            <StatCard label="Settled" :value="stats.settled ?? 0" tone="brand">
-                <template #icon><CheckCircle2 class="size-5" /></template>
-            </StatCard>
+            <StatTile label="Total" :value="stats.total ?? 0" :icon="Inbox" />
+            <StatTile label="Draft" :value="stats.draft ?? 0" :icon="Inbox" />
+            <StatTile label="Approved" :value="stats.approved ?? 0" :icon="CheckCircle2" tone="warn" />
+            <StatTile label="Sent" :value="stats.sent ?? 0" :icon="Send" tone="warn" />
+            <StatTile label="Settled" :value="stats.settled ?? 0" :icon="CheckCircle2" />
         </section>
 
-        <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm overflow-hidden">
-            <div class="border-b border-border/70 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+        <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm overflow-hidden">
+            <div class="border-b border-foreground/5 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
                 <div class="relative flex-1">
                     <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-                    <Input v-model="filters.q" placeholder="Cari no retur, supplier…" class="pl-8 h-9 rounded-md" />
+                    <Input v-model="filters.q" placeholder="Cari no retur, supplier…" class="pl-8 h-9 rounded-full bg-muted/50 border-transparent focus-visible:bg-card" />
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <Select v-model="filters.status">
-                        <SelectTrigger class="w-[140px] h-9 rounded-md"><SelectValue placeholder="Status" /></SelectTrigger>
+                        <SelectTrigger class="w-[140px] h-9 rounded-full bg-muted/50 border-transparent"><SelectValue placeholder="Status" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem :value="ALL">Semua Status</SelectItem>
                             <SelectItem value="draft">Draft</SelectItem>
@@ -138,13 +128,13 @@ function fmtRp(v) {
                         </SelectContent>
                     </Select>
                     <Select v-model="filters.supplier_id">
-                        <SelectTrigger class="w-[180px] h-9 rounded-md"><SelectValue placeholder="Supplier" /></SelectTrigger>
+                        <SelectTrigger class="w-[180px] h-9 rounded-full bg-muted/50 border-transparent"><SelectValue placeholder="Supplier" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem :value="ALL">Semua Supplier</SelectItem>
                             <SelectItem v-for="s in suppliers" :key="s.id" :value="String(s.id)">{{ s.name }}</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button type="button" variant="outline" size="default" @click="reset">
+                    <Button type="button" variant="ghost" size="default" class="rounded-full" @click="reset">
                         <RotateCcw class="size-3.5" /> Reset
                     </Button>
                 </div>
@@ -172,7 +162,7 @@ function fmtRp(v) {
                             </div>
                         </TableCell>
                     </TableRow>
-                    <TableRow v-for="sr in supplierReturns.data" :key="sr.id" class="hover:bg-muted/30 transition-colors">
+                    <TableRow v-for="sr in supplierReturns.data" :key="sr.id" class="hover:bg-foreground/2.5 border-foreground/5 transition-colors">
                         <TableCell class="pl-4 py-2.5 font-mono text-xs">
                             <Link :href="route('supplier-returns.show', sr.id)" class="hover:text-primary">
                                 {{ sr.return_number }}
@@ -202,7 +192,7 @@ function fmtRp(v) {
                 </TableBody>
             </Table>
 
-            <div v-if="supplierReturns.data.length > 0" class="border-t border-border/70 px-4 py-2.5">
+            <div v-if="supplierReturns.data.length > 0" class="border-t border-foreground/5 px-4 py-2.5">
                 <Pagination :meta="supplierReturns" />
             </div>
         </section>

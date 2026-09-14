@@ -66,7 +66,7 @@ function fmtRp(v) {
     <AppLayout>
         <PageHeader title="Buat Payment Request" description="Lapor pembayaran dari customer. Kasir akan verifikasi sebelum apply ke invoice." :icon="Inbox">
             <template #actions>
-                <Button as-child variant="ghost" size="default">
+                <Button as-child variant="ghost" size="default" class="rounded-full">
                     <Link :href="route('payment-requests.index')">
                         <ArrowLeft class="size-4" /> Daftar Request
                     </Link>
@@ -75,7 +75,7 @@ function fmtRp(v) {
         </PageHeader>
 
         <form @submit.prevent="submit">
-            <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5 mb-4 space-y-3">
+            <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-5 mb-4 space-y-3">
                 <p class="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">Invoice</p>
                 <div class="space-y-1">
                     <Label class="text-xs font-medium">Pilih Invoice *</Label>
@@ -95,14 +95,14 @@ function fmtRp(v) {
                     </Select>
                     <p v-if="form.errors.invoice_id" class="text-xs text-destructive">{{ form.errors.invoice_id }}</p>
                 </div>
-                <div v-if="chosenInvoice" class="rounded-md bg-muted/40 px-3 py-2 text-xs space-y-0.5">
+                <div v-if="chosenInvoice" class="rounded-2xl bg-muted/40 px-3 py-2 text-xs space-y-0.5">
                     <p><strong>Customer:</strong> {{ chosenInvoice.customer?.name }}</p>
                     <p><strong>Total invoice:</strong> {{ fmtRp(chosenInvoice.total) }}</p>
                     <p><strong>Outstanding:</strong> <span class="font-mono text-red-700">{{ fmtRp(chosenInvoice.outstanding) }}</span></p>
                 </div>
             </section>
 
-            <section class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-5 mb-4">
+            <section class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-5 mb-4">
                 <p class="text-[12px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Detail Pembayaran</p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div v-if="salesUsers.length > 0" class="space-y-1">
@@ -163,10 +163,10 @@ function fmtRp(v) {
             </section>
 
             <div class="flex justify-end gap-2">
-                <Button as-child type="button" variant="outline" size="default">
+                <Button as-child type="button" variant="outline" size="default" class="rounded-full">
                     <Link :href="route('payment-requests.index')">Batal</Link>
                 </Button>
-                <Button type="submit" variant="secondary" size="default" :disabled="form.processing || !form.invoice_id">
+                <Button type="submit" size="default" class="rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="form.processing || !form.invoice_id">
                     <Loader2 v-if="form.processing" class="size-4 animate-spin" />
                     Simpan Draft
                 </Button>

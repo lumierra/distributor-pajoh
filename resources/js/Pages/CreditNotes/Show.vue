@@ -74,7 +74,7 @@ function formatDateTime(v) {
     <AppLayout>
         <PageHeader :title="creditNote.cn_number" :description="creditNote.customer?.name" :icon="FileMinus">
             <template #actions>
-                <Button as-child variant="outline" size="default">
+                <Button as-child variant="outline" size="default" class="rounded-full">
                     <Link :href="route('credit-notes.index')">
                         <ArrowLeft class="size-4" /> Kembali
                     </Link>
@@ -83,7 +83,7 @@ function formatDateTime(v) {
         </PageHeader>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <section class="lg:col-span-2 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-3">
+            <section class="lg:col-span-2 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 space-y-3">
                 <div class="flex items-center justify-between">
                     <h3 class="text-sm font-semibold">Detail</h3>
                     <CnStatusBadge :status="creditNote.status" />
@@ -126,10 +126,10 @@ function formatDateTime(v) {
             </section>
 
             <aside class="space-y-3">
-                <section v-if="canApply" class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4">
+                <section v-if="canApply" class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4">
                     <h3 class="text-sm font-semibold mb-2">Apply ke Invoice</h3>
                     <p class="text-xs text-muted-foreground mb-3">Sisa: {{ fmtRp(creditNote.remaining_amount) }}</p>
-                    <Button class="w-full" :disabled="openInvoices.length === 0" @click="openApply">
+                    <Button class="w-full rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="openInvoices.length === 0" @click="openApply">
                         Apply Sekarang
                     </Button>
                     <p v-if="openInvoices.length === 0" class="text-xs text-muted-foreground mt-2">
@@ -138,11 +138,11 @@ function formatDateTime(v) {
                 </section>
             </aside>
 
-            <section class="lg:col-span-3 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4">
+            <section class="lg:col-span-3 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4">
                 <h3 class="text-sm font-semibold mb-2">Riwayat Aplikasi</h3>
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="text-[11px] uppercase text-muted-foreground border-b">
+                        <tr class="text-[11px] uppercase tracking-wider text-muted-foreground border-b border-foreground/5">
                             <th class="text-left py-2">Tanggal</th>
                             <th class="text-left">Invoice</th>
                             <th class="text-right">Amount</th>
@@ -153,7 +153,7 @@ function formatDateTime(v) {
                         <tr v-if="creditNote.applications.length === 0">
                             <td colspan="4" class="text-center py-6 text-muted-foreground text-xs">Belum ada aplikasi.</td>
                         </tr>
-                        <tr v-for="app in creditNote.applications" :key="app.id" class="border-b">
+                        <tr v-for="app in creditNote.applications" :key="app.id" class="border-b border-foreground/5 hover:bg-foreground/2.5 transition-colors">
                             <td class="py-2 text-xs">{{ formatDateTime(app.applied_at) }}</td>
                             <td class="font-mono text-xs">
                                 <Link :href="route('invoices.show', app.invoice_id)" class="hover:text-primary">
@@ -169,12 +169,12 @@ function formatDateTime(v) {
         </div>
 
         <Dialog v-model:open="applyOpen">
-            <DialogContent>
-                <DialogHeader>
+            <DialogContent class="rounded-3xl gap-0">
+                <DialogHeader class="border-b border-foreground/5 pb-4">
                     <DialogTitle>Apply CN ke Invoice</DialogTitle>
                     <DialogDescription>Pilih invoice dan masukkan jumlah yang akan di-apply.</DialogDescription>
                 </DialogHeader>
-                <div class="space-y-3">
+                <div class="space-y-3 pt-4">
                     <div>
                         <Label>Invoice</Label>
                         <Select v-model="invoiceId">
@@ -192,8 +192,8 @@ function formatDateTime(v) {
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" @click="applyOpen = false">Batal</Button>
-                    <Button :disabled="processing || !invoiceId || amount <= 0" @click="submitApply">Apply</Button>
+                    <Button variant="outline" class="rounded-full" @click="applyOpen = false">Batal</Button>
+                    <Button class="rounded-full bg-brand text-white hover:bg-brand-dark" :disabled="processing || !invoiceId || amount <= 0" @click="submitApply">Apply</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

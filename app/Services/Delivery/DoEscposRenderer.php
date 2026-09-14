@@ -20,7 +20,12 @@ class DoEscposRenderer
 
     private const COND_ON = "\x0F";              // SI = condensed (17 CPI)
 
-    private const NLQ_ON = self::ESC.'x1';       // Near Letter Quality (huruf tajam)
+    // Kualitas SEDANG: mode Draft (cepat) + Bold (tebal) → cepat tapi tetap
+    // jelas terbaca, tidak berbayang seperti draft polos, dan jauh lebih cepat
+    // daripada NLQ (yang menyapu 2x per baris).
+    private const DRAFT_ON = self::ESC.'x0';     // Draft quality (cepat)
+
+    private const BOLD_ON = self::ESC.'E';       // Emphasized/bold ON
 
     private const FORM_FEED = "\x0C";            // maju ke lembar berikut
 
@@ -81,7 +86,8 @@ class DoEscposRenderer
 
         // ── Susun output ───────────────────────────────────────────────────
         $out = self::INIT;
-        $out .= self::NLQ_ON;
+        $out .= self::DRAFT_ON;   // cepat
+        $out .= self::BOLD_ON;    // tebal → tetap jelas
         $out .= self::COND_ON;
 
         $out .= $this->center(strtoupper($companyName))."\n";

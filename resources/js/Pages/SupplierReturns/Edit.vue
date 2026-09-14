@@ -37,7 +37,7 @@ function submit() {
     <AppLayout>
         <PageHeader :title="`Edit ${supplierReturn.return_number}`" :icon="PackageOpen">
             <template #actions>
-                <Button as-child variant="outline" size="default">
+                <Button as-child variant="outline" size="default" class="rounded-full">
                     <Link :href="route('supplier-returns.show', supplierReturn.id)">
                         <ArrowLeft class="size-4" /> Kembali
                     </Link>
@@ -46,7 +46,7 @@ function submit() {
         </PageHeader>
 
         <form class="grid grid-cols-1 lg:grid-cols-3 gap-4" @submit.prevent="submit">
-            <section class="lg:col-span-2 rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 space-y-3">
+            <section class="lg:col-span-2 rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 space-y-3">
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <Label>Tgl Retur</Label>
@@ -75,8 +75,8 @@ function submit() {
                     <Textarea v-model="form.notes" rows="2" />
                 </div>
             </section>
-            <aside class="rounded-lg bg-card ring-1 ring-foreground/5 shadow-sm p-4 h-fit">
-                <Button type="submit" :disabled="form.processing" class="w-full">Simpan Perubahan</Button>
+            <aside class="rounded-2xl bg-card/70 backdrop-blur-xl ring-1 ring-foreground/6 shadow-sm p-4 h-fit">
+                <Button type="submit" :disabled="form.processing" class="w-full rounded-full bg-brand text-white hover:bg-brand-dark">Simpan Perubahan</Button>
             </aside>
         </form>
     </AppLayout>
