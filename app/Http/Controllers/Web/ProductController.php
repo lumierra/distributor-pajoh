@@ -25,7 +25,7 @@ class ProductController extends Controller
         $this->authorize('viewAny', Product::class);
 
         $query = Product::query()
-            ->with(['category:id,code,name', 'baseUnit:id,product_id,name'])
+            ->with(['category:id,code,name', 'baseUnit:id,product_id,name', 'supplier:id,code,name'])
             ->orderBy('name');
 
         if ($search = trim((string) $request->input('q'))) {
@@ -37,6 +37,10 @@ class ProductController extends Controller
 
         if ($cat = $request->input('category')) {
             $query->withCategory($cat);
+        }
+
+        if ($supplierId = $request->input('supplier')) {
+            $query->where('supplier_id', $supplierId);
         }
 
         if ($request->filled('active')) {
@@ -57,6 +61,7 @@ class ProductController extends Controller
             'filters' => [
                 'q' => $request->input('q'),
                 'category' => $request->input('category'),
+                'supplier' => $request->input('supplier'),
                 'active' => $request->input('active'),
             ],
             'stats' => [

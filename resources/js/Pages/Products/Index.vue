@@ -60,6 +60,7 @@ const ALL = 'all';
 const filters = reactive({
     q: props.filters.q ?? '',
     category: props.filters.category || ALL,
+    supplier: props.filters.supplier ? String(props.filters.supplier) : ALL,
     active:
         props.filters.active === '' ||
         props.filters.active === null ||
@@ -77,6 +78,7 @@ watch(filters, () => {
             {
                 q: filters.q,
                 category: filters.category === ALL ? '' : filters.category,
+                supplier: filters.supplier === ALL ? '' : filters.supplier,
                 active: filters.active === ALL ? '' : filters.active,
             },
             { preserveState: true, preserveScroll: true, replace: true },
@@ -87,6 +89,7 @@ watch(filters, () => {
 function reset() {
     filters.q = '';
     filters.category = ALL;
+    filters.supplier = ALL;
     filters.active = ALL;
 }
 
@@ -260,6 +263,17 @@ const statTiles = computed(() => {
                             </SelectItem>
                         </SelectContent>
                     </Select>
+                    <Select v-model="filters.supplier">
+                        <SelectTrigger class="w-[170px] h-9 rounded-full bg-muted/50 border-transparent">
+                            <SelectValue placeholder="Supplier" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem :value="ALL">Semua supplier</SelectItem>
+                            <SelectItem v-for="s in suppliers" :key="s.id" :value="String(s.id)">
+                                {{ s.name }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
                     <Select v-model="filters.active">
                         <SelectTrigger class="w-[130px] h-9 rounded-full bg-muted/50 border-transparent">
                             <SelectValue placeholder="Status" />
@@ -319,6 +333,7 @@ const statTiles = computed(() => {
                         </TableHead>
                         <TableHead>Produk</TableHead>
                         <TableHead>Kategori</TableHead>
+                        <TableHead>Supplier</TableHead>
                         <TableHead>Base</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Dibuat</TableHead>
@@ -327,7 +342,7 @@ const statTiles = computed(() => {
                 </TableHeader>
                 <TableBody class="text-sm">
                     <TableRow v-if="products.data.length === 0">
-                        <TableCell colspan="7" class="text-center py-16">
+                        <TableCell colspan="8" class="text-center py-16">
                             <div class="flex flex-col items-center gap-2 text-muted-foreground">
                                 <Package class="size-7 opacity-40" />
                                 <p class="text-sm">Belum ada produk.</p>
@@ -371,6 +386,10 @@ const statTiles = computed(() => {
                             >
                                 {{ p.category.name }}
                             </span>
+                            <span v-else class="text-muted-foreground">—</span>
+                        </TableCell>
+                        <TableCell class="text-xs">
+                            <span v-if="p.supplier">{{ p.supplier.name }}</span>
                             <span v-else class="text-muted-foreground">—</span>
                         </TableCell>
                         <TableCell class="text-xs">
