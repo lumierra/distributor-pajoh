@@ -100,21 +100,39 @@ test('bulk destroy ditolak untuk id yang tidak ada', function (): void {
 });
 
 test('user tanpa izin delete produk dilewati (tidak ikut terhapus)', function (): void {
-    $admin = bulkAdmin();
-    $products = makeProducts(2);
+    makeProducts(2);
+    $products = Product::query()->get();
 
-    // Role admin: master.product punya view/create/update tapi TIDAK delete.
-    $adminRole = Role::query()->where('code', Role::CODE_ADMIN)->firstOrFail();
-    $nonSuper = User::factory()->create(['role_id' => $adminRole->id]);
+    // Role operator: master.product hanya view (tak boleh create/update/delete).
+    $operatorRole = Role::query()->where('code', Role::CODE_OPERATOR)->firstOrFail();
+    $nonPrivileged = User::factory()->create(['role_id' => $operatorRole->id]);
 
     $ids = $products->pluck('id')->all();
-    $this->actingAs($nonSuper)
+    $this->actingAs($nonPrivileged)
         ->post(route('products.bulk-destroy'), ['ids' => $ids])
         ->assertRedirect()
         ->assertSessionHas('flash.error');
 
-    // Tidak ada yang terhapus karena role admin tak punya permission delete.
+    // Tidak ada yang terhapus karena role operator tak punya permission delete.
     foreach ($ids as $id) {
         expect(Product::find($id))->not->toBeNull();
+    }
+});
+
+test('role admin bisa hapus produk (punya izin delete)', function (): void {
+    makeProducts(2);
+    $products = Product::query()->get();
+
+    $adminRole = Role::query()->where('code', Role::CODE_ADMIN)->firstOrFail();
+    $admin = User::factory()->create(['role_id' => $adminRole->id]);
+
+    $ids = $products->pluck('id')->all();
+    $this->actingAs($admin)
+        ->post(route('products.bulk-destroy'), ['ids' => $ids])
+        ->assertRedirect()
+        ->assertSessionHas('flash.success');
+
+    foreach ($ids as $id) {
+        expect(Product::find($id))->toBeNull(); // soft-deleted
     }
 });

@@ -73,7 +73,7 @@ class RolePermissionSeeder extends Seeder
             'master.sales_user' => ['view' => true, 'create' => true, 'update' => true, 'export' => true],
             'master.supplier' => ['view' => true, 'create' => true, 'update' => true, 'export' => true],
             'master.customer' => ['view' => true, 'create' => true, 'update' => true, 'export' => true],
-            'master.product' => ['view' => true, 'create' => true, 'update' => true, 'export' => true],
+            'master.product' => ['view' => true, 'create' => true, 'update' => true, 'delete' => true, 'export' => true],
             'master.product_group' => ['view' => true, 'create' => true, 'update' => true],
             'master.unit' => ['view' => true, 'create' => true, 'update' => true, 'delete' => true],
             'master.driver' => ['view' => true, 'create' => true, 'update' => true],
